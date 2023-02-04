@@ -1,0 +1,16 @@
+name: binder_env
+channels:
+  - conda-forge
+dependencies:
+  - python
+  - seaborn
+  - pandas
+  - jupyterlab
+  - requests
+  - numpy-financial
+  - altair
+  - arch-py
+  - pandas-datareader
+  - requests
+  - stats_can
+  - statsmodels

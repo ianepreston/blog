@@ -1,0 +1,18 @@
+project:
+  type: website
+
+website:
+  title: "Ian's blog"
+  site-url: "https://blog.ianpreston.ca"
+  navbar:
+    right:
+      - about.qmd
+      - icon: github
+        href: https://github.com/ianepreston
+format:
+  html:
+    theme: cosmo
+    css: styles.css
+
+
+
