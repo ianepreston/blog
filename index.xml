@@ -6,14 +6,14 @@
       version="2.0">
 <channel>
 <title>Ian&#39;s blog</title>
-<link>https://iane.preston.github.io/blog/index.html</link>
-<atom:link href="https://iane.preston.github.io/blog/index.xml" rel="self" type="application/rss+xml"/>
+<link>https://ianepreston.github.io/blog/index.html</link>
+<atom:link href="https://ianepreston.github.io/blog/index.xml" rel="self" type="application/rss+xml"/>
 <description></description>
 <generator>quarto-1.2.335</generator>
 <lastBuildDate>Sat, 21 Jan 2023 00:00:00 GMT</lastBuildDate>
 <item>
   <title>Home cluster part 3 - Setup VM templates on proxmox</title>
-  <link>https://iane.preston.github.io/blog/posts/2023-01-21-proxmox3.html</link>
+  <link>https://ianepreston.github.io/blog/posts/2023-01-21-proxmox3.html</link>
   <description><![CDATA[ 
 
 
@@ -109,7 +109,7 @@
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
 <figure class="figure">
-<img src="https://iane.preston.github.io/blog/posts/proxmox3/panic.png" title="Rocky Panic" class="img-fluid figure-img">
+<img src="https://ianepreston.github.io/blog/posts/proxmox3/panic.png" title="Rocky Panic" class="img-fluid figure-img">
 </figure>
 <p></p><figcaption class="figure-caption">Nodes</figcaption><p></p>
 </figure>
@@ -151,13 +151,13 @@
   <category>configuration</category>
   <category>linux</category>
   <category>proxmox</category>
-  <guid>https://iane.preston.github.io/blog/posts/2023-01-21-proxmox3.html</guid>
+  <guid>https://ianepreston.github.io/blog/posts/2023-01-21-proxmox3.html</guid>
   <pubDate>Sat, 21 Jan 2023 00:00:00 GMT</pubDate>
-  <media:content url="https://iane.preston.github.io/blog/posts/proxmox3/panic.png " medium="image"/>
+  <media:content url="https://ianepreston.github.io/blog/posts/proxmox3/panic.png " medium="image"/>
 </item>
 <item>
   <title>Home cluster part 2 - Configuring Proxmox</title>
-  <link>https://iane.preston.github.io/blog/posts/2022-12-31-proxmox2.html</link>
+  <link>https://ianepreston.github.io/blog/posts/2022-12-31-proxmox2.html</link>
   <description><![CDATA[ 
 
 
@@ -185,7 +185,7 @@
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
 <figure class="figure">
-<img src="https://iane.preston.github.io/blog/posts/proxmox2/nodes.jpg" title="Proxmox nodes" class="img-fluid figure-img">
+<img src="https://ianepreston.github.io/blog/posts/proxmox2/nodes.jpg" title="Proxmox nodes" class="img-fluid figure-img">
 </figure>
 <p></p><figcaption class="figure-caption">Nodes</figcaption><p></p>
 </figure>
@@ -316,13 +316,13 @@
   <category>configuration</category>
   <category>linux</category>
   <category>proxmox</category>
-  <guid>https://iane.preston.github.io/blog/posts/2022-12-31-proxmox2.html</guid>
+  <guid>https://ianepreston.github.io/blog/posts/2022-12-31-proxmox2.html</guid>
   <pubDate>Sat, 31 Dec 2022 00:00:00 GMT</pubDate>
-  <media:content url="https://iane.preston.github.io/blog/posts/proxmox2/nodes.jpg " medium="image"/>
+  <media:content url="https://ianepreston.github.io/blog/posts/proxmox2/nodes.jpg " medium="image"/>
 </item>
 <item>
   <title>Setting up rootless docker</title>
-  <link>https://iane.preston.github.io/blog/posts/2022-12-30-rootless-docker.html</link>
+  <link>https://ianepreston.github.io/blog/posts/2022-12-30-rootless-docker.html</link>
   <description><![CDATA[ 
 
 
@@ -437,12 +437,12 @@
  ]]></description>
   <category>configuration</category>
   <category>linux</category>
-  <guid>https://iane.preston.github.io/blog/posts/2022-12-30-rootless-docker.html</guid>
+  <guid>https://ianepreston.github.io/blog/posts/2022-12-30-rootless-docker.html</guid>
   <pubDate>Fri, 30 Dec 2022 00:00:00 GMT</pubDate>
 </item>
 <item>
   <title>Building my own devcontainers</title>
-  <link>https://iane.preston.github.io/blog/posts/2022-12-30-devcontainers.html</link>
+  <link>https://ianepreston.github.io/blog/posts/2022-12-30-devcontainers.html</link>
   <description><![CDATA[ 
 
 
@@ -476,12 +476,12 @@
  ]]></description>
   <category>configuration</category>
   <category>linux</category>
-  <guid>https://iane.preston.github.io/blog/posts/2022-12-30-devcontainers.html</guid>
+  <guid>https://ianepreston.github.io/blog/posts/2022-12-30-devcontainers.html</guid>
   <pubDate>Fri, 30 Dec 2022 00:00:00 GMT</pubDate>
 </item>
 <item>
   <title>Home cluster part 1 - Intro and Proxmox install</title>
-  <link>https://iane.preston.github.io/blog/posts/2022-11-21-proxmox.html</link>
+  <link>https://ianepreston.github.io/blog/posts/2022-11-21-proxmox.html</link>
   <description><![CDATA[ 
 
 
@@ -557,12 +557,12 @@
   <category>configuration</category>
   <category>linux</category>
   <category>proxmox</category>
-  <guid>https://iane.preston.github.io/blog/posts/2022-11-21-proxmox.html</guid>
+  <guid>https://ianepreston.github.io/blog/posts/2022-11-21-proxmox.html</guid>
   <pubDate>Mon, 21 Nov 2022 00:00:00 GMT</pubDate>
 </item>
 <item>
   <title>Dunning-Kruger is autocorrelation</title>
-  <link>https://iane.preston.github.io/blog/posts/2022-08-01-dunning.html</link>
+  <link>https://ianepreston.github.io/blog/posts/2022-08-01-dunning.html</link>
   <description><![CDATA[ 
 
 
@@ -631,14 +631,14 @@
 <div class="cell" data-execution_count="6">
 <div class="sourceCode cell-code" id="cb6" style="background: #f1f3f5;"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1">dk.x_vs_y_chart</span></code></pre></div>
 <div class="cell-output cell-output-display">
-<p><img src="https://iane.preston.github.io/blog/posts/2022-08-01-dunning_files/figure-html/cell-7-output-1.png" class="img-fluid"></p>
+<p><img src="https://ianepreston.github.io/blog/posts/2022-08-01-dunning_files/figure-html/cell-7-output-1.png" class="img-fluid"></p>
 </div>
 </div>
 <p>The basic format of this <code>x_vs_y_chart</code> will be the same in all scenarios, so I’ll just explain how to interpret it in this first example. The x axis represents someone’s actual place in the percentile distribution, the y axis is their predicted place in that same distribution. Each point in the scatter plot represents a single observation of someone’s actual place in the distribution and their corresponding prediction of where they are in the distribution. The white dotted line moving up at a 45 degree angle represents perfect prediction, where all observations would be if everyone could exactly predict their place in the distribution. The blue-green line is a regression line of the relationship between someone’s actual place in the distribution and their prediction. The fact that it’s pretty much flat suggests no relationship, which is what we’d expect since that’s how the data was generated</p>
 <div class="cell" data-execution_count="7">
 <div class="sourceCode cell-code" id="cb7" style="background: #f1f3f5;"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1">dk.x_vs_error_chart<span class="op" style="color: #5E5E5E;">;</span></span></code></pre></div>
 <div class="cell-output cell-output-display">
-<p><img src="https://iane.preston.github.io/blog/posts/2022-08-01-dunning_files/figure-html/cell-8-output-1.png" class="img-fluid"></p>
+<p><img src="https://ianepreston.github.io/blog/posts/2022-08-01-dunning_files/figure-html/cell-8-output-1.png" class="img-fluid"></p>
 </div>
 </div>
 <p>As with the previous chart, the basic format of this <code>x_vs_error_chart</code> will be the same in all scenarios, so I’ll just explain how to interpret it in this first example. The x axis again represents someone’s actual place in the percentile distribution, but now the y axis is the difference between their prediction and actual place. Each point in the scatter plot represents a single observation of someone’s actual place in the distribution and their corresponding prediction error. The horizontal white dotted line moving up at a zero again represents perfect prediction, where all observations would be if everyone could exactly predict their place in the distribution. The blue-green line is a regression line of the relationship between someone’s actual place in the distribution and their prediction error. Note that in this randomly generated scenario we’re seeing something that looks like Dunning Kruger, with people on the low endof the distribution tending to overestimate their place, and people on the high end tending to underestimate.</p>
@@ -657,13 +657,13 @@
 <div class="cell" data-execution_count="10">
 <div class="sourceCode cell-code" id="cb10" style="background: #f1f3f5;"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb10-1">dk.x_vs_y_chart<span class="op" style="color: #5E5E5E;">;</span></span></code></pre></div>
 <div class="cell-output cell-output-display">
-<p><img src="https://iane.preston.github.io/blog/posts/2022-08-01-dunning_files/figure-html/cell-11-output-1.png" class="img-fluid"></p>
+<p><img src="https://ianepreston.github.io/blog/posts/2022-08-01-dunning_files/figure-html/cell-11-output-1.png" class="img-fluid"></p>
 </div>
 </div>
 <div class="cell" data-execution_count="11">
 <div class="sourceCode cell-code" id="cb11" style="background: #f1f3f5;"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb11-1">dk.x_vs_error_chart<span class="op" style="color: #5E5E5E;">;</span></span></code></pre></div>
 <div class="cell-output cell-output-display">
-<p><img src="https://iane.preston.github.io/blog/posts/2022-08-01-dunning_files/figure-html/cell-12-output-1.png" class="img-fluid"></p>
+<p><img src="https://ianepreston.github.io/blog/posts/2022-08-01-dunning_files/figure-html/cell-12-output-1.png" class="img-fluid"></p>
 </div>
 </div>
 <p>Even here we can see a slight appearance of “overconfidence” for lower percentiles and “underconfidence” for higher percentiles simply because prediction errors are truncated at the top and bottom (If I’m actually in the lowest percentile the only errors I can possibly make are to overestimate my performance).</p>
@@ -687,13 +687,13 @@
 <div class="cell" data-execution_count="14">
 <div class="sourceCode cell-code" id="cb14" style="background: #f1f3f5;"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb14-1">dk.x_vs_y_chart<span class="op" style="color: #5E5E5E;">;</span></span></code></pre></div>
 <div class="cell-output cell-output-display">
-<p><img src="https://iane.preston.github.io/blog/posts/2022-08-01-dunning_files/figure-html/cell-15-output-1.png" class="img-fluid"></p>
+<p><img src="https://ianepreston.github.io/blog/posts/2022-08-01-dunning_files/figure-html/cell-15-output-1.png" class="img-fluid"></p>
 </div>
 </div>
 <div class="cell" data-execution_count="15">
 <div class="sourceCode cell-code" id="cb15" style="background: #f1f3f5;"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb15-1">dk.x_vs_error_chart<span class="op" style="color: #5E5E5E;">;</span></span></code></pre></div>
 <div class="cell-output cell-output-display">
-<p><img src="https://iane.preston.github.io/blog/posts/2022-08-01-dunning_files/figure-html/cell-16-output-1.png" class="img-fluid"></p>
+<p><img src="https://ianepreston.github.io/blog/posts/2022-08-01-dunning_files/figure-html/cell-16-output-1.png" class="img-fluid"></p>
 </div>
 </div>
 </section>
@@ -709,12 +709,12 @@
  ]]></description>
   <category>python</category>
   <category>statistics</category>
-  <guid>https://iane.preston.github.io/blog/posts/2022-08-01-dunning.html</guid>
+  <guid>https://ianepreston.github.io/blog/posts/2022-08-01-dunning.html</guid>
   <pubDate>Mon, 01 Aug 2022 00:00:00 GMT</pubDate>
 </item>
 <item>
   <title>Modeling out fixed closed vs capped variable mortgages</title>
-  <link>https://iane.preston.github.io/blog/posts/2022-03-17-mortgage.html</link>
+  <link>https://ianepreston.github.io/blog/posts/2022-03-17-mortgage.html</link>
   <description><![CDATA[ 
 
 
@@ -942,7 +942,7 @@
 <div class="cell" data-execution_count="9">
 <div class="sourceCode cell-code" id="cb9" style="background: #f1f3f5;"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb9-1">sns.lineplot(data<span class="op" style="color: #5E5E5E;">=</span>cdf, x<span class="op" style="color: #5E5E5E;">=</span><span class="st" style="color: #20794D;">"d"</span>, y<span class="op" style="color: #5E5E5E;">=</span><span class="st" style="color: #20794D;">"value"</span>, hue<span class="op" style="color: #5E5E5E;">=</span><span class="st" style="color: #20794D;">"variable"</span>)<span class="op" style="color: #5E5E5E;">;</span></span></code></pre></div>
 <div class="cell-output cell-output-display">
-<p><img src="https://iane.preston.github.io/blog/posts/2022-03-17-mortgage_files/figure-html/cell-10-output-1.png" class="img-fluid"></p>
+<p><img src="https://ianepreston.github.io/blog/posts/2022-03-17-mortgage_files/figure-html/cell-10-output-1.png" class="img-fluid"></p>
 </div>
 </div>
 <p>Here’s what prime vs 5 year mortgage rates have looked like for the last 50ish years. The variable rate tends to be below the fixed at any given point in time, but of course the variable rate can go up over your mortgage term while a fixed rate will stay fixed. Let’s start the actual analysis.</p>
@@ -1136,7 +1136,7 @@
 <div class="cell" data-execution_count="13">
 <div class="sourceCode cell-code" id="cb13" style="background: #f1f3f5;"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb13-1">sns.lineplot(data<span class="op" style="color: #5E5E5E;">=</span>delta_cdf, x<span class="op" style="color: #5E5E5E;">=</span><span class="st" style="color: #20794D;">"period"</span>, y<span class="op" style="color: #5E5E5E;">=</span><span class="st" style="color: #20794D;">"variable_delta"</span>, hue<span class="op" style="color: #5E5E5E;">=</span><span class="st" style="color: #20794D;">"start date delta"</span>)<span class="op" style="color: #5E5E5E;">;</span></span></code></pre></div>
 <div class="cell-output cell-output-display">
-<p><img src="https://iane.preston.github.io/blog/posts/2022-03-17-mortgage_files/figure-html/cell-14-output-1.png" class="img-fluid"></p>
+<p><img src="https://ianepreston.github.io/blog/posts/2022-03-17-mortgage_files/figure-html/cell-14-output-1.png" class="img-fluid"></p>
 </div>
 </div>
 <p>This chart shows the change in the delta between a fixed rate mortgage and the variable rate over a 5 year period. Each line represents a potential start month, with the delta between fixed and variable on the y axis and how many months into the 5 year term that mortgage is on the x axis. The colour corresponds to the number of days after Jan 1 1970 the scenario starts (I just needed a nice linear series to get the colour coding).</p>
@@ -1146,7 +1146,7 @@
 <div class="sourceCode cell-code" id="cb14" style="background: #f1f3f5;"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb14-1">subset_cdf <span class="op" style="color: #5E5E5E;">=</span> delta_cdf.loc[<span class="kw" style="color: #003B4F;">lambda</span> df: df[<span class="st" style="color: #20794D;">"start date delta"</span>] <span class="op" style="color: #5E5E5E;">&gt;=</span> <span class="dv" style="color: #AD0000;">25</span> <span class="op" style="color: #5E5E5E;">*</span> <span class="dv" style="color: #AD0000;">365</span>]</span>
 <span id="cb14-2">sns.lineplot(data<span class="op" style="color: #5E5E5E;">=</span>subset_cdf, x<span class="op" style="color: #5E5E5E;">=</span><span class="st" style="color: #20794D;">"period"</span>, y<span class="op" style="color: #5E5E5E;">=</span><span class="st" style="color: #20794D;">"variable_delta"</span>, hue<span class="op" style="color: #5E5E5E;">=</span><span class="st" style="color: #20794D;">"start date delta"</span>)<span class="op" style="color: #5E5E5E;">;</span></span></code></pre></div>
 <div class="cell-output cell-output-display">
-<p><img src="https://iane.preston.github.io/blog/posts/2022-03-17-mortgage_files/figure-html/cell-15-output-1.png" class="img-fluid"></p>
+<p><img src="https://ianepreston.github.io/blog/posts/2022-03-17-mortgage_files/figure-html/cell-15-output-1.png" class="img-fluid"></p>
 </div>
 </div>
 <p>So since 2000 it looks like your variable rate has almost never gone above the five year fixed rate. Again, recall that the actual fixed or variable rate you’d get at any of these points is not perfectly correlated with the posted rates I’m using, but it’s still a good indicator. Personally since I’m risk averse and we are currently looking at higher inflation than there’s been for 30 years I’m inclined to use the longer term scenarios, but it was an interesting exercise to see what more recent history looks like.</p>
@@ -1166,7 +1166,7 @@
 <span id="cb16-6">)</span>
 <span id="cb16-7">sns.lineplot(data<span class="op" style="color: #5E5E5E;">=</span>fdist_cdf, x<span class="op" style="color: #5E5E5E;">=</span><span class="st" style="color: #20794D;">"period"</span>, y<span class="op" style="color: #5E5E5E;">=</span><span class="st" style="color: #20794D;">"value"</span>, hue<span class="op" style="color: #5E5E5E;">=</span><span class="st" style="color: #20794D;">"variable"</span>)<span class="op" style="color: #5E5E5E;">;</span></span></code></pre></div>
 <div class="cell-output cell-output-display">
-<p><img src="https://iane.preston.github.io/blog/posts/2022-03-17-mortgage_files/figure-html/cell-17-output-1.png" class="img-fluid"></p>
+<p><img src="https://ianepreston.github.io/blog/posts/2022-03-17-mortgage_files/figure-html/cell-17-output-1.png" class="img-fluid"></p>
 </div>
 </div>
 <p>So over the whole observation period the mean gap between fixed and variable rate tends to trend downward, which makes sense given interest rates were declining over most of the observed period. At least 3/4 of the time they stayed below the fixed rate for the entire period, but when we look at the 90th percentile and above they were over the fixed rate throughout the period (this is not saying any one series was consistently that high above throughout the 5 year period, just that at least 10% of them were that much above it at that point.) Let’s try it again, just focusing on since 2000.</p>
@@ -1184,7 +1184,7 @@
 <span id="cb17-11">)</span>
 <span id="cb17-12">sns.lineplot(data<span class="op" style="color: #5E5E5E;">=</span>fdist_cdf, x<span class="op" style="color: #5E5E5E;">=</span><span class="st" style="color: #20794D;">"period"</span>, y<span class="op" style="color: #5E5E5E;">=</span><span class="st" style="color: #20794D;">"value"</span>, hue<span class="op" style="color: #5E5E5E;">=</span><span class="st" style="color: #20794D;">"variable"</span>)<span class="op" style="color: #5E5E5E;">;</span></span></code></pre></div>
 <div class="cell-output cell-output-display">
-<p><img src="https://iane.preston.github.io/blog/posts/2022-03-17-mortgage_files/figure-html/cell-18-output-1.png" class="img-fluid"></p>
+<p><img src="https://ianepreston.github.io/blog/posts/2022-03-17-mortgage_files/figure-html/cell-18-output-1.png" class="img-fluid"></p>
 </div>
 </div>
 <p>So in the more recent period I checked out some of the wider end of the tails. At the 99th percentile we do see a couple spots where it goes above 0, but not by much. Variable rates over the last 20 years have been a pretty sweet deal.</p>
@@ -1494,14 +1494,14 @@
 <div class="cell" data-execution_count="28">
 <div class="sourceCode cell-code" id="cb34" style="background: #f1f3f5;"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb34-1">plot_hist(capped_scenarios, <span class="st" style="color: #20794D;">"end_balance"</span>)<span class="op" style="color: #5E5E5E;">;</span></span></code></pre></div>
 <div class="cell-output cell-output-display">
-<p><img src="https://iane.preston.github.io/blog/posts/2022-03-17-mortgage_files/figure-html/cell-29-output-1.png" class="img-fluid"></p>
+<p><img src="https://ianepreston.github.io/blog/posts/2022-03-17-mortgage_files/figure-html/cell-29-output-1.png" class="img-fluid"></p>
 </div>
 </div>
 <p>Similarly, we can look at the distribution of maximum payments made over the whole 5 year term. As long as the cap at least covers your interest payments you never go over it, so unsurprisingly over 70% of the scenarios have a max payment equal to the fixed amount. Again though, there’s a long tail (presumably corresponding to the massive rate hikes we saw in the late 70s and early 80s where you would end up making at least one payment that’s more than double the fixed amount, ouch.</p>
 <div class="cell" data-execution_count="29">
 <div class="sourceCode cell-code" id="cb35" style="background: #f1f3f5;"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb35-1">plot_hist(capped_scenarios, <span class="st" style="color: #20794D;">"max_payment"</span>)<span class="op" style="color: #5E5E5E;">;</span></span></code></pre></div>
 <div class="cell-output cell-output-display">
-<p><img src="https://iane.preston.github.io/blog/posts/2022-03-17-mortgage_files/figure-html/cell-30-output-1.png" class="img-fluid"></p>
+<p><img src="https://ianepreston.github.io/blog/posts/2022-03-17-mortgage_files/figure-html/cell-30-output-1.png" class="img-fluid"></p>
 </div>
 </div>
 <p>Finally, let’s look at the same scenarios, but just paying the variable rate the whole way through. The graphs represent the same things as above, just with the uncapped variable rate mortgage.</p>
@@ -1524,13 +1524,13 @@
 <div class="cell" data-execution_count="31">
 <div class="sourceCode cell-code" id="cb38" style="background: #f1f3f5;"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb38-1">plot_hist(uncapped_scenarios, <span class="st" style="color: #20794D;">"end_balance"</span>)<span class="op" style="color: #5E5E5E;">;</span></span></code></pre></div>
 <div class="cell-output cell-output-display">
-<p><img src="https://iane.preston.github.io/blog/posts/2022-03-17-mortgage_files/figure-html/cell-32-output-1.png" class="img-fluid"></p>
+<p><img src="https://ianepreston.github.io/blog/posts/2022-03-17-mortgage_files/figure-html/cell-32-output-1.png" class="img-fluid"></p>
 </div>
 </div>
 <div class="cell" data-execution_count="32">
 <div class="sourceCode cell-code" id="cb39" style="background: #f1f3f5;"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb39-1">plot_hist(uncapped_scenarios, <span class="st" style="color: #20794D;">"max_payment"</span>)<span class="op" style="color: #5E5E5E;">;</span></span></code></pre></div>
 <div class="cell-output cell-output-display">
-<p><img src="https://iane.preston.github.io/blog/posts/2022-03-17-mortgage_files/figure-html/cell-33-output-1.png" class="img-fluid"></p>
+<p><img src="https://ianepreston.github.io/blog/posts/2022-03-17-mortgage_files/figure-html/cell-33-output-1.png" class="img-fluid"></p>
 </div>
 </div>
 <p>The distribution of end balances looks reasonably similar, although the capped variable definitely has more weight on the lower end of the distribution, which is quite good. Unsurprisingly, the max payment is a much wider distribution than under the capped scenario, with a decent chunk of payments above what you’d do in the fixed rate scenario.</p>
@@ -1546,12 +1546,12 @@
   <category>housing</category>
   <category>jupyter</category>
   <category>python</category>
-  <guid>https://iane.preston.github.io/blog/posts/2022-03-17-mortgage.html</guid>
+  <guid>https://ianepreston.github.io/blog/posts/2022-03-17-mortgage.html</guid>
   <pubDate>Thu, 17 Mar 2022 00:00:00 GMT</pubDate>
 </item>
 <item>
   <title>Building a where to live app</title>
-  <link>https://iane.preston.github.io/blog/posts/2021-12-30-wheretolive.html</link>
+  <link>https://ianepreston.github.io/blog/posts/2021-12-30-wheretolive.html</link>
   <description><![CDATA[ 
 
 
@@ -1649,12 +1649,12 @@
   <category>data</category>
   <category>python</category>
   <category>yyc</category>
-  <guid>https://iane.preston.github.io/blog/posts/2021-12-30-wheretolive.html</guid>
+  <guid>https://ianepreston.github.io/blog/posts/2021-12-30-wheretolive.html</guid>
   <pubDate>Thu, 30 Dec 2021 00:00:00 GMT</pubDate>
 </item>
 <item>
   <title>My Portfolio</title>
-  <link>https://iane.preston.github.io/blog/posts/2021-04-10-portfolio.html</link>
+  <link>https://ianepreston.github.io/blog/posts/2021-04-10-portfolio.html</link>
   <description><![CDATA[ 
 
 
@@ -1713,12 +1713,12 @@
 </section>
 
  ]]></description>
-  <guid>https://iane.preston.github.io/blog/posts/2021-04-10-portfolio.html</guid>
+  <guid>https://ianepreston.github.io/blog/posts/2021-04-10-portfolio.html</guid>
   <pubDate>Sat, 10 Apr 2021 00:00:00 GMT</pubDate>
 </item>
 <item>
   <title>Alberta’s Fiscal Responses To Fluctuations In Non-Renewable-Resource Revenue</title>
-  <link>https://iane.preston.github.io/blog/posts/2021-02-26-ferede.html</link>
+  <link>https://ianepreston.github.io/blog/posts/2021-02-26-ferede.html</link>
   <description><![CDATA[ 
 
 
@@ -2395,7 +2395,7 @@
 <div class="cell" data-execution_count="6">
 <div class="sourceCode cell-code" id="cb6" style="background: #f1f3f5;"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1">Image(filename<span class="op" style="color: #5E5E5E;">=</span><span class="st" style="color: #20794D;">"img/ferede_fig_1.png"</span>)</span></code></pre></div>
 <div class="cell-output cell-output-display" data-execution_count="6">
-<p><img src="https://iane.preston.github.io/blog/posts/2021-02-26-ferede_files/figure-html/cell-7-output-1.png" class="img-fluid"></p>
+<p><img src="https://ianepreston.github.io/blog/posts/2021-02-26-ferede_files/figure-html/cell-7-output-1.png" class="img-fluid"></p>
 </div>
 </div>
 <p>And here’s mine:</p>
@@ -2403,7 +2403,7 @@
 <div class="sourceCode cell-code" id="cb7" style="background: #f1f3f5;"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1">df <span class="op" style="color: #5E5E5E;">=</span> budget_real_per_capita()</span>
 <span id="cb7-2">fig1(df)</span></code></pre></div>
 <div class="cell-output cell-output-display" data-execution_count="7">
-<p><img src="https://iane.preston.github.io/blog/posts/2021-02-26-ferede_files/figure-html/cell-8-output-1.png" class="img-fluid"></p>
+<p><img src="https://ianepreston.github.io/blog/posts/2021-02-26-ferede_files/figure-html/cell-8-output-1.png" class="img-fluid"></p>
 </div>
 </div>
 <p>This graph looks very similar to the chart in the paper, with a notable exception of the 1976/1977 budget year. My chart shows Non-renewable Resource Revenue as slightly negative, whereas the original chart has it largely in line with 1975/1976 and 1977/1978. NRR is negative in my chart because I have netted out contributions to the Alberta Heritage Savings Trust Fund (AHSTF). To the best of my understanding, the original paper does the same, and the consistent values between the two in all other years supports that. Quoting the original paper:</p>
@@ -2420,7 +2420,7 @@
 <span id="cb8-6">)</span>
 <span id="cb8-7">fig1(no_net_df)</span></code></pre></div>
 <div class="cell-output cell-output-display" data-execution_count="9">
-<p><img src="https://iane.preston.github.io/blog/posts/2021-02-26-ferede_files/figure-html/cell-9-output-1.png" class="img-fluid"></p>
+<p><img src="https://ianepreston.github.io/blog/posts/2021-02-26-ferede_files/figure-html/cell-9-output-1.png" class="img-fluid"></p>
 </div>
 </div>
 <p>1976/1977 more closely matches the original chart in the paper, but the remaining years in the period of mid 70s to mid 80s when there were significant contributions clearly do not match. Let’s try one more where I just substitute that one year.</p>
@@ -2432,14 +2432,14 @@
 <span id="cb9-5">error_df.loc[<span class="st" style="color: #20794D;">"1976"</span>, <span class="st" style="color: #20794D;">"deficit"</span>] <span class="op" style="color: #5E5E5E;">-=</span> heritage_76</span>
 <span id="cb9-6">fig1(error_df)</span></code></pre></div>
 <div class="cell-output cell-output-display" data-execution_count="10">
-<p><img src="https://iane.preston.github.io/blog/posts/2021-02-26-ferede_files/figure-html/cell-10-output-1.png" class="img-fluid"></p>
+<p><img src="https://ianepreston.github.io/blog/posts/2021-02-26-ferede_files/figure-html/cell-10-output-1.png" class="img-fluid"></p>
 </div>
 </div>
 <p>Here’s the original figure again for easier comparison</p>
 <div class="cell" data-execution_count="11">
 <div class="sourceCode cell-code" id="cb10" style="background: #f1f3f5;"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb10-1">Image(filename<span class="op" style="color: #5E5E5E;">=</span><span class="st" style="color: #20794D;">"img/ferede_fig_1.png"</span>)</span></code></pre></div>
 <div class="cell-output cell-output-display" data-execution_count="11">
-<p><img src="https://iane.preston.github.io/blog/posts/2021-02-26-ferede_files/figure-html/cell-11-output-1.png" class="img-fluid"></p>
+<p><img src="https://ianepreston.github.io/blog/posts/2021-02-26-ferede_files/figure-html/cell-11-output-1.png" class="img-fluid"></p>
 </div>
 </div>
 <p>From eyeballing it that looks exactly like Figure 1 in the paper. It appears there’s a data error in the original paper. For the rest of this analysis I’ll compare both my base implementation of the data, as well as the one with the data error.</p>
@@ -2477,21 +2477,21 @@
 <div class="cell" data-execution_count="13">
 <div class="sourceCode cell-code" id="cb12" style="background: #f1f3f5;"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb12-1">Image(filename<span class="op" style="color: #5E5E5E;">=</span><span class="st" style="color: #20794D;">"img/ferede_fig_2.png"</span>)</span></code></pre></div>
 <div class="cell-output cell-output-display" data-execution_count="13">
-<p><img src="https://iane.preston.github.io/blog/posts/2021-02-26-ferede_files/figure-html/cell-13-output-1.png" class="img-fluid"></p>
+<p><img src="https://ianepreston.github.io/blog/posts/2021-02-26-ferede_files/figure-html/cell-13-output-1.png" class="img-fluid"></p>
 </div>
 </div>
 <p>Here’s the figure using my original data:</p>
 <div class="cell" data-execution_count="14">
 <div class="sourceCode cell-code" id="cb13" style="background: #f1f3f5;"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb13-1">fig2(df)</span></code></pre></div>
 <div class="cell-output cell-output-display">
-<p><img src="https://iane.preston.github.io/blog/posts/2021-02-26-ferede_files/figure-html/cell-14-output-1.png" class="img-fluid"></p>
+<p><img src="https://ianepreston.github.io/blog/posts/2021-02-26-ferede_files/figure-html/cell-14-output-1.png" class="img-fluid"></p>
 </div>
 </div>
 <p>And here’s the figure using the version with a data error:</p>
 <div class="cell" data-execution_count="15">
 <div class="sourceCode cell-code" id="cb14" style="background: #f1f3f5;"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb14-1">fig2(error_df)</span></code></pre></div>
 <div class="cell-output cell-output-display">
-<p><img src="https://iane.preston.github.io/blog/posts/2021-02-26-ferede_files/figure-html/cell-15-output-1.png" class="img-fluid"></p>
+<p><img src="https://ianepreston.github.io/blog/posts/2021-02-26-ferede_files/figure-html/cell-15-output-1.png" class="img-fluid"></p>
 </div>
 </div>
 <p>Again, this chart is more consistent with the dataframe where I don’t net heritage fund contributions out of 1976 but do for all other years</p>
@@ -2589,7 +2589,7 @@
 <div class="cell" data-execution_count="19">
 <div class="sourceCode cell-code" id="cb18" style="background: #f1f3f5;"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb18-1">Image(filename<span class="op" style="color: #5E5E5E;">=</span><span class="st" style="color: #20794D;">"img/ferede_tbl_1.png"</span>)</span></code></pre></div>
 <div class="cell-output cell-output-display" data-execution_count="19">
-<p><img src="https://iane.preston.github.io/blog/posts/2021-02-26-ferede_files/figure-html/cell-19-output-1.png" class="img-fluid"></p>
+<p><img src="https://ianepreston.github.io/blog/posts/2021-02-26-ferede_files/figure-html/cell-19-output-1.png" class="img-fluid"></p>
 </div>
 </div>
 <p>Here’s my summary of the top half</p>
@@ -2912,7 +2912,7 @@
 <div class="cell" data-execution_count="24">
 <div class="sourceCode cell-code" id="cb23" style="background: #f1f3f5;"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb23-1">Image(filename<span class="op" style="color: #5E5E5E;">=</span><span class="st" style="color: #20794D;">"img/ferede_tbl_1.png"</span>)</span></code></pre></div>
 <div class="cell-output cell-output-display" data-execution_count="24">
-<p><img src="https://iane.preston.github.io/blog/posts/2021-02-26-ferede_files/figure-html/cell-24-output-1.png" class="img-fluid"></p>
+<p><img src="https://ianepreston.github.io/blog/posts/2021-02-26-ferede_files/figure-html/cell-24-output-1.png" class="img-fluid"></p>
 </div>
 </div>
 <p>Here’s mine:</p>
@@ -3260,7 +3260,7 @@
 <div class="cell" data-execution_count="28">
 <div class="sourceCode cell-code" id="cb27" style="background: #f1f3f5;"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb27-1">Image(filename<span class="op" style="color: #5E5E5E;">=</span><span class="st" style="color: #20794D;">"img/ferede_tbl_a1.png"</span>)</span></code></pre></div>
 <div class="cell-output cell-output-display" data-execution_count="28">
-<p><img src="https://iane.preston.github.io/blog/posts/2021-02-26-ferede_files/figure-html/cell-28-output-1.png" class="img-fluid"></p>
+<p><img src="https://ianepreston.github.io/blog/posts/2021-02-26-ferede_files/figure-html/cell-28-output-1.png" class="img-fluid"></p>
 </div>
 </div>
 <p>Here is mine with my data set</p>
@@ -3700,7 +3700,7 @@
 <div class="cell" data-execution_count="37">
 <div class="sourceCode cell-code" id="cb36" style="background: #f1f3f5;"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb36-1">Image(filename<span class="op" style="color: #5E5E5E;">=</span><span class="st" style="color: #20794D;">"img/ferede_tbl_a2.png"</span>)</span></code></pre></div>
 <div class="cell-output cell-output-display" data-execution_count="37">
-<p><img src="https://iane.preston.github.io/blog/posts/2021-02-26-ferede_files/figure-html/cell-37-output-1.png" class="img-fluid"></p>
+<p><img src="https://ianepreston.github.io/blog/posts/2021-02-26-ferede_files/figure-html/cell-37-output-1.png" class="img-fluid"></p>
 </div>
 </div>
 <div class="cell" data-execution_count="38">
@@ -4406,7 +4406,7 @@
 <div class="cell" data-execution_count="43">
 <div class="sourceCode cell-code" id="cb42" style="background: #f1f3f5;"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb42-1">Image(filename<span class="op" style="color: #5E5E5E;">=</span><span class="st" style="color: #20794D;">"img/ferede_tbl_3.png"</span>)</span></code></pre></div>
 <div class="cell-output cell-output-display" data-execution_count="43">
-<p><img src="https://iane.preston.github.io/blog/posts/2021-02-26-ferede_files/figure-html/cell-43-output-1.png" class="img-fluid"></p>
+<p><img src="https://ianepreston.github.io/blog/posts/2021-02-26-ferede_files/figure-html/cell-43-output-1.png" class="img-fluid"></p>
 </div>
 </div>
 <div class="cell" data-execution_count="44">
@@ -4741,31 +4741,31 @@
 <div class="cell" data-execution_count="48">
 <div class="sourceCode cell-code" id="cb47" style="background: #f1f3f5;"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb47-1">Image(filename<span class="op" style="color: #5E5E5E;">=</span><span class="st" style="color: #20794D;">"img/ferede_fig_3.png"</span>)</span></code></pre></div>
 <div class="cell-output cell-output-display" data-execution_count="48">
-<p><img src="https://iane.preston.github.io/blog/posts/2021-02-26-ferede_files/figure-html/cell-48-output-1.png" class="img-fluid"></p>
+<p><img src="https://ianepreston.github.io/blog/posts/2021-02-26-ferede_files/figure-html/cell-48-output-1.png" class="img-fluid"></p>
 </div>
 </div>
 <div class="cell" data-execution_count="49">
 <div class="sourceCode cell-code" id="cb48" style="background: #f1f3f5;"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb48-1">results.irf().plot(impulse<span class="op" style="color: #5E5E5E;">=</span><span class="st" style="color: #20794D;">'nrri'</span>, response<span class="op" style="color: #5E5E5E;">=</span><span class="st" style="color: #20794D;">'program_expenditure'</span>)<span class="op" style="color: #5E5E5E;">;</span></span></code></pre></div>
 <div class="cell-output cell-output-display">
-<p><img src="https://iane.preston.github.io/blog/posts/2021-02-26-ferede_files/figure-html/cell-49-output-1.png" class="img-fluid"></p>
+<p><img src="https://ianepreston.github.io/blog/posts/2021-02-26-ferede_files/figure-html/cell-49-output-1.png" class="img-fluid"></p>
 </div>
 </div>
 <div class="cell" data-execution_count="50">
 <div class="sourceCode cell-code" id="cb49" style="background: #f1f3f5;"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb49-1">results.irf().plot(impulse<span class="op" style="color: #5E5E5E;">=</span><span class="st" style="color: #20794D;">'nrrd'</span>, response<span class="op" style="color: #5E5E5E;">=</span><span class="st" style="color: #20794D;">'program_expenditure'</span>)<span class="op" style="color: #5E5E5E;">;</span></span></code></pre></div>
 <div class="cell-output cell-output-display">
-<p><img src="https://iane.preston.github.io/blog/posts/2021-02-26-ferede_files/figure-html/cell-50-output-1.png" class="img-fluid"></p>
+<p><img src="https://ianepreston.github.io/blog/posts/2021-02-26-ferede_files/figure-html/cell-50-output-1.png" class="img-fluid"></p>
 </div>
 </div>
 <div class="cell" data-execution_count="51">
 <div class="sourceCode cell-code" id="cb50" style="background: #f1f3f5;"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb50-1">results_err.irf().plot(impulse<span class="op" style="color: #5E5E5E;">=</span><span class="st" style="color: #20794D;">'nrri'</span>, response<span class="op" style="color: #5E5E5E;">=</span><span class="st" style="color: #20794D;">'program_expenditure'</span>)<span class="op" style="color: #5E5E5E;">;</span></span></code></pre></div>
 <div class="cell-output cell-output-display">
-<p><img src="https://iane.preston.github.io/blog/posts/2021-02-26-ferede_files/figure-html/cell-51-output-1.png" class="img-fluid"></p>
+<p><img src="https://ianepreston.github.io/blog/posts/2021-02-26-ferede_files/figure-html/cell-51-output-1.png" class="img-fluid"></p>
 </div>
 </div>
 <div class="cell" data-execution_count="52">
 <div class="sourceCode cell-code" id="cb51" style="background: #f1f3f5;"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb51-1">results_err.irf().plot(impulse<span class="op" style="color: #5E5E5E;">=</span><span class="st" style="color: #20794D;">'nrrd'</span>, response<span class="op" style="color: #5E5E5E;">=</span><span class="st" style="color: #20794D;">'program_expenditure'</span>)<span class="op" style="color: #5E5E5E;">;</span></span></code></pre></div>
 <div class="cell-output cell-output-display">
-<p><img src="https://iane.preston.github.io/blog/posts/2021-02-26-ferede_files/figure-html/cell-52-output-1.png" class="img-fluid"></p>
+<p><img src="https://ianepreston.github.io/blog/posts/2021-02-26-ferede_files/figure-html/cell-52-output-1.png" class="img-fluid"></p>
 </div>
 </div>
 <p>These are harder to eyeball because I’m showing the individual responses and the paper is showing the cumulative ones. But again, if I think about what adding up the points in my charts would look like, they end up closer to the data set with the error.</p>
@@ -8110,12 +8110,12 @@
   <category>jupyter</category>
   <category>python</category>
   <category>Alberta</category>
-  <guid>https://iane.preston.github.io/blog/posts/2021-02-26-ferede.html</guid>
+  <guid>https://ianepreston.github.io/blog/posts/2021-02-26-ferede.html</guid>
   <pubDate>Fri, 26 Feb 2021 00:00:00 GMT</pubDate>
 </item>
 <item>
   <title>Using traefik for internal services</title>
-  <link>https://iane.preston.github.io/blog/posts/2021-01-09-traefik-lan.html</link>
+  <link>https://ianepreston.github.io/blog/posts/2021-01-09-traefik-lan.html</link>
   <description><![CDATA[ 
 
 
@@ -8148,12 +8148,12 @@ local-data: "ian.ca A &lt;my server IP&gt;"</code></pre>
   <category>traefik</category>
   <category>networking</category>
   <category>tip</category>
-  <guid>https://iane.preston.github.io/blog/posts/2021-01-09-traefik-lan.html</guid>
+  <guid>https://ianepreston.github.io/blog/posts/2021-01-09-traefik-lan.html</guid>
   <pubDate>Sat, 09 Jan 2021 00:00:00 GMT</pubDate>
 </item>
 <item>
   <title>Automating provisioning Arch continued - TLDR</title>
-  <link>https://iane.preston.github.io/blog/posts/2020-11-26-arch-tldr.html</link>
+  <link>https://ianepreston.github.io/blog/posts/2020-11-26-arch-tldr.html</link>
   <description><![CDATA[ 
 
 
@@ -8240,12 +8240,12 @@ local-data: "ian.ca A &lt;my server IP&gt;"</code></pre>
   <category>configuration</category>
   <category>linux</category>
   <category>arch</category>
-  <guid>https://iane.preston.github.io/blog/posts/2020-11-26-arch-tldr.html</guid>
+  <guid>https://ianepreston.github.io/blog/posts/2020-11-26-arch-tldr.html</guid>
   <pubDate>Thu, 26 Nov 2020 00:00:00 GMT</pubDate>
 </item>
 <item>
   <title>Automating provisioning Arch continued - dotfiles</title>
-  <link>https://iane.preston.github.io/blog/posts/2020-11-25-dotfiles.html</link>
+  <link>https://ianepreston.github.io/blog/posts/2020-11-25-dotfiles.html</link>
   <description><![CDATA[ 
 
 
@@ -8422,12 +8422,12 @@ local-data: "ian.ca A &lt;my server IP&gt;"</code></pre>
   <category>linux</category>
   <category>arch</category>
   <category>python</category>
-  <guid>https://iane.preston.github.io/blog/posts/2020-11-25-dotfiles.html</guid>
+  <guid>https://ianepreston.github.io/blog/posts/2020-11-25-dotfiles.html</guid>
   <pubDate>Wed, 25 Nov 2020 00:00:00 GMT</pubDate>
 </item>
 <item>
   <title>Automating provisioning Arch continued - Ansible</title>
-  <link>https://iane.preston.github.io/blog/posts/2020-11-21-ansible.html</link>
+  <link>https://ianepreston.github.io/blog/posts/2020-11-21-ansible.html</link>
   <description><![CDATA[ 
 
 
@@ -8480,12 +8480,12 @@ local-data: "ian.ca A &lt;my server IP&gt;"</code></pre>
   <category>ansible</category>
   <category>linux</category>
   <category>arch</category>
-  <guid>https://iane.preston.github.io/blog/posts/2020-11-21-ansible.html</guid>
+  <guid>https://ianepreston.github.io/blog/posts/2020-11-21-ansible.html</guid>
   <pubDate>Sat, 21 Nov 2020 00:00:00 GMT</pubDate>
 </item>
 <item>
   <title>Automating provisioning Arch - OS installation</title>
-  <link>https://iane.preston.github.io/blog/posts/2020-10-14-arch-bootstrap.html</link>
+  <link>https://ianepreston.github.io/blog/posts/2020-10-14-arch-bootstrap.html</link>
   <description><![CDATA[ 
 
 
@@ -8574,27 +8574,27 @@ local-data: "ian.ca A &lt;my server IP&gt;"</code></pre>
 <p>Then I create a base image to work off of.</p>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
-<p><img src="https://iane.preston.github.io/blog/posts/arch/vm_01.PNG" class="img-fluid figure-img"></p>
+<p><img src="https://ianepreston.github.io/blog/posts/arch/vm_01.PNG" class="img-fluid figure-img"></p>
 <p></p><figcaption class="figure-caption">base_vm</figcaption><p></p>
 </figure>
 </div>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
-<p><img src="https://iane.preston.github.io/blog/posts/arch/vm_02.PNG" class="img-fluid figure-img"></p>
+<p><img src="https://ianepreston.github.io/blog/posts/arch/vm_02.PNG" class="img-fluid figure-img"></p>
 <p></p><figcaption class="figure-caption">vm_disk</figcaption><p></p>
 </figure>
 </div>
 <p>Fire up the new VM, and select the Arch ISO at the prompt:</p>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
-<p><img src="https://iane.preston.github.io/blog/posts/arch/vm_03.PNG" class="img-fluid figure-img"></p>
+<p><img src="https://ianepreston.github.io/blog/posts/arch/vm_03.PNG" class="img-fluid figure-img"></p>
 <p></p><figcaption class="figure-caption">vm_iso</figcaption><p></p>
 </figure>
 </div>
 <p>After that we’re at the boot prompt. Now comes the fun task of developing a bootstrap script that will automate the install process.</p>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
-<p><img src="https://iane.preston.github.io/blog/posts/arch/vm_04.PNG" class="img-fluid figure-img"></p>
+<p><img src="https://ianepreston.github.io/blog/posts/arch/vm_04.PNG" class="img-fluid figure-img"></p>
 <p></p><figcaption class="figure-caption">vm_prompt</figcaption><p></p>
 </figure>
 </div>
@@ -8605,7 +8605,7 @@ local-data: "ian.ca A &lt;my server IP&gt;"</code></pre>
 <p>The full URL to the raw script is at <a href="https://raw.githubusercontent.com/ianepreston/recipes/arch_bootstrap/arch_bootstrap/bootstrap.sh">this page</a>. That’s pointing to the branch I’m using while I develop the script. When I’ve got it working I’ll hopefully remember to come back here and point it to the master reference. From there I can go to my domain registrar and add a URL redirect record to point an easy to remember subdomain to that path:</p>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
-<p><img src="https://iane.preston.github.io/blog/posts/arch/DNS_01.PNG" class="img-fluid figure-img"></p>
+<p><img src="https://ianepreston.github.io/blog/posts/arch/DNS_01.PNG" class="img-fluid figure-img"></p>
 <p></p><figcaption class="figure-caption">DNS</figcaption><p></p>
 </figure>
 </div>
@@ -8625,7 +8625,7 @@ local-data: "ian.ca A &lt;my server IP&gt;"</code></pre>
 <p>Back at the VM I test my overly elaborate bootstrapping setup and…</p>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
-<p><img src="https://iane.preston.github.io/blog/posts/arch/curl_01.PNG" class="img-fluid figure-img"></p>
+<p><img src="https://ianepreston.github.io/blog/posts/arch/curl_01.PNG" class="img-fluid figure-img"></p>
 <p></p><figcaption class="figure-caption">curl</figcaption><p></p>
 </figure>
 </div>
@@ -9033,13 +9033,13 @@ local-data: "ian.ca A &lt;my server IP&gt;"</code></pre>
   <category>linux</category>
   <category>arch</category>
   <category>bash</category>
-  <guid>https://iane.preston.github.io/blog/posts/2020-10-14-arch-bootstrap.html</guid>
+  <guid>https://ianepreston.github.io/blog/posts/2020-10-14-arch-bootstrap.html</guid>
   <pubDate>Wed, 14 Oct 2020 00:00:00 GMT</pubDate>
-  <media:content url="https://iane.preston.github.io/blog/posts/arch/vm_01.PNG" medium="image"/>
+  <media:content url="https://ianepreston.github.io/blog/posts/arch/vm_01.PNG" medium="image"/>
 </item>
 <item>
   <title>Notes on docker-compose</title>
-  <link>https://iane.preston.github.io/blog/posts/2020-10-06-docker-compose.html</link>
+  <link>https://ianepreston.github.io/blog/posts/2020-10-06-docker-compose.html</link>
   <description><![CDATA[ 
 
 
@@ -9067,12 +9067,12 @@ local-data: "ian.ca A &lt;my server IP&gt;"</code></pre>
  ]]></description>
   <category>docker</category>
   <category>tips</category>
-  <guid>https://iane.preston.github.io/blog/posts/2020-10-06-docker-compose.html</guid>
+  <guid>https://ianepreston.github.io/blog/posts/2020-10-06-docker-compose.html</guid>
   <pubDate>Tue, 06 Oct 2020 00:00:00 GMT</pubDate>
 </item>
 <item>
   <title>Connecting a Harmony remote to a raspberry pi</title>
-  <link>https://iane.preston.github.io/blog/posts/2020-07-20-pi-bluetooth.html</link>
+  <link>https://ianepreston.github.io/blog/posts/2020-07-20-pi-bluetooth.html</link>
   <description><![CDATA[ 
 
 
@@ -9109,12 +9109,12 @@ local-data: "ian.ca A &lt;my server IP&gt;"</code></pre>
   <category>linux</category>
   <category>bluetooth</category>
   <category>pi</category>
-  <guid>https://iane.preston.github.io/blog/posts/2020-07-20-pi-bluetooth.html</guid>
+  <guid>https://ianepreston.github.io/blog/posts/2020-07-20-pi-bluetooth.html</guid>
   <pubDate>Mon, 20 Jul 2020 00:00:00 GMT</pubDate>
 </item>
 <item>
   <title>Python packaging</title>
-  <link>https://iane.preston.github.io/blog/posts/2020-07-09-pypack.html</link>
+  <link>https://ianepreston.github.io/blog/posts/2020-07-09-pypack.html</link>
   <description><![CDATA[ 
 
 
@@ -9416,7 +9416,7 @@ local-data: "ian.ca A &lt;my server IP&gt;"</code></pre>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
 <figure class="figure">
-<img src="https://iane.preston.github.io/blog/posts/pypack/testpypi.PNG" title="package uploaded" class="img-fluid figure-img">
+<img src="https://ianepreston.github.io/blog/posts/pypack/testpypi.PNG" title="package uploaded" class="img-fluid figure-img">
 </figure>
 <p></p><figcaption class="figure-caption">test pypi</figcaption><p></p>
 </figure>
@@ -9578,7 +9578,7 @@ versionsync:
 <p><code>conda_ext_pub</code> depends on the <code>conda</code> recipe so this will build the package first and then upload it to Anaconda.org. After running <code>make conda_ext_pub</code> I can see that the package was indeed published to Anaconda.org:</p>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
-<p><img src="https://iane.preston.github.io/blog/posts/pypack/anaconda.PNG" class="img-fluid figure-img"></p>
+<p><img src="https://ianepreston.github.io/blog/posts/pypack/anaconda.PNG" class="img-fluid figure-img"></p>
 <p></p><figcaption class="figure-caption">Anaconda</figcaption><p></p>
 </figure>
 </div>
@@ -9672,13 +9672,13 @@ versionsync:
   <category>python</category>
   <category>poetry</category>
   <category>conda</category>
-  <guid>https://iane.preston.github.io/blog/posts/2020-07-09-pypack.html</guid>
+  <guid>https://ianepreston.github.io/blog/posts/2020-07-09-pypack.html</guid>
   <pubDate>Thu, 09 Jul 2020 00:00:00 GMT</pubDate>
-  <media:content url="https://iane.preston.github.io/blog/posts/pypack/testpypi.PNG " medium="image"/>
+  <media:content url="https://ianepreston.github.io/blog/posts/pypack/testpypi.PNG " medium="image"/>
 </item>
 <item>
   <title>Trouble with reproducible conda environments</title>
-  <link>https://iane.preston.github.io/blog/posts/2020-05-17-conda.html</link>
+  <link>https://ianepreston.github.io/blog/posts/2020-05-17-conda.html</link>
   <description><![CDATA[ 
 
 
@@ -9729,12 +9729,12 @@ versionsync:
   <category>python</category>
   <category>conda</category>
   <category>bug</category>
-  <guid>https://iane.preston.github.io/blog/posts/2020-05-17-conda.html</guid>
+  <guid>https://ianepreston.github.io/blog/posts/2020-05-17-conda.html</guid>
   <pubDate>Sun, 17 May 2020 00:00:00 GMT</pubDate>
 </item>
 <item>
   <title>How to work with conda environments in shell scripts and Makefiles</title>
-  <link>https://iane.preston.github.io/blog/posts/2020-05-13-conda_envs.html</link>
+  <link>https://ianepreston.github.io/blog/posts/2020-05-13-conda_envs.html</link>
   <description><![CDATA[ 
 
 
@@ -9968,7 +9968,7 @@ versionsync:
   <category>conda</category>
   <category>python</category>
   <category>bash</category>
-  <guid>https://iane.preston.github.io/blog/posts/2020-05-13-conda_envs.html</guid>
+  <guid>https://ianepreston.github.io/blog/posts/2020-05-13-conda_envs.html</guid>
   <pubDate>Wed, 13 May 2020 00:00:00 GMT</pubDate>
 </item>
 </channel>
