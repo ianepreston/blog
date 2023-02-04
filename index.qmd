@@ -1,0 +1,16 @@
+---
+title: ""
+listing:
+  contents: posts
+  fields: [date, title, description, reading-time]
+  feed: true
+  sort: "date desc"
+  type: default
+  categories: false
+  sort-ui: true
+  filter-ui: true
+page-layout: full
+title-block-banner: false
+---
+
+
