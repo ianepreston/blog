@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.2.335">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="dcterms.date" content="2022-12-31">
+<meta name="description" content="Homelab cluster adventures continue">
+
+<title>Ian’s blog - Home cluster part 2 - Configuring Proxmox</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1.6em;
+  vertical-align: middle;
+}
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+    color: #aaaaaa;
+  }
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code span.at { color: #7d9029; } /* Attribute */
+code span.bn { color: #40a070; } /* BaseN */
+code span.bu { color: #008000; } /* BuiltIn */
+code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code span.ch { color: #4070a0; } /* Char */
+code span.cn { color: #880000; } /* Constant */
+code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code span.dt { color: #902000; } /* DataType */
+code span.dv { color: #40a070; } /* DecVal */
+code span.er { color: #ff0000; font-weight: bold; } /* Error */
+code span.ex { } /* Extension */
+code span.fl { color: #40a070; } /* Float */
+code span.fu { color: #06287e; } /* Function */
+code span.im { color: #008000; font-weight: bold; } /* Import */
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code span.op { color: #666666; } /* Operator */
+code span.ot { color: #007020; } /* Other */
+code span.pp { color: #bc7a00; } /* Preprocessor */
+code span.sc { color: #4070a0; } /* SpecialChar */
+code span.ss { color: #bb6688; } /* SpecialString */
+code span.st { color: #4070a0; } /* String */
+code span.va { color: #19177c; } /* Variable */
+code span.vs { color: #4070a0; } /* VerbatimString */
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+</style>
+
+
+<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../">
+<script src="../site_libs/quarto-html/quarto.js"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../site_libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 20,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit"
+  }
+}</script>
+
+
+<link rel="stylesheet" href="../styles.css">
+</head>
+
+<body class="nav-fixed">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg navbar-dark ">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container">
+    <a class="navbar-brand" href="../index.html">
+    <span class="navbar-title">Ian’s blog</span>
+    </a>
+  </div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll ms-auto">
+  <li class="nav-item">
+    <a class="nav-link" href="../about.html">
+ <span class="menu-text">about</span></a>
+  </li>  
+  <li class="nav-item compact">
+    <a class="nav-link" href="https://github.com/ianepreston"><i class="bi bi-github" role="img">
+</i> 
+ <span class="menu-text"></span></a>
+  </li>  
+</ul>
+              <div id="quarto-search" class="" title="Search"></div>
+          </div> <!-- /navcollapse -->
+      </div> <!-- /container-fluid -->
+    </nav>
+</header>
+<!-- content -->
+<header id="title-block-header" class="quarto-title-block default page-columns page-full">
+  <div class="quarto-title-banner page-columns page-full">
+    <div class="quarto-title column-body">
+      <h1 class="title">Home cluster part 2 - Configuring Proxmox</h1>
+                  <div>
+        <div class="description">
+          Homelab cluster adventures continue
+        </div>
+      </div>
+                          <div class="quarto-categories">
+                <div class="quarto-category">configuration</div>
+                <div class="quarto-category">linux</div>
+                <div class="quarto-category">proxmox</div>
+              </div>
+                  </div>
+  </div>
+    
+  
+  <div class="quarto-title-meta">
+
+      
+      <div>
+      <div class="quarto-title-meta-heading">Published</div>
+      <div class="quarto-title-meta-contents">
+        <p class="date">December 31, 2022</p>
+      </div>
+    </div>
+    
+      
+    </div>
+    
+  
+  </header><div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#introduction" id="toc-introduction" class="nav-link active" data-scroll-target="#introduction">Introduction</a></li>
+  <li><a href="#the-goals-for-this-post" id="toc-the-goals-for-this-post" class="nav-link" data-scroll-target="#the-goals-for-this-post">The goals for this post</a></li>
+  <li><a href="#what-im-working-on" id="toc-what-im-working-on" class="nav-link" data-scroll-target="#what-im-working-on">What I’m working on</a></li>
+  <li><a href="#the-code" id="toc-the-code" class="nav-link" data-scroll-target="#the-code">The code</a></li>
+  <li><a href="#ansible-connectivity" id="toc-ansible-connectivity" class="nav-link" data-scroll-target="#ansible-connectivity">Ansible connectivity</a></li>
+  <li><a href="#set-up-the-non-subscription-repository" id="toc-set-up-the-non-subscription-repository" class="nav-link" data-scroll-target="#set-up-the-non-subscription-repository">Set up the non-subscription repository</a></li>
+  <li><a href="#set-up-ups-state-alerting" id="toc-set-up-ups-state-alerting" class="nav-link" data-scroll-target="#set-up-ups-state-alerting">Set up UPS state alerting</a>
+  <ul class="collapse">
+  <li><a href="#failed-first-attempt" id="toc-failed-first-attempt" class="nav-link" data-scroll-target="#failed-first-attempt">Failed first attempt</a>
+  <ul class="collapse">
+  <li><a href="#borked-attempt-write-up" id="toc-borked-attempt-write-up" class="nav-link" data-scroll-target="#borked-attempt-write-up">Borked attempt write up</a></li>
+  </ul></li>
+  <li><a href="#working-second-attempt" id="toc-working-second-attempt" class="nav-link" data-scroll-target="#working-second-attempt">Working second attempt</a></li>
+  </ul></li>
+  <li><a href="#setup-email-alerting" id="toc-setup-email-alerting" class="nav-link" data-scroll-target="#setup-email-alerting">Setup email alerting</a></li>
+  <li><a href="#configure-locale-settings" id="toc-configure-locale-settings" class="nav-link" data-scroll-target="#configure-locale-settings">Configure locale settings</a></li>
+  <li><a href="#set-up-nfs-shares" id="toc-set-up-nfs-shares" class="nav-link" data-scroll-target="#set-up-nfs-shares">Set up NFS shares</a></li>
+  <li><a href="#conclusion" id="toc-conclusion" class="nav-link" data-scroll-target="#conclusion">Conclusion</a></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content quarto-banner-title-block" id="quarto-document-content">
+
+
+
+
+<section id="introduction" class="level1">
+<h1>Introduction</h1>
+<p>In <a href="https://blog.ianpreston.ca/configuration/linux/2022/11/21/proxmox.html">part 1</a> of this series I laid out the rationale for building a homelab cluster, walked through my hardware selection, and ran through the proxmox installer. In this post I’ll document the further configuration of the cluster and its nodes. The actual implementation will be done in ansible and tracked in my <a href="https://github.com/ianepreston/recipes">recipes</a> repository, so I will keep it light on code in this post. What I’m going to try and document here is the steps I took, why I took them, and any weird edge cases or other fun learning opportunities I encounter in the process.</p>
+</section>
+<section id="the-goals-for-this-post" class="level1">
+<h1>The goals for this post</h1>
+<p>By the end of this post I’d like to have accomplished the following things with my cluster:</p>
+<ul>
+<li>Set up their entries in ansible and be able to connect to each node individually or address them as a group</li>
+<li>Turn off the enterprise repository and add the non-enterprise one</li>
+<li>Make each node aware of my UPS state (one directly and the other two as clients)</li>
+<li>Set up email alerting</li>
+<li>Configure locale settings</li>
+<li>Set up my NAS as a storage target</li>
+</ul>
+</section>
+<section id="what-im-working-on" class="level1">
+<h1>What I’m working on</h1>
+<p>Just for kicks, let’s include an actual picture of these nodes I’m working on in this post:</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<figure class="figure">
+<img src="proxmox2/nodes.jpg" title="Proxmox nodes" class="img-fluid figure-img">
+</figure>
+<p></p><figcaption class="figure-caption">Nodes</figcaption><p></p>
+</figure>
+</div>
+<p>Here they are, sitting in my utility room near the rest of my gear. So cute!</p>
+</section>
+<section id="the-code" class="level1">
+<h1>The code</h1>
+<p>The playbook I built for this is available <a href="https://github.com/ianepreston/recipes/blob/master/ansible/pve.yml">here</a>. That link points to the main playbook, and the repository more generally has the custom roles and other configs I made to get everything set up.</p>
+</section>
+<section id="ansible-connectivity" class="level1">
+<h1>Ansible connectivity</h1>
+<p>I haven’t set up these hosts to use key based authentication yet, and decided to just try password auth. I ended up getting some host key errors, which I didn’t quite understand. At first I thought it was something with the devcontainer config I was using, but I tried the same thing on the host system and got the same error. After that I realized it was because I’d reinstalled that host and the key I had saved in <code>~/.ssh/known_hosts</code> was from the old install. After clearing out that record I was able to ssh to all three hosts from my main system. I then had to refresh the devcontainer so it would copy in an updated copy of my <code>~/.ssh/known_hosts</code> file. I’m not sure how frequently devcontainers normally refresh that, but it’s a config alignment issue I’ll have to keep in mind for future problems. Anyway, beside that little known hosts config issue, adding all three hosts and addressing them in the <code>pve</code> group all worked fine.</p>
+</section>
+<section id="set-up-the-non-subscription-repository" class="level1">
+<h1>Set up the non-subscription repository</h1>
+<p>Proxmox has two repositories for package updates, one for Enterprise subscribers, and one for non-subscribers. By default it comes with the enterprise repository enabled, but since I’m not a subscriber I want to switch repos. Ansible comes with a built in <a href="https://docs.ansible.com/ansible/latest/collections/ansible/builtin/apt_repository_module.html">apt repository</a> module so that was an easy way to ensure the enterprise repo was absent from my sources list and that all the recommended ones (including for CEPH) were included. I set that role to also update my repository list and upgrade all installed packages for good measure as well using the <a href="https://docs.ansible.com/ansible/latest/collections/ansible/builtin/apt_module.html">apt</a> module.</p>
+</section>
+<section id="set-up-ups-state-alerting" class="level1">
+<h1>Set up UPS state alerting</h1>
+<section id="failed-first-attempt" class="level2">
+<h2 class="anchored" data-anchor-id="failed-first-attempt">Failed first attempt</h2>
+<p>I made a good amount of progress trying to set this up a certain way, but eventually hit a wall. Some of what I tried originally is still interesting, it just didn’t work. The core issue is that I was dynamically identifying which host had the UPS attached to it based on the output of a locally run command on each host. This worked fine in terms of setting conditionals to only do server setup stuff on the node with the UPS attached, but ran into troubles configuring the clients. The clients need to know the hostname of the server, but I couldn’t figure out any way to dynamically identify that host in an ansible playbook. Registered variables from commands (what I was using to identify which host was connected to the UPS) are host variables only, so the other hosts didn’t have access to it. From the look of it you can’t really make a host variable a global variable based on a condition. There might be a way to concatenate all host variables in a way that would let me get <code>&lt;server host&gt; + '' + '' == &lt;server host&gt;</code> as the output for all hosts, but that felt pretty hacky. Based on this I’m just going to hard code which host is directly connected to the UPS and build my playbook from that.</p>
+<section id="borked-attempt-write-up" class="level3">
+<h3 class="anchored" data-anchor-id="borked-attempt-write-up">Borked attempt write up</h3>
+<p>One node in my cluster is connected via USB to my UPS. In the event of a power failure I want it to be alerted via that USB connection, and then pass that alert on to the other nodes via <a href="https://networkupstools.org/">NUT</a>. I’m largely relying on the <a href="https://wiki.archlinux.org/title/Network_UPS_Tools">Arch wiki</a> to set this up, even though proxmox is Debian based, just because that wiki is amazing. I also found <a href="https://github.com/ykuksenko/ansible.nut">this repository</a> which has a role configured for setting up nut. It’s set up in a different way than I want, and also has a lot more abstraction that’s good for portability but bad for interpretability, so I won’t use it directly.</p>
+<p>The first thing I want to do is install the <code>nut</code> utility on all the systems, as with the previous section this is easily accomplished with the apt module in ansible.</p>
+<p>Next I need to identify which system has the UPS USB cable connected to it, as this one will be the NUT server, and the others will be NUT clients. Realistically this is not going to change and I could just hard code it, but I thought it would be fun to figure out how to automate it.</p>
+<p>The <code>nut</code> package comes with a <code>nut-scanner</code> utility which can be used to identify compatible devices. I can register the output of that command in ansible and then set a <a href="https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_conditionals.html#conditions-based-on-registered-variables">conditional</a> to only perform certain operations if the output of the command listed a USB device. To test this before I actually applied anything with conditionals I used the <a href="https://docs.ansible.com/ansible/latest/collections/ansible/builtin/debug_module.html">debug</a> module to output which host had the UPS attached. I won’t keep that debug in my final playbook, so I’ll reproduce that part here:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode yml code-with-copy"><code class="sourceCode yaml"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> Check if USB for UPS is connected to this host</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">ansible.builtin.shell</span><span class="kw">:</span><span class="at"> nut-scanner -U -P</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">register</span><span class="kw">:</span><span class="at"> ups_driver</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> Show me which host has the UPS connected</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">ansible.builtin.debug</span><span class="kw">:</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">msg</span><span class="kw">:</span><span class="at"> System {{ inventory_hostname }} has UPS driver {{ ups_driver }}</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">when</span><span class="kw">:</span><span class="at"> ups_driver.stdout.find('usbhid-ups') != -1</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Next is to configure the driver on connected system. To do this I copy over a <code>ups.conf</code> file based on the output of the <code>nut-scanner</code> command. After copying over the template I test it by sshing into the machine and running <code>upsdrvctl start</code>. Since that looked good I enable the <code>nut-driver</code> service with ansible’s systemd module.</p>
+<p>After that it’s time to set up the nut server for clients (both the local machine and the other nodes in the cluster) to connect to. Following the Arch wiki I created a <code>upsd.users</code> file with user configuration for the clients and then tried to enable and start the nut server. I didn’t get an error from ansible for this, but when I tried to check the server I got nothing, and checking the state of the service I saw that it was dead. The relevant lines in the service status seemed to be:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ex">upsd</span> disabled, please adjust the configuration to your needs</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="ex">Then</span> set MODE to a suitable value in /etc/nut/nut.conf to enable it</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Taking a look at that file I see this:</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co">##############################################################################</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="co"># The MODE determines which part of the NUT is to be started, and which</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="co"># configuration files must be modified.</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="co">#</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="co"># This file try to standardize the various files being found in the field, like</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="co"># /etc/default/nut on Debian based systems, /etc/sysconfig/ups on RedHat based</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="co"># systems, ... Distribution's init script should source this file to see which</span></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a><span class="co"># component(s) has to be started.</span></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a><span class="co">#</span></span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a><span class="co"># The values of MODE can be:</span></span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a><span class="co"># - none: NUT is not configured, or use the Integrated Power Management, or use</span></span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a><span class="co">#   some external system to startup NUT components. So nothing is to be started.</span></span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a><span class="co"># - standalone: This mode address a local only configuration, with 1 UPS</span></span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a><span class="co">#   protecting the local system. This implies to start the 3 NUT layers (driver,</span></span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a><span class="co">#   upsd and upsmon) and the matching configuration files. This mode can also</span></span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a><span class="co">#   address UPS redundancy.</span></span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a><span class="co"># - netserver: same as for the standalone configuration, but also need</span></span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a><span class="co">#   some more network access controls (firewall, tcp-wrappers) and possibly a</span></span>
+<span id="cb3-19"><a href="#cb3-19" aria-hidden="true" tabindex="-1"></a><span class="co">#   specific LISTEN directive in upsd.conf.</span></span>
+<span id="cb3-20"><a href="#cb3-20" aria-hidden="true" tabindex="-1"></a><span class="co">#   Since this MODE is opened to the network, a special care should be applied</span></span>
+<span id="cb3-21"><a href="#cb3-21" aria-hidden="true" tabindex="-1"></a><span class="co">#   to security concerns.</span></span>
+<span id="cb3-22"><a href="#cb3-22" aria-hidden="true" tabindex="-1"></a><span class="co"># - netclient: this mode only requires upsmon.</span></span>
+<span id="cb3-23"><a href="#cb3-23" aria-hidden="true" tabindex="-1"></a><span class="co">#</span></span>
+<span id="cb3-24"><a href="#cb3-24" aria-hidden="true" tabindex="-1"></a><span class="co"># IMPORTANT </span><span class="al">NOTE</span><span class="co">:</span></span>
+<span id="cb3-25"><a href="#cb3-25" aria-hidden="true" tabindex="-1"></a><span class="co">#  This file is intended to be sourced by shell scripts.</span></span>
+<span id="cb3-26"><a href="#cb3-26" aria-hidden="true" tabindex="-1"></a><span class="co">#  You MUST NOT use spaces around the equal sign!</span></span>
+<span id="cb3-27"><a href="#cb3-27" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-28"><a href="#cb3-28" aria-hidden="true" tabindex="-1"></a><span class="va">MODE</span><span class="op">=</span>none</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>So based on this I think I need ansible to remove the <code>MODE=none</code> line and change it to <code>MODE=netserver</code> on the server. Probably it will have to be <code>MODE=netclient</code> on the clients, but let’s leave that alone for now. I can handle this using the <a href="https://docs.ansible.com/ansible/latest/collections/ansible/builtin/lineinfile_module.html">lineinfile</a> module. After doing this and restarting the <code>nut-server</code> service I ran <code>upsc pveups</code> and had the state of the UPS returned, indicating the config was good for the directly connected node. <strong>This is where I got stuck, see the write up above</strong></p>
+</section>
+</section>
+<section id="working-second-attempt" class="level2">
+<h2 class="anchored" data-anchor-id="working-second-attempt">Working second attempt</h2>
+<p>Don’t reinvent the wheel folks. I vendored in <a href="https://github.com/ykuksenko/ansible.nut">this role</a> and got everything working pretty much right away. I did have to hard code which host was attached to the UPS, but that’s a small price to pay. Problem solved!</p>
+</section>
+</section>
+<section id="setup-email-alerting" class="level1">
+<h1>Setup email alerting</h1>
+<p>The next thing I want is to set up an outbound email configuration, so I can receive email alerts for things like backups or drive issues. The general idea for configuring this comes from <a href="https://docs.technotim.live/posts/proxmox-alerts/">Techno Tim</a>. I’m learning my lesson from NUT and not trying to roll my own ansible role, instead I’m using <a href="https://github.com/Oefenweb/ansible-postfix">this role</a> I found on GitHub.</p>
+<p>I set up the playbook to run, ansible indicated it had made some changes, so I tried sending an email from the command line with</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">"This is a test message sent from postfix on my Proxmox Server"</span> <span class="kw">|</span> <span class="ex">mail</span> <span class="at">-s</span> <span class="st">"Test Email from Proxmox"</span> <span class="op">&lt;</span>my.email@address.com<span class="op">&gt;</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>But nothing went out. Ok, time to troubleshoot.</p>
+<ul>
+<li><p>Check if postfix service is up with <code>systemctl status postfix</code>. It looks fine</p></li>
+<li><p>Check if I have a correct looking config in <code>/etc/postfix/sasl_passwd</code>. I do and there’s the <code>sasl_passwd.db</code> file in that folder as well that I’d expect</p></li>
+<li><p>Check <code>/etc/postfix/main.cf</code>. Config looks ok</p></li>
+<li><p>Check <code>/var/log/mail.log</code>. Pertinent error seems to be around this:</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a> <span class="va">status</span><span class="op">=</span>bounced <span class="kw">(</span><span class="ex">host</span> smtp.gmx.com[212.227.17.184] said: 550-Requested action not taken: mailbox unavailable 550 invalid DNS MX or A/AAAA resource record <span class="er">(in</span> <span class="ex">reply</span> to MAIL FROM command<span class="kw">))</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div></li>
+<li><p>Figure I probably set up <code>postfix_aliases</code> wrong in the role variables, so change that and try again. Slightly different error</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="va">status</span><span class="op">=</span>bounced <span class="kw">(</span><span class="ex">host</span> smtp.gmx.com[212.227.17.174] said: 550-Requested action not taken: mailbox unavailable 550 Sender address is not allowed. <span class="er">(in</span> <span class="ex">reply</span> to MAIL FROM command<span class="kw">))</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div></li>
+<li><p>Realize that I was using <code>postfix_aliases</code> the way I should have been using <code>postfix_sender_canonical_maps</code>. Redo that part.</p></li>
+</ul>
+<p>Email sent! Right now they all show up as just coming from <code>root</code>. Per the Techno Tim docs linked above I know there’s a way to make that a more informative name. This would work, but I’d like it to say which host it’s actually coming from.</p>
+<p>I took a guess from the Techno Tim post and figured the config I needed to change in the playbook would be <code>postfix_header_checks</code> and after poking around in the related jinja templates and looking at what the Techno Tim post said to write I got a config together that at least didn’t blow up. Sent a test email again and:</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a> <span class="va">status</span><span class="op">=</span>bounced <span class="kw">(</span><span class="ex">host</span> smtp.gmx.com[212.227.17.184] said: 554-Transaction failed 554-Reject due to policy restrictions. 554 For explanation visit https://postmaster.gmx.net/en/error-messages<span class="pp">?</span>ip=24.64.146.237<span class="kw">&amp;</span><span class="va">c</span><span class="op">=</span>hi <span class="kw">(</span><span class="er">in</span> <span class="ex">reply</span> to end of DATA command<span class="kw">))</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Ok, this isn’t a critical feature, but I can handle hacking at it for a bit before I give up.</p>
+<ul>
+<li>Compare what’s in my <code>/etc/postfix/header_checks</code> to what the guide showed: It looks mostly the same, although I’ve got <code>.</code>s in my name since I used the <code>{{ ansible_hostname }}</code> variable to define it. Maybe that’s it? Nope. Same error.</li>
+<li>Techno Tim blog installed <code>postfix-pcre</code> to enable this. Playbook didn’t by default. Add that to the <code>postfix_install</code> var and try again: Still bounced.</li>
+<li>Notice that in the Techno Tim post he didn’t bother including a real email in the replacement line because it wasn’t supposed to matter. Maybe GMX actually cares ( his example had been for gmail). Update the variable so it keeps my real email for that part and just changes the name: It works!</li>
+</ul>
+</section>
+<section id="configure-locale-settings" class="level1">
+<h1>Configure locale settings</h1>
+<p>Around this time I noticed I was getting some error messages when I would connect to a shell on the nodes: <code>perl: warning: Please check that your locale settings:</code>. I already had a role created to set up locales for previously configured hosts, so this was an easy fix, I just had to add it to the playbook for these hosts. Not much to say about this, just noting it here for completeness.</p>
+</section>
+<section id="set-up-nfs-shares" class="level1">
+<h1>Set up NFS shares</h1>
+<p>I already configured this manually, but now I’d like to make sure it stays configured if I rebuild, so I’ll move it into ansible.</p>
+<p>According to the <a href="https://pve.proxmox.com/wiki/Storage:_NFS">proxmox docs</a> the configuration is stored in <code>/etc/pve/storage.cfg</code>.</p>
+<p>Taking a look in there I can see that I do have a NFS share configured there, along with my local and zfs storage.</p>
+<p>This seems like a great use case for the <a href="https://docs.ansible.com/ansible/latest/collections/ansible/builtin/blockinfile_module.html">blockinfile</a> module in ansible.</p>
+<p>Well this is weird. After removing the original block from that file and having ansible add it, I can access the mount point from the terminal on all my hosts, but it no longer shows up as a storage option in the UI.</p>
+<p>After doing a reboot and some further testing I confirmed that removing that entry should remove it from the mount point and the UI (and it does). Adding the entry back does not seem to add the storage either to the mount point or the UI. I’m not sure why that would be, so let’s see what else there is to do.</p>
+<p>Looking more through the proxmox docs I see there’s a <a href="https://pve.proxmox.com/pve-docs/chapter-pvesm.html">pve storage manager</a> command. Maybe what I should do instead is check if that share is in the config file, and if it’s not run a shell command to add it.</p>
+<p>In doing some testing for the shell command, I confirmed that all the shell command does is fill in an entry in the file mentioned above. After some further testing, the issue seems to be related to the <code>#Ansible Managed Block</code> comments the ansible function places around the entry. Something about needing blank lines around entries. By modifying the block marker to have newlines on either side of the comment I was able to use blockinfile to set up the share. Easier than parsing shell output and sending a big long command. I could have set this to be applied to all hosts, but since this is in <code>/etc/pve</code> the cluster manager will handle replication across hosts for me.</p>
+</section>
+<section id="conclusion" class="level1">
+<h1>Conclusion</h1>
+<p>In this post I covered a bunch of configuration I wanted to have in place on my proxmox nodes before I got into the business of actually deploying anything. Stay tuned for my next post in this series where maybe I’ll actually use the cluster for what it was intended for and spin up some VMs.</p>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    target: function(trigger) {
+      return trigger.previousElementSibling;
+    }
+  });
+  clipboard.on('success', function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  });
+  function tippyHover(el, contentFn) {
+    const config = {
+      allowHTML: true,
+      content: contentFn,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start'
+    };
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      return note.innerHTML;
+    });
+  }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+</body></html>

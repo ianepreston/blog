@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.2.335">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="dcterms.date" content="2020-11-21">
+<meta name="description" content="Using ansible to install programs and do other system level configuration">
+
+<title>Ian’s blog - Automating provisioning Arch continued - Ansible</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1.6em;
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../">
+<script src="../site_libs/quarto-html/quarto.js"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../site_libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 20,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit"
+  }
+}</script>
+
+
+<link rel="stylesheet" href="../styles.css">
+</head>
+
+<body class="nav-fixed">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg navbar-dark ">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container">
+    <a class="navbar-brand" href="../index.html">
+    <span class="navbar-title">Ian’s blog</span>
+    </a>
+  </div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll ms-auto">
+  <li class="nav-item">
+    <a class="nav-link" href="../about.html">
+ <span class="menu-text">about</span></a>
+  </li>  
+  <li class="nav-item compact">
+    <a class="nav-link" href="https://github.com/ianepreston"><i class="bi bi-github" role="img">
+</i> 
+ <span class="menu-text"></span></a>
+  </li>  
+</ul>
+              <div id="quarto-search" class="" title="Search"></div>
+          </div> <!-- /navcollapse -->
+      </div> <!-- /container-fluid -->
+    </nav>
+</header>
+<!-- content -->
+<header id="title-block-header" class="quarto-title-block default page-columns page-full">
+  <div class="quarto-title-banner page-columns page-full">
+    <div class="quarto-title column-body">
+      <h1 class="title">Automating provisioning Arch continued - Ansible</h1>
+                  <div>
+        <div class="description">
+          Using ansible to install programs and do other system level configuration
+        </div>
+      </div>
+                          <div class="quarto-categories">
+                <div class="quarto-category">configuration</div>
+                <div class="quarto-category">ansible</div>
+                <div class="quarto-category">linux</div>
+                <div class="quarto-category">arch</div>
+              </div>
+                  </div>
+  </div>
+    
+  
+  <div class="quarto-title-meta">
+
+      
+      <div>
+      <div class="quarto-title-meta-heading">Published</div>
+      <div class="quarto-title-meta-contents">
+        <p class="date">November 21, 2020</p>
+      </div>
+    </div>
+    
+      
+    </div>
+    
+  
+  </header><div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#introduction" id="toc-introduction" class="nav-link active" data-scroll-target="#introduction">Introduction</a></li>
+  <li><a href="#hashed-passwords" id="toc-hashed-passwords" class="nav-link" data-scroll-target="#hashed-passwords">Hashed passwords</a></li>
+  <li><a href="#git-clone" id="toc-git-clone" class="nav-link" data-scroll-target="#git-clone">git clone</a></li>
+  <li><a href="#dconf" id="toc-dconf" class="nav-link" data-scroll-target="#dconf">dconf</a></li>
+  <li><a href="#other-resources" id="toc-other-resources" class="nav-link" data-scroll-target="#other-resources">Other resources</a></li>
+  <li><a href="#conclusion" id="toc-conclusion" class="nav-link" data-scroll-target="#conclusion">Conclusion</a></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content quarto-banner-title-block" id="quarto-document-content">
+
+
+
+
+<p>This is part 2 of a 4 part series describing how I provision my systems. Links to each part are below:</p>
+<ul>
+<li><a href="https://blog.ianpreston.ca/configuration/linux/arch/bash/2020/10/14/arch-bootstrap.html">part 1 - The base OS install</a></li>
+<li><a href="https://blog.ianpreston.ca/configuration/ansible/linux/arch/2020/11/21/ansible.html">part 2 - Software install and system configuration with Ansible</a></li>
+<li><a href="https://blog.ianpreston.ca/configuration/linux/arch/python/2020/11/25/dotfiles.html">part 3 - User level and python environment config with dotfiles and mkrc</a></li>
+<li><a href="https://blog.ianpreston.ca/configuration/linux/arch/2020/11/26/arch-tldr.html">part 4 - The tldr that wraps up how to do the whole thing from start to finish</a>]</li>
+</ul>
+<section id="introduction" class="level1">
+<h1>Introduction</h1>
+<p>My <a href="https://blog.ianpreston.ca/configuration/linux/arch/bash/2020/10/14/arch-bootstrap.html">previous post</a> described how to automate a base installation of <a href="https://www.archlinux.org/">Arch</a>. This follow up post will give an overview of the next step of configuration.</p>
+<p>After getting a base system setup there is still a ton of administrative tasks to do, like creating a user account and installing software. I accomplished this using <a href="https://www.ansible.com/">Ansible</a>. As with the previous post, I borrowed heavily from <a href="https://github.com/brennanfee/provision-arch">Brennan Fee</a> for the configuration. My copy is <a href="https://github.com/ianepreston/recipes/tree/master/ansible">here</a>. This post won’t be as in depth as the previous one, as the ansible syntax is a lot more directly readable, so in most cases it should be enough to look at the code and maybe consult the <a href="https://docs.ansible.com/">ansible docs</a> to figure out what’s going on. The sections below will outline a few of the parts that were a little tricky.</p>
+</section>
+<section id="hashed-passwords" class="level1">
+<h1>Hashed passwords</h1>
+<p>Ansible lets you create a user and include the hash of their password, which means you can have the data available publicly without a security concern. In order to generate a hash of a password refer to <a href="https://docs.ansible.com/ansible/latest/reference_appendices/faq.html#how-do-i-generate-encrypted-passwords-for-the-user-module">this section of the ansible FAQ</a></p>
+</section>
+<section id="git-clone" class="level1">
+<h1>git clone</h1>
+<p>I had a tricky time with <a href="https://github.com/ianepreston/recipes/blob/master/ansible/roles/dotfiles/tasks/main.yml">this task</a>. I wanted to clone some repositories I controlled using ssh and save them in my home directory. After a lot of googling I determined that trying to become my user and do the clone directly wouldn’t work because ansible wouldn’t know which key to use (I have a separate key for GitHub than for my local network). This task splits it up by cloning into the ansible user directory and then using the copy task to move them over to my home directory and set the correct permissions. A little hacky, but it worked.</p>
+</section>
+<section id="dconf" class="level1">
+<h1>dconf</h1>
+<p>You can use ansible to configure your GNOME desktop with the <a href="https://docs.ansible.com/ansible/latest/collections/community/general/dconf_module.html">dconf</a> module. The trickiest part of that is figuring out what key you have to change. <a href="https://opensource.com/article/18/5/manage-your-workstation-ansible-part-3">This blog</a> has the solution I used.</p>
+<ul>
+<li><code>dconf dump / &gt; before.txt</code></li>
+<li>make changes in settings or tweak tool</li>
+<li><code>dconf dump / &gt; after.txt</code></li>
+<li><code>diff before.txt after.txt</code></li>
+<li>Figure out what changed and create a dconf task for it.</li>
+</ul>
+</section>
+<section id="other-resources" class="level1">
+<h1>Other resources</h1>
+<p>Beyond the links previously mentioned I want to highlight a tutorial series from <a href="https://www.youtube.com/watch?v=goclfp6a2IQ">Jeff Geerling</a> which was excellent and informative. He also wrote a book on ansible that I haven’t read yet but imagine is quite good, given the quality of his video guide, and the fact that I found posts from him a few times when I was googling how to do something.</p>
+</section>
+<section id="conclusion" class="level1">
+<h1>Conclusion</h1>
+<p>Ansible is a pretty rad way to reproducibly get your desktop environment set up just the way you like it. It’s a bit overkill given what it’s actually designed for, but it’s a handy skill to learn and it saves rebuilding your environment from scratch.</p>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    target: function(trigger) {
+      return trigger.previousElementSibling;
+    }
+  });
+  clipboard.on('success', function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  });
+  function tippyHover(el, contentFn) {
+    const config = {
+      allowHTML: true,
+      content: contentFn,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start'
+    };
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      return note.innerHTML;
+    });
+  }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+</body></html>

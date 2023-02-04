@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.2.335">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="dcterms.date" content="2020-11-25">
+<meta name="description" content="How I do all the user level configuration for my system, including setting up my python environment.">
+
+<title>Ian’s blog - Automating provisioning Arch continued - dotfiles</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1.6em;
+  vertical-align: middle;
+}
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+    color: #aaaaaa;
+  }
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code span.at { color: #7d9029; } /* Attribute */
+code span.bn { color: #40a070; } /* BaseN */
+code span.bu { color: #008000; } /* BuiltIn */
+code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code span.ch { color: #4070a0; } /* Char */
+code span.cn { color: #880000; } /* Constant */
+code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code span.dt { color: #902000; } /* DataType */
+code span.dv { color: #40a070; } /* DecVal */
+code span.er { color: #ff0000; font-weight: bold; } /* Error */
+code span.ex { } /* Extension */
+code span.fl { color: #40a070; } /* Float */
+code span.fu { color: #06287e; } /* Function */
+code span.im { color: #008000; font-weight: bold; } /* Import */
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code span.op { color: #666666; } /* Operator */
+code span.ot { color: #007020; } /* Other */
+code span.pp { color: #bc7a00; } /* Preprocessor */
+code span.sc { color: #4070a0; } /* SpecialChar */
+code span.ss { color: #bb6688; } /* SpecialString */
+code span.st { color: #4070a0; } /* String */
+code span.va { color: #19177c; } /* Variable */
+code span.vs { color: #4070a0; } /* VerbatimString */
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+</style>
+
+
+<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../">
+<script src="../site_libs/quarto-html/quarto.js"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../site_libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 20,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit"
+  }
+}</script>
+
+
+<link rel="stylesheet" href="../styles.css">
+</head>
+
+<body class="nav-fixed">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg navbar-dark ">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container">
+    <a class="navbar-brand" href="../index.html">
+    <span class="navbar-title">Ian’s blog</span>
+    </a>
+  </div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll ms-auto">
+  <li class="nav-item">
+    <a class="nav-link" href="../about.html">
+ <span class="menu-text">about</span></a>
+  </li>  
+  <li class="nav-item compact">
+    <a class="nav-link" href="https://github.com/ianepreston"><i class="bi bi-github" role="img">
+</i> 
+ <span class="menu-text"></span></a>
+  </li>  
+</ul>
+              <div id="quarto-search" class="" title="Search"></div>
+          </div> <!-- /navcollapse -->
+      </div> <!-- /container-fluid -->
+    </nav>
+</header>
+<!-- content -->
+<header id="title-block-header" class="quarto-title-block default page-columns page-full">
+  <div class="quarto-title-banner page-columns page-full">
+    <div class="quarto-title column-body">
+      <h1 class="title">Automating provisioning Arch continued - dotfiles</h1>
+                  <div>
+        <div class="description">
+          How I do all the user level configuration for my system, including setting up my python environment.
+        </div>
+      </div>
+                          <div class="quarto-categories">
+                <div class="quarto-category">configuration</div>
+                <div class="quarto-category">linux</div>
+                <div class="quarto-category">arch</div>
+                <div class="quarto-category">python</div>
+              </div>
+                  </div>
+  </div>
+    
+  
+  <div class="quarto-title-meta">
+
+      
+      <div>
+      <div class="quarto-title-meta-heading">Published</div>
+      <div class="quarto-title-meta-contents">
+        <p class="date">November 25, 2020</p>
+      </div>
+    </div>
+    
+      
+    </div>
+    
+  
+  </header><div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#introduction" id="toc-introduction" class="nav-link active" data-scroll-target="#introduction">Introduction</a></li>
+  <li><a href="#repository-setup" id="toc-repository-setup" class="nav-link" data-scroll-target="#repository-setup">Repository setup</a></li>
+  <li><a href="#repository-root-files" id="toc-repository-root-files" class="nav-link" data-scroll-target="#repository-root-files">Repository root files</a>
+  <ul class="collapse">
+  <li><a href="#setup.sh" id="toc-setup.sh" class="nav-link" data-scroll-target="#setup.sh">setup.sh</a></li>
+  <li><a href="#base-rcrc" id="toc-base-rcrc" class="nav-link" data-scroll-target="#base-rcrc">base-rcrc</a></li>
+  <li><a href="#other-root-files" id="toc-other-root-files" class="nav-link" data-scroll-target="#other-root-files">other root files</a></li>
+  </ul></li>
+  <li><a href="#bash" id="toc-bash" class="nav-link" data-scroll-target="#bash">bash</a>
+  <ul class="collapse">
+  <li><a href="#completions" id="toc-completions" class="nav-link" data-scroll-target="#completions">completions</a></li>
+  <li><a href="#distrosmanjaroaliases" id="toc-distrosmanjaroaliases" class="nav-link" data-scroll-target="#distrosmanjaroaliases">distros/manjaro/aliases</a></li>
+  <li><a href="#linux" id="toc-linux" class="nav-link" data-scroll-target="#linux">linux</a></li>
+  <li><a href="#macos" id="toc-macos" class="nav-link" data-scroll-target="#macos">macos</a></li>
+  <li><a href="#windows-wsl" id="toc-windows-wsl" class="nav-link" data-scroll-target="#windows-wsl">windows-wsl</a></li>
+  <li><a href="#nerdfonts" id="toc-nerdfonts" class="nav-link" data-scroll-target="#nerdfonts">nerdfonts</a></li>
+  <li><a href="#shared" id="toc-shared" class="nav-link" data-scroll-target="#shared">shared</a>
+  <ul class="collapse">
+  <li><a href="#aliases" id="toc-aliases" class="nav-link" data-scroll-target="#aliases">aliases</a></li>
+  <li><a href="#exports" id="toc-exports" class="nav-link" data-scroll-target="#exports">exports</a></li>
+  <li><a href="#functions" id="toc-functions" class="nav-link" data-scroll-target="#functions">functions</a></li>
+  <li><a href="#options" id="toc-options" class="nav-link" data-scroll-target="#options">options</a></li>
+  <li><a href="#other" id="toc-other" class="nav-link" data-scroll-target="#other">other</a></li>
+  <li><a href="#third-party" id="toc-third-party" class="nav-link" data-scroll-target="#third-party">third party</a></li>
+  </ul></li>
+  </ul></li>
+  <li><a href="#bin" id="toc-bin" class="nav-link" data-scroll-target="#bin">bin</a></li>
+  <li><a href="#filesmac-and-iterm2" id="toc-filesmac-and-iterm2" class="nav-link" data-scroll-target="#filesmac-and-iterm2">files/mac and iterm2</a></li>
+  <li><a href="#rcs" id="toc-rcs" class="nav-link" data-scroll-target="#rcs">rcs</a>
+  <ul class="collapse">
+  <li><a href="#bash_logout" id="toc-bash_logout" class="nav-link" data-scroll-target="#bash_logout">bash_logout</a></li>
+  <li><a href="#bash_profile" id="toc-bash_profile" class="nav-link" data-scroll-target="#bash_profile">bash_profile</a></li>
+  <li><a href="#bashrc" id="toc-bashrc" class="nav-link" data-scroll-target="#bashrc">bashrc</a></li>
+  <li><a href="#other-files" id="toc-other-files" class="nav-link" data-scroll-target="#other-files">other files</a></li>
+  <li><a href="#config-folder" id="toc-config-folder" class="nav-link" data-scroll-target="#config-folder">config folder</a></li>
+  <li><a href="#host--folders" id="toc-host--folders" class="nav-link" data-scroll-target="#host--folders">host-* folders</a></li>
+  <li><a href="#tag--folders" id="toc-tag--folders" class="nav-link" data-scroll-target="#tag--folders">tag-* folders</a></li>
+  <li><a href="#vifm-and-vim" id="toc-vifm-and-vim" class="nav-link" data-scroll-target="#vifm-and-vim">vifm and vim</a></li>
+  </ul></li>
+  <li><a href="#hooks" id="toc-hooks" class="nav-link" data-scroll-target="#hooks">hooks</a></li>
+  <li><a href="#conclusion" id="toc-conclusion" class="nav-link" data-scroll-target="#conclusion">conclusion</a></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content quarto-banner-title-block" id="quarto-document-content">
+
+
+
+
+<p>This is part 3 of a 4 part series describing how I provision my systems. Links to each part are below:</p>
+<ul>
+<li><a href="https://blog.ianpreston.ca/configuration/linux/arch/bash/2020/10/14/arch-bootstrap.html">part 1 - The base OS install</a></li>
+<li><a href="https://blog.ianpreston.ca/configuration/ansible/linux/arch/2020/11/21/ansible.html">part 2 - Software install and system configuration with Ansible</a></li>
+<li><a href="https://blog.ianpreston.ca/configuration/linux/arch/python/2020/11/25/dotfiles.html">part 3 - User level and python environment config with dotfiles and mkrc</a></li>
+<li><a href="https://blog.ianpreston.ca/configuration/linux/arch/2020/11/26/arch-tldr.html">part 4 - The tldr that wraps up how to do the whole thing from start to finish</a>]</li>
+</ul>
+<section id="introduction" class="level1">
+<h1>Introduction</h1>
+<p>In this post I’ll go through setting up configuration files (also called dotfiles or rcs).</p>
+<p>As with the earlier posts in this series I’ll be copying liberally from <a href="https://github.com/brennanfee/dotfiles">Brennan Fee</a>. Since I’m building off his guide I will also use <a href="https://thoughtbot.github.io/rcm/rcm.7.html">RCM</a> to manage my dotfiles. At the time of this writing I don’t think I need a lot of the tag or host specific tools it offers, and I could probably stick with using my old approach of a <a href="https://www.atlassian.com/git/tutorials/dotfiles">bare git repository</a> right in my home. This seems a bit cleaner though, and maybe I’ll want to extend it eventually. The idea of being able to extend things to WSL or MacOS is cool and I could see using host or tag specific features to be able to use these on work machines as well.</p>
+<p>I have a hard time remembering why I structure my dotfiles the way I do, or what some features do, so hopefully by writing all this out I will make it easier to update them in the future. As a bonus maybe this will be useful to others looking to configure their own environments. I’m not going to dissect the files in this document, it’s too easy to let things get out of sync between this guide and my actual dotfiles. Instead this will focus on explaining the directory structure and what files do what, since that’s not easily captured by comments. I’ll try to heavily comment the actual files in the repository. That will have a slightly better chance of staying relevant.</p>
+</section>
+<section id="repository-setup" class="level1">
+<h1>Repository setup</h1>
+<p>Following Brennan’s example, I have two repositories to contain my configs. The first is for configuration I don’t mind sharing and it’s available <a href="https://github.com/ianepreston/dots">here</a>. In addition to that I have a second private repository for configurations that contain personal information, which I will not be sharing a link to for obvious reasons.</p>
+<p>Just for reference in this guide the public dotfiles repository is cloned to <code>~/.dotfiles</code>, which is the default location for RCM. The private ones are cloned to <code>~/.private_dotfiles</code>. That one I’ll have to manually specify, and if I want to add a file to it I’ll have to move it over manually.</p>
+</section>
+<section id="repository-root-files" class="level1">
+<h1>Repository root files</h1>
+<section id="setup.sh" class="level2">
+<h2 class="anchored" data-anchor-id="setup.sh">setup.sh</h2>
+<p>This file either links in or generates the config file for RCM (rcrc). This is the file that identifies which tags are applicable for the machine so it has to be configured properly before the rest of the dotfiles can be brought up. The base implementation checks what Operating System you’re running and adds tags for that. At work I have it generate additional tags for which user is running it so I can create user specific tagged files (for things like email addresses).</p>
+<p>After running this script, if we didn’t link in an already existing <code>.rcrc</code> file then you’ll have a host specific one generated, but it won’t be saved in the repository, it will just be a reglar file. If as prompted you run <code>mkrc -o ~/.rcrc</code> it will add a host specific rcrc file to the repository.</p>
+</section>
+<section id="base-rcrc" class="level2">
+<h2 class="anchored" data-anchor-id="base-rcrc">base-rcrc</h2>
+<p>This file is used by <code>setup.sh</code> to generate the host specific <code>~/.rcrc</code>. The script adds tags to this file based on the operating system you’re running. You can add additional tags if you’d like.</p>
+</section>
+<section id="other-root-files" class="level2">
+<h2 class="anchored" data-anchor-id="other-root-files">other root files</h2>
+<p>The other files in the root of the repository are generic repository management files. README.md will show on the base of the page on GitHub and should point back to this blog post for more details. I picked GPL V3 for the license somewhat arbitrarily. I think I used the GitHub license picker helper for it. <code>.gitignore</code> and <code>.gitattributes</code> handle files for git to ignore and enforce consistent line break characters. <code>.editorconfig</code> tells a variety of text editors things like whether to use tabs or spaces for indentation.</p>
+</section>
+</section>
+<section id="bash" class="level1">
+<h1>bash</h1>
+<p>This folder contains all the stuff that gets loaded into my profile at login. It’s where things like custom functions and the layout of my command prompt are defined.</p>
+<section id="completions" class="level2">
+<h2 class="anchored" data-anchor-id="completions">completions</h2>
+<p>These scripts let you tab complete commands for certain applications. At the time of this writing I have completions for git, pipx and poetry installed.</p>
+</section>
+<section id="distrosmanjaroaliases" class="level2">
+<h2 class="anchored" data-anchor-id="distrosmanjaroaliases">distros/manjaro/aliases</h2>
+<p>I don’t actually use manjaro, but I wanted to keep this in as an example for myself of how to set distribution specific functionality.</p>
+</section>
+<section id="linux" class="level2">
+<h2 class="anchored" data-anchor-id="linux">linux</h2>
+<p>This has a few commands to set <code>start</code> or <code>open</code> to run <code>xdg-open</code> in linux. Makes the syntax compatible against platforms. That would be for opening a file in a gui rather than with a command line app.</p>
+</section>
+<section id="macos" class="level2">
+<h2 class="anchored" data-anchor-id="macos">macos</h2>
+<p>I don’t have any mac machines to test this stuff out on right now. It’s got a few files that presumably help make behaviour consistent on macs.</p>
+</section>
+<section id="windows-wsl" class="level2">
+<h2 class="anchored" data-anchor-id="windows-wsl">windows-wsl</h2>
+<p>Similar to the mac and linux entries above. Lets you use the same commands regardless of your specific platform.</p>
+</section>
+<section id="nerdfonts" class="level2">
+<h2 class="anchored" data-anchor-id="nerdfonts">nerdfonts</h2>
+<p>This maps a bunch of <a href="https://www.nerdfonts.com/">nerd fonts</a> to environment variables so they can be included in shell scripts. It lets you do things like put a check mark in your command prompt. Very important stuff.</p>
+</section>
+<section id="shared" class="level2">
+<h2 class="anchored" data-anchor-id="shared">shared</h2>
+<p>This is where the bulk of the content is in the bash directory. All of these files are cross platform and should work the same on linux, mac or WSL.</p>
+<section id="aliases" class="level3">
+<h3 class="anchored" data-anchor-id="aliases">aliases</h3>
+<p>Basically these are all the command shortcuts. For example <code>alias grep="grep --color"</code> means you can just type <code>grep</code> but get nicely coloured results.</p>
+</section>
+<section id="exports" class="level3">
+<h3 class="anchored" data-anchor-id="exports">exports</h3>
+<p>This is where environment variables are set. For example <code>EDITOR=vim</code> is set here.</p>
+</section>
+<section id="functions" class="level3">
+<h3 class="anchored" data-anchor-id="functions">functions</h3>
+<p>This is where user defined functions/tools live. For example <code>extract</code> is defined here to call the appropriate underlying app to extract a file based on its extension.</p>
+</section>
+<section id="options" class="level3">
+<h3 class="anchored" data-anchor-id="options">options</h3>
+<p>Sets a bunch of shell options. Things like turning on vi mode for the command line.</p>
+</section>
+<section id="other" class="level3">
+<h3 class="anchored" data-anchor-id="other">other</h3>
+<p>A catch all. Code to set up conda, manage the file path, and actually set the appearance of my command prompt all live here.</p>
+</section>
+<section id="third-party" class="level3">
+<h3 class="anchored" data-anchor-id="third-party">third party</h3>
+<p>A place to dump cool code snippets you found on the internet that you want to be able to manage in your shell.</p>
+</section>
+</section>
+</section>
+<section id="bin" class="level1">
+<h1>bin</h1>
+<p>As opposed to the functions in the bash folder that get added to your environment, these are scripts that are supposed to be called directly, and are therefore on the path but not parsed until they’re called. At least I think that’s the distinction. I’m not super good at bash namespaces yet so this might need to be edited.</p>
+</section>
+<section id="filesmac-and-iterm2" class="level1">
+<h1>files/mac and iterm2</h1>
+<p>I don’t have a mac, not totally sure what this stuff does. But maybe some day I will! Then it’ll be super nice to have this stuff enabled… I assume.</p>
+</section>
+<section id="rcs" class="level1">
+<h1>rcs</h1>
+<p>This is where the actual config files live</p>
+<section id="bash_logout" class="level2">
+<h2 class="anchored" data-anchor-id="bash_logout">bash_logout</h2>
+<p>Clear the screen when you log out. I’m not sure if I actually need this, doesn’t seem to hurt</p>
+</section>
+<section id="bash_profile" class="level2">
+<h2 class="anchored" data-anchor-id="bash_profile">bash_profile</h2>
+<p>I’m sure in theory there’s a difference between this file and <code>.bashrc</code> but in practice they seem to be the same. Just map this one to load <code>~/.bashrc</code> so whichever one your terminal expects you get the same result.</p>
+</section>
+<section id="bashrc" class="level2">
+<h2 class="anchored" data-anchor-id="bashrc">bashrc</h2>
+<p><code>bashrc</code> configures your shell on login. Brennan has a nice modular design that I’m going to emulate. Basically nothing goes in bashrc itself, rather it walks through all the folders in the previously described bash folder and adds them in (at least those relevant to your Operating System). A snippet of what that looks like is below.</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># We want to walk "outside" in... which is to say run all options files first, then all</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="co"># exports, then all functions, etc.</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> folder <span class="kw">in</span> <span class="st">"options"</span> <span class="st">"exports"</span> <span class="st">"functions"</span> <span class="st">"third-party"</span> <span class="st">"other"</span> <span class="st">"aliases"</span><span class="kw">;</span> <span class="cf">do</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> base <span class="kw">in</span> <span class="st">"shared"</span> <span class="st">"</span><span class="va">$OS_PRIMARY</span><span class="st">"</span> <span class="st">"distros/</span><span class="va">$OS_SECONDARY</span><span class="st">"</span><span class="kw">;</span> <span class="cf">do</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> root <span class="kw">in</span> <span class="st">"</span><span class="va">$DOTFILES</span><span class="st">/bash"</span> <span class="st">"</span><span class="va">$DOTFILES_PRIVATE</span><span class="st">/bash"</span><span class="kw">;</span> <span class="cf">do</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>      <span class="cf">if</span> <span class="kw">[[</span> <span class="ot">-d</span> <span class="st">"</span><span class="va">$root</span><span class="st">/</span><span class="va">$base</span><span class="st">/</span><span class="va">$folder</span><span class="st">"</span> <span class="kw">]];</span> <span class="cf">then</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> file <span class="kw">in</span> <span class="va">$root</span>/<span class="va">$base</span>/<span class="va">$folder</span>/<span class="pp">*</span>.bash<span class="kw">;</span> <span class="cf">do</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>          <span class="co"># shellcheck source=/dev/null</span></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>          <span class="bu">source</span> <span class="st">"</span><span class="va">$file</span><span class="st">"</span></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>        <span class="cf">done</span></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>      <span class="cf">fi</span></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>    <span class="cf">done</span></span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>  <span class="cf">done</span></span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a><span class="cf">done</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>All the actual functionality lives in the <code>bash</code> folders of the dotfiles repositories and only this file itself needs to be linked in by RCM. Distribution and OS specific functionality can be managed by just placing the script in the appropriate folder. Because of the order of execution the more granular files will overwrite more general settings if there’s a conflict.</p>
+</section>
+<section id="other-files" class="level2">
+<h2 class="anchored" data-anchor-id="other-files">other files</h2>
+<ul>
+<li><code>dircolors</code>: make <code>ls</code> show pretty colours.</li>
+<li><code>gitignore</code>: files and patterns to ignore in all git repositories</li>
+<li><code>inputrc</code>: manage basic keyboard mappings for the shell (home to go to the beginning of the line for example)</li>
+<li><code>prettierrc</code>: configurations for the code formatter prettier. Kind of like <a href="https://pypi.org/project/black/">black</a> for other languages</li>
+<li><code>tmux.conf</code>: configuration for <a href="https://www.hamvocke.com/blog/a-quick-and-easy-guide-to-tmux/">tmux</a>. I don’t use tmux enough to have strong opinions about these commands so the commenting is pretty sparse at the time of this writing</li>
+</ul>
+</section>
+<section id="config-folder" class="level2">
+<h2 class="anchored" data-anchor-id="config-folder">config folder</h2>
+<p>Polite applications store their configuration files here rather than your home directory. The <a href="https://wiki.archlinux.org/index.php/XDG_Base_Directory#User_directories">Arch Wiki</a> has a good list of polite applications and how to override some of the impolite ones. The folders all correspond to the name of the application they configure (e.g.&nbsp;git) so they layout is pretty self explanatory.</p>
+</section>
+<section id="host--folders" class="level2">
+<h2 class="anchored" data-anchor-id="host--folders">host-* folders</h2>
+<p>Host specific configs. Everything within here will have the same layout as the <code>rcs</code> folder above it, but will have machine specific configs. For my setup that’s just the <code>~/.rcrc</code> file that sets the tags for everything else on the machine.</p>
+</section>
+<section id="tag--folders" class="level2">
+<h2 class="anchored" data-anchor-id="tag--folders">tag-* folders</h2>
+<p>The same idea as hosts, except each host can have multiple tags. In general this is used for OS specific configurations. At work I also add tags for each user on the system for things like configuring e-mail addresses.</p>
+</section>
+<section id="vifm-and-vim" class="level2">
+<h2 class="anchored" data-anchor-id="vifm-and-vim">vifm and vim</h2>
+<p>These folder should really be under config. They’re just the settings for vim and vifm. Rude of them to demand their own space in <code>~</code>.</p>
+</section>
+</section>
+<section id="hooks" class="level1">
+<h1>hooks</h1>
+<p>These just live in the <code>rcs</code> folder, but they’re special so I want to give them their own place. Some configurations need to have setup steps run, either before they’re installed or after. For instance, you can specify which plugins you want vim to use, but they won’t actually be installed until you run <code>vim -N -u "$HOME/.vim/vimrc.bundles" +PlugUpdate +PlugClean! +qa -</code>. You can put a script that does that in <code>hooks/post-up</code> and it will automatically run that after loading in your configuration files. I’m pushing this feature a little beyond what it’s intended to install some user level things like miniconda and pyenv. Doing that with this tool doesn’t quite fit its intended use, but it seems to work so I’ll stick with it.</p>
+</section>
+<section id="conclusion" class="level1">
+<h1>conclusion</h1>
+<p>This guide gave an overview of the structure of my dotfiles. For more details on the tool used to set them up check out <a href="https://thoughtbot.com/blog/rcm-for-rc-files-in-dotfiles-repos">RCM</a> and for the specifics of the configurations check the files themselves in <a href="https://github.com/ianepreston/dots">my repository</a>.</p>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    target: function(trigger) {
+      return trigger.previousElementSibling;
+    }
+  });
+  clipboard.on('success', function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  });
+  function tippyHover(el, contentFn) {
+    const config = {
+      allowHTML: true,
+      content: contentFn,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start'
+    };
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      return note.innerHTML;
+    });
+  }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+</body></html>

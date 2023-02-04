@@ -1,0 +1,955 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.2.335">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="dcterms.date" content="2020-07-09">
+<meta name="description" content="Helping myself understand python packaging by working up from a single file to an actual library.">
+
+<title>Ian’s blog - Python packaging</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1.6em;
+  vertical-align: middle;
+}
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+    color: #aaaaaa;
+  }
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code span.at { color: #7d9029; } /* Attribute */
+code span.bn { color: #40a070; } /* BaseN */
+code span.bu { color: #008000; } /* BuiltIn */
+code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code span.ch { color: #4070a0; } /* Char */
+code span.cn { color: #880000; } /* Constant */
+code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code span.dt { color: #902000; } /* DataType */
+code span.dv { color: #40a070; } /* DecVal */
+code span.er { color: #ff0000; font-weight: bold; } /* Error */
+code span.ex { } /* Extension */
+code span.fl { color: #40a070; } /* Float */
+code span.fu { color: #06287e; } /* Function */
+code span.im { color: #008000; font-weight: bold; } /* Import */
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code span.op { color: #666666; } /* Operator */
+code span.ot { color: #007020; } /* Other */
+code span.pp { color: #bc7a00; } /* Preprocessor */
+code span.sc { color: #4070a0; } /* SpecialChar */
+code span.ss { color: #bb6688; } /* SpecialString */
+code span.st { color: #4070a0; } /* String */
+code span.va { color: #19177c; } /* Variable */
+code span.vs { color: #4070a0; } /* VerbatimString */
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+</style>
+
+
+<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../">
+<script src="../site_libs/quarto-html/quarto.js"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../site_libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 20,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit"
+  }
+}</script>
+
+
+<link rel="stylesheet" href="../styles.css">
+</head>
+
+<body class="nav-fixed">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg navbar-dark ">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container">
+    <a class="navbar-brand" href="../index.html">
+    <span class="navbar-title">Ian’s blog</span>
+    </a>
+  </div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll ms-auto">
+  <li class="nav-item">
+    <a class="nav-link" href="../about.html">
+ <span class="menu-text">about</span></a>
+  </li>  
+  <li class="nav-item compact">
+    <a class="nav-link" href="https://github.com/ianepreston"><i class="bi bi-github" role="img">
+</i> 
+ <span class="menu-text"></span></a>
+  </li>  
+</ul>
+              <div id="quarto-search" class="" title="Search"></div>
+          </div> <!-- /navcollapse -->
+      </div> <!-- /container-fluid -->
+    </nav>
+</header>
+<!-- content -->
+<header id="title-block-header" class="quarto-title-block default page-columns page-full">
+  <div class="quarto-title-banner page-columns page-full">
+    <div class="quarto-title column-body">
+      <h1 class="title">Python packaging</h1>
+                  <div>
+        <div class="description">
+          Helping myself understand python packaging by working up from a single file to an actual library.
+        </div>
+      </div>
+                          <div class="quarto-categories">
+                <div class="quarto-category">python</div>
+                <div class="quarto-category">poetry</div>
+                <div class="quarto-category">conda</div>
+              </div>
+                  </div>
+  </div>
+    
+  
+  <div class="quarto-title-meta">
+
+      
+      <div>
+      <div class="quarto-title-meta-heading">Published</div>
+      <div class="quarto-title-meta-contents">
+        <p class="date">July 9, 2020</p>
+      </div>
+    </div>
+    
+      
+    </div>
+    
+  
+  </header><div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#intro" id="toc-intro" class="nav-link active" data-scroll-target="#intro">Intro</a>
+  <ul class="collapse">
+  <li><a href="#background" id="toc-background" class="nav-link" data-scroll-target="#background">Background</a></li>
+  <li><a href="#my-current-packaging-approach" id="toc-my-current-packaging-approach" class="nav-link" data-scroll-target="#my-current-packaging-approach">My current packaging approach</a></li>
+  <li><a href="#the-problem" id="toc-the-problem" class="nav-link" data-scroll-target="#the-problem">The problem</a></li>
+  <li><a href="#what-im-hoping-to-do-here" id="toc-what-im-hoping-to-do-here" class="nav-link" data-scroll-target="#what-im-hoping-to-do-here">What I’m hoping to do here</a></li>
+  <li><a href="#how-this-will-progress" id="toc-how-this-will-progress" class="nav-link" data-scroll-target="#how-this-will-progress">How this will progress</a></li>
+  </ul></li>
+  <li><a href="#the-process" id="toc-the-process" class="nav-link" data-scroll-target="#the-process">The process</a>
+  <ul class="collapse">
+  <li><a href="#preliminary-setup" id="toc-preliminary-setup" class="nav-link" data-scroll-target="#preliminary-setup">Preliminary setup</a>
+  <ul class="collapse">
+  <li><a href="#create-repository" id="toc-create-repository" class="nav-link" data-scroll-target="#create-repository">Create repository</a></li>
+  <li><a href="#set-up-environment" id="toc-set-up-environment" class="nav-link" data-scroll-target="#set-up-environment">Set up environment</a></li>
+  <li><a href="#make-my-super-sweet-library" id="toc-make-my-super-sweet-library" class="nav-link" data-scroll-target="#make-my-super-sweet-library">Make my super sweet library</a></li>
+  </ul></li>
+  <li><a href="#run-into-problems" id="toc-run-into-problems" class="nav-link" data-scroll-target="#run-into-problems">Run into problems</a></li>
+  <li><a href="#some-bad-ways-to-solve-the-problem" id="toc-some-bad-ways-to-solve-the-problem" class="nav-link" data-scroll-target="#some-bad-ways-to-solve-the-problem">Some bad ways to solve the problem</a>
+  <ul class="collapse">
+  <li><a href="#just-copy-the-file-everywhere" id="toc-just-copy-the-file-everywhere" class="nav-link" data-scroll-target="#just-copy-the-file-everywhere">Just copy the file everywhere</a></li>
+  <li><a href="#add-it-to-the-path" id="toc-add-it-to-the-path" class="nav-link" data-scroll-target="#add-it-to-the-path">Add it to the path</a></li>
+  </ul></li>
+  <li><a href="#get-hypermodern" id="toc-get-hypermodern" class="nav-link" data-scroll-target="#get-hypermodern">Get hypermodern</a></li>
+  <li><a href="#turn-our-code-into-a-poetry-package" id="toc-turn-our-code-into-a-poetry-package" class="nav-link" data-scroll-target="#turn-our-code-into-a-poetry-package">Turn our code into a poetry package</a>
+  <ul class="collapse">
+  <li><a href="#poetry-init" id="toc-poetry-init" class="nav-link" data-scroll-target="#poetry-init">Poetry init</a></li>
+  <li><a href="#src-layout" id="toc-src-layout" class="nav-link" data-scroll-target="#src-layout">src layout</a></li>
+  <li><a href="#poetry-install" id="toc-poetry-install" class="nav-link" data-scroll-target="#poetry-install">poetry install</a></li>
+  <li><a href="#poetry-build" id="toc-poetry-build" class="nav-link" data-scroll-target="#poetry-build">poetry build</a></li>
+  </ul></li>
+  <li><a href="#automate-testing" id="toc-automate-testing" class="nav-link" data-scroll-target="#automate-testing">Automate testing</a>
+  <ul class="collapse">
+  <li><a href="#add-a-pytest-dependency" id="toc-add-a-pytest-dependency" class="nav-link" data-scroll-target="#add-a-pytest-dependency">Add a pytest dependency</a></li>
+  <li><a href="#write-tests" id="toc-write-tests" class="nav-link" data-scroll-target="#write-tests">Write tests</a></li>
+  </ul></li>
+  <li><a href="#publish-to-pypi" id="toc-publish-to-pypi" class="nav-link" data-scroll-target="#publish-to-pypi">Publish to pypi</a>
+  <ul class="collapse">
+  <li><a href="#set-up-for-publishing" id="toc-set-up-for-publishing" class="nav-link" data-scroll-target="#set-up-for-publishing">Set up for publishing</a></li>
+  <li><a href="#publish" id="toc-publish" class="nav-link" data-scroll-target="#publish">Publish</a></li>
+  <li><a href="#pull-it-back-down-and-test" id="toc-pull-it-back-down-and-test" class="nav-link" data-scroll-target="#pull-it-back-down-and-test">Pull it back down and test</a></li>
+  </ul></li>
+  <li><a href="#publish-to-a-private-repository" id="toc-publish-to-a-private-repository" class="nav-link" data-scroll-target="#publish-to-a-private-repository">Publish to a private repository</a></li>
+  <li><a href="#adding-dependencies" id="toc-adding-dependencies" class="nav-link" data-scroll-target="#adding-dependencies">Adding dependencies</a></li>
+  <li><a href="#now-do-conda" id="toc-now-do-conda" class="nav-link" data-scroll-target="#now-do-conda">Now do conda</a>
+  <ul class="collapse">
+  <li><a href="#sort-of-working-build" id="toc-sort-of-working-build" class="nav-link" data-scroll-target="#sort-of-working-build">Sort of working build</a></li>
+  <li><a href="#publish-to-a-public-channel" id="toc-publish-to-a-public-channel" class="nav-link" data-scroll-target="#publish-to-a-public-channel">Publish to a public channel</a></li>
+  <li><a href="#publish-to-a-private-channel" id="toc-publish-to-a-private-channel" class="nav-link" data-scroll-target="#publish-to-a-private-channel">Publish to a private channel</a></li>
+  </ul></li>
+  <li><a href="#put-it-all-together" id="toc-put-it-all-together" class="nav-link" data-scroll-target="#put-it-all-together">Put it all together</a>
+  <ul class="collapse">
+  <li><a href="#clean-slate" id="toc-clean-slate" class="nav-link" data-scroll-target="#clean-slate">Clean slate</a></li>
+  <li><a href="#full-build-chain" id="toc-full-build-chain" class="nav-link" data-scroll-target="#full-build-chain">Full build chain</a></li>
+  </ul></li>
+  </ul></li>
+  <li><a href="#conclusion-and-next-steps." id="toc-conclusion-and-next-steps." class="nav-link" data-scroll-target="#conclusion-and-next-steps.">Conclusion and next steps.</a></li>
+  <li><a href="#resources-ive-consulted" id="toc-resources-ive-consulted" class="nav-link" data-scroll-target="#resources-ive-consulted">Resources I’ve consulted</a></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content quarto-banner-title-block" id="quarto-document-content">
+
+
+
+
+<section id="intro" class="level1">
+<h1>Intro</h1>
+<p>Probably the best way to introduce this post is to explain a bit of my background, and then describe the problem I’m trying to solve.</p>
+<section id="background" class="level2">
+<h2 class="anchored" data-anchor-id="background">Background</h2>
+<p>I have been using python for data analysis work since about 2017, so around 3 years at the time of writing this post. I work on a small team, and so it’s necessary for us to be able to share code for things like implementing business logic, or connecting to internal data sources. I also maintain an open source package called <a href="https://github.com/ianepreston/stats_can">stats_can</a> that can be used to access Statistics Canada datasets in python.</p>
+</section>
+<section id="my-current-packaging-approach" class="level2">
+<h2 class="anchored" data-anchor-id="my-current-packaging-approach">My current packaging approach</h2>
+<p>The current way my team shares code is by having a repository with a <code>lib</code> folder in it, and adding that folder to the <code>PYTHONPATH</code> environment variable in Windows.</p>
+<p>The current way I build new versions of <code>stats_can</code> is through a <a href="https://en.wikipedia.org/wiki/Cargo_cult">cargo cult</a> sequence of steps that I kind of sort of understand.</p>
+</section>
+<section id="the-problem" class="level2">
+<h2 class="anchored" data-anchor-id="the-problem">The problem</h2>
+<p>For the shared team library all of our stuff is basically in one giant package, broken up into subpackages. This leads to all sorts of problems:</p>
+<ul>
+<li>It’s very difficult to write tests for it.</li>
+<li>There’s no version numbering so it’s impossible to pin code at a particular version.</li>
+<li>We can’t share it easily with other teams, and we really can’t share just one particular subpackage of it with other teams.</li>
+<li>The whole thing just feels very wrong to me. I knew it wasn’t the way to go when I set it up, but I was very new to python and just didn’t have the experience/capacity to find a better way and it worked for the time being.</li>
+</ul>
+<p>For stats_can my current system more or less works, it just has two problems:</p>
+<ul>
+<li>I only build conda packages. I’d like to allow <code>pip</code> users to access it but…</li>
+<li>Like I said, the build process is a bit of a house of cards that I barely understand, so adding in another build steps scares me.</li>
+</ul>
+<p>Both of the examples described above are for libraries. I’ve built a couple of small apps, but have even less of an idea the correct way to build/deploy them.</p>
+</section>
+<section id="what-im-hoping-to-do-here" class="level2">
+<h2 class="anchored" data-anchor-id="what-im-hoping-to-do-here">What I’m hoping to do here</h2>
+<p>Basically I want to figure out the current best practice way to do the following:</p>
+<ul>
+<li>build a library package with versions that can be installed with <code>pip</code> and <code>conda</code></li>
+<li>deploy those packages to both a privately hosted repository (for work specific stuff) as well as <a href="https://pypi.org/">pypi</a> and <a href="https://anaconda.org/">Anaconda Cloud</a> or <a href="https://conda-forge.org/">conda-forge</a> for public open source stuff</li>
+<li>Originally I was also going to include building user facing (web or CLI) apps but this got pretty long already so I think I’m going to leave that for another post</li>
+<li>Ditto for CI/CD, linting, extensive testing, and all the other things that go into managing a project. Too big to include in this post.</li>
+</ul>
+<p>So a library with <code>conda</code> and <code>pip</code> packages, hosted both publicly and privately means four total ways to manage the library.</p>
+</section>
+<section id="how-this-will-progress" class="level2">
+<h2 class="anchored" data-anchor-id="how-this-will-progress">How this will progress</h2>
+<p>I find that most of the packaging guides I’ve read show either how to build a completely trivial project that demonstrates one narrow feature, or some giant project that’s a lot to take in all at once. My aim is to start from a single file script and gradually build it up to the final product that I laid out in the what I’m trying to accomplish section. I’ll host the repositories for the library/app on GitHub, and use <a href="https://git-scm.com/book/en/v2/Git-Basics-Tagging">tags</a> in order to mark the progress of the project through various stages.</p>
+</section>
+</section>
+<section id="the-process" class="level1">
+<h1>The process</h1>
+<section id="preliminary-setup" class="level2">
+<h2 class="anchored" data-anchor-id="preliminary-setup">Preliminary setup</h2>
+<section id="create-repository" class="level3">
+<h3 class="anchored" data-anchor-id="create-repository">Create repository</h3>
+<p>The first step in any project is to make a repository. This one has the uncreative name of <a href="https://github.com/ianepreston/ianlibdemo">ianlibdemo</a>. If you want to follow along at home you can clone it and check out the tag for the associated stage in the tutorial. The state of the repository right after being created in this case can be accessed with <code>git checkout eg01</code></p>
+</section>
+<section id="set-up-environment" class="level3">
+<h3 class="anchored" data-anchor-id="set-up-environment">Set up environment</h3>
+<p>So I have somewhere to work from, and also to make this process reproducible for others the next thing I have to do is create an isolated python environment to work in. I’m a <code>conda</code> user so I’ll create an <code>environment.yml</code> file:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode yml code-with-copy"><code class="sourceCode yaml"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">name</span><span class="kw">:</span><span class="at"> ianlibdemo_conda_env</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">dependencies</span><span class="kw">:</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> python</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Then I’ll create the environment with <code>conda env create -f environment.yml</code>.</p>
+<p>There’s absolutely nothing to this environment, which is kind of the point.</p>
+</section>
+<section id="make-my-super-sweet-library" class="level3">
+<h3 class="anchored" data-anchor-id="make-my-super-sweet-library">Make my super sweet library</h3>
+<p>Enough talk! Let’s write some code! Well, actually, I’m not going to write any code. The point of this tutorial is to build a package, not write a super awesome library, so I’m just going to copy the demo project used in <a href="https://www.youtube.com/watch?v=xiI1i525ljE">SciPy 2018 - the sheer joy of packaging</a>. The original code is <a href="https://github.com/python-packaging-tutorial/python-packaging-tutorial/tree/master/setup_example/capitalize/capitalize">here</a>. Basically what the module does is take a text file and output a copy with all the words capitalized (except a specified subset).</p>
+<p>In the root directory of the repository I’ll copy the <code>capital_mod.py</code> file and <code>cap_data.txt</code>. I’ll also create an <code>example_in.txt</code> file that I can use to manually test the capitalize function.</p>
+<p>Now I have the following files in my repository:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> ls</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="ex">__pycache__/</span>  capital_mod.py   example_in.txt   LICENSE</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="ex">cap_data.txt</span>  environment.yml  README.md</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>I can test the “package” out from the interactive prompt:</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> python <span class="at">-i</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="ex">Python</span> 3.8.3 <span class="er">(</span><span class="ex">default,</span> May 19 2020, 06:50:17<span class="kw">)</span> <span class="ex">[MSC</span> v.1916 64 bit <span class="er">(</span><span class="ex">AMD64</span><span class="kw">)</span><span class="ex">]</span> :: Anaconda, Inc. on win32</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="ex">Type</span> <span class="st">"help"</span>, <span class="st">"copyright"</span>, <span class="st">"credits"</span> or <span class="st">"license"</span> for more information.</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;&gt;&gt;</span> import <span class="ex">capital_mod</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;&gt;&gt;</span> capital_mod.get_datafile_name<span class="kw">()</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="ex">WindowsPath</span><span class="er">(</span><span class="st">'C:/Users/ianep/Documents/ianlibdemo/cap_data.txt'</span><span class="kw">)</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;&gt;&gt;</span> capital_mod.capitalize<span class="kw">(</span><span class="st">"example_in.txt"</span><span class="ex">,</span> <span class="st">"example_out.txt"</span><span class="kw">)</span></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;&gt;&gt;</span> quit<span class="kw">()</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Everything looks like it ran fine, and if I check in the directory I have file <code>example_out.txt</code> that is indeed a capitalized version of <code>example_in.txt</code>. If you want to get your repository to this point run <code>git checkout eg02</code>.</p>
+<p>So everything works great and we can go home, right?</p>
+</section>
+</section>
+<section id="run-into-problems" class="level2">
+<h2 class="anchored" data-anchor-id="run-into-problems">Run into problems</h2>
+<p>This is all well and good, but I don’t just want to use this functionality in this folder. The idea is that this is a utility library. Presumably there are all sorts of scripts that I want to add this file capitalization capability to. Maybe I have coworkers I want to share this with, or use it in an app I’m building. As it stands how can I accomplish this?</p>
+</section>
+<section id="some-bad-ways-to-solve-the-problem" class="level2">
+<h2 class="anchored" data-anchor-id="some-bad-ways-to-solve-the-problem">Some bad ways to solve the problem</h2>
+<section id="just-copy-the-file-everywhere" class="level3">
+<h3 class="anchored" data-anchor-id="just-copy-the-file-everywhere">Just copy the file everywhere</h3>
+<p>Fine. It only works from the local directory? I’ll just put a copy of it everywhere I want it. This is pretty clearly a bad idea. It will be annoying to copy the file into every location I might want to use it, if I ever have to update the functionality I will then have to track down every instance of that file and make the change repeatedly, and it violates <a href="https://en.wikipedia.org/wiki/Don%27t_repeat_yourself">DRY</a> so any experienced developer that sees me do it will make fun of me. Better not do it this way.</p>
+</section>
+<section id="add-it-to-the-path" class="level3">
+<h3 class="anchored" data-anchor-id="add-it-to-the-path">Add it to the path</h3>
+<p>This is already going to be a really long guide so I don’t want to add too much about the python path directly. <a href="https://chrisyeh96.github.io/2017/08/08/definitive-guide-python-imports.html">This guide by Chris Yeh</a> is the best I’ve found on the python path and import statements, so if you’re curious by all means check that out. Briefly though, let’s demonstrate the two ways we could directly add this “package” to the path, and therefore run it without being in the same directory.</p>
+<p>To set the stage I’ve created a new directory separate from the package, and created a text file that I will try and capitalize:</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="kw">(</span><span class="ex">ianlibdemo_conda_env</span><span class="kw">)</span> <span class="ex">Ian@terra</span> ~/Documents/demo_tmp</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> ls</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="ex">demo_in.txt</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="kw">(</span><span class="ex">ianlibdemo_conda_env</span><span class="kw">)</span> <span class="ex">Ian@terra</span> ~/Documents/demo_tmp</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> cat demo_in.txt</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="ex">i</span> want to capitalize this text file, but it<span class="st">'s in the wrong folder. oh no!</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>If I just try and do the same steps I did from within the folder it will fail:</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;&gt;&gt;</span> <span class="im">import</span> capital_mod</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>Traceback (most recent call last):</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>  File <span class="st">"&lt;stdin&gt;"</span>, line <span class="dv">1</span>, <span class="kw">in</span> <span class="op">&lt;</span>module<span class="op">&gt;</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>ModuleNotFoundError: No module named <span class="st">'capital_mod'</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>That’s because the folder with <code>capital_mod.py</code> is not on my path.</p>
+<p>One way I can solve this is by adding the path to <code>capital_mod.py</code> to my path. Like so:</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> export PYTHONPATH=<span class="st">"/c/Users/Ian/Documents/ianlibdemo"</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="kw">(</span><span class="ex">ianlibdemo_conda_env</span><span class="kw">)</span> <span class="ex">Ian@terra</span> ~/Documents/demo_tmp</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> python <span class="at">-i</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="ex">Python</span> 3.8.2 <span class="kw">|</span> <span class="ex">packaged</span> by conda-forge <span class="kw">|</span> <span class="kw">(</span><span class="ex">default,</span> Apr 24 2020, 07:34:03<span class="kw">)</span> <span class="ex">[MSC</span> v.1916 64 bit <span class="er">(</span><span class="ex">AMD64</span><span class="kw">)</span><span class="ex">]</span> on win32</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="ex">Type</span> <span class="st">"help"</span>, <span class="st">"copyright"</span>, <span class="st">"credits"</span> or <span class="st">"license"</span> for more information.</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;&gt;&gt;</span> import <span class="ex">capital_mod</span></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;&gt;&gt;</span> capital_mod.get_datafile_name<span class="kw">()</span></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a><span class="ex">WindowsPath</span><span class="er">(</span><span class="st">'C:/Users/Ian/Documents/ianlibdemo/cap_data.txt'</span><span class="kw">)</span></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;&gt;&gt;</span> capital_mod.capitalize<span class="kw">(</span><span class="st">"demo_in.txt"</span><span class="ex">,</span> <span class="st">"demo_out.txt"</span><span class="kw">)</span></span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;&gt;&gt;</span> quit<span class="kw">()</span></span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a><span class="kw">(</span><span class="ex">ianlibdemo_conda_env</span><span class="kw">)</span> <span class="ex">Ian@terra</span> ~/Documents/demo_tmp</span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> cat demo_out.txt</span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a><span class="ex">I</span> Want to Capitalize This Text File, But It<span class="st">'s In the Wrong Folder. Oh No!</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>This worked, but I don’t want to have to run that <code>export</code> command every time before I run a script, and sharing this code with other people and telling them to do that every time seems like a hassle. There are ways to permanently add folders to your python path. <a href="https://bic-berkeley.github.io/psych-214-fall-2016/using_pythonpath.html">This guide</a> covers them nicely. But we’re not actually going to go this route so let’s move on.</p>
+<p>The <em>slightly</em> less hacky way is to use <code>sys.path</code> from within a python script. Back in my demo directory I can write a python script that looks like this:</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> sys</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>sys.path.append(<span class="vs">r"C:\Users\Ian\Documents\ianlibdemo"</span>)</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> capital_mod</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>capital_mod.capitalize(<span class="st">"demo_in.txt"</span>, <span class="st">"demo_out.txt"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>We can see that this works as well:</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="kw">(</span><span class="ex">ianlibdemo_conda_env</span><span class="kw">)</span> <span class="ex">Ian@terra</span> ~/Documents/demo_tmp</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> ls</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="ex">demo_in.txt</span>  syspathdemo.py</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a><span class="kw">(</span><span class="ex">ianlibdemo_conda_env</span><span class="kw">)</span> <span class="ex">Ian@terra</span> ~/Documents/demo_tmp</span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> python syspathdemo.py</span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a><span class="kw">(</span><span class="ex">ianlibdemo_conda_env</span><span class="kw">)</span> <span class="ex">Ian@terra</span> ~/Documents/demo_tmp</span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> ls</span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a><span class="ex">demo_in.txt</span>  demo_out.txt  syspathdemo.py</span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a><span class="kw">(</span><span class="ex">ianlibdemo_conda_env</span><span class="kw">)</span> <span class="ex">Ian@terra</span> ~/Documents/demo_tmp</span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> cat demo_out.txt</span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a><span class="ex">I</span> Want to Capitalize This Text File, But It<span class="st">'s In the Wrong Folder. Oh No!</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>This also worked, but I had to import <code>sys</code>, and I had to know the exact path to the library. It’s going to be annoying to have to put that in every script, and if I try and share this code with anyone else they’re going to have to modify it to point to wherever they’ve saved my library code.</p>
+</section>
+</section>
+<section id="get-hypermodern" class="level2">
+<h2 class="anchored" data-anchor-id="get-hypermodern">Get hypermodern</h2>
+<p>As I was working on this guide I discovered a series of articles by Claudio Jolowicz called <a href="https://cjolowicz.github.io/posts/hypermodern-python-01-setup/">Hypermodern Python</a>. The series is an opinionated (in a good way) look at how to configure a python project in 2020. It’s excellent and well worth a read, but I can’t completely adopt its recommendations for two related reasons. The first is that it assumes you’re either using a *NIX system or can load WSL2 on your Windows machine. For my work setup neither of those assumptions hold. It also assumes you’re working in the standard python ecosystem and therefore doesn’t reference <code>conda</code> either for environment management or packaging. For the remainder of this guide I’m going to try and follow Claudio’s suggestions where possible, but adapt them to incorporate <code>conda</code>.</p>
+</section>
+<section id="turn-our-code-into-a-poetry-package" class="level2">
+<h2 class="anchored" data-anchor-id="turn-our-code-into-a-poetry-package">Turn our code into a poetry package</h2>
+<p><a href="https://python-poetry.org/">Poetry</a> seems to be the current best practice for building python packages. Let’s see if we can get it working with <code>conda</code>.</p>
+<section id="poetry-init" class="level3">
+<h3 class="anchored" data-anchor-id="poetry-init">Poetry init</h3>
+<p>After adding <code>poetry</code> as a dependency to my <code>conda</code> environment and updating the environment I run <code>poetry init</code>:</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> poetry init</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="ex">This</span> command will guide you through creating your pyproject.toml config.</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a><span class="ex">Package</span> name [ianlibdemo]:</span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a><span class="ex">Version</span> [0.1.0]:</span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a><span class="ex">Description</span> []:  Python packaging <span class="at">-</span> how does it work<span class="pp">?</span></span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a><span class="ex">Author</span> [[Ian Preston] <span class="op">&lt;</span>17241371+ianepreston@users.noreply.github.com<span class="op">&gt;</span>, n to skip]:  Ian Preston</span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a><span class="ex">License</span> []:  GPL-3.0-or-later</span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a><span class="ex">Compatible</span> Python versions [^3.7]:</span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a><span class="ex">Would</span> you like to define your main dependencies interactively<span class="pp">?</span> <span class="er">(</span><span class="ex">yes/no</span><span class="kw">)</span> <span class="ex">[yes]</span> no</span>
+<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a><span class="ex">Would</span> you like to define your dev dependencies <span class="er">(</span><span class="ex">require-dev</span><span class="kw">)</span> <span class="ex">interactively</span> <span class="er">(</span><span class="ex">yes/no</span><span class="kw">)</span> <span class="ex">[yes]</span> no</span>
+<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a><span class="ex">Generated</span> file</span>
+<span id="cb9-15"><a href="#cb9-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-16"><a href="#cb9-16" aria-hidden="true" tabindex="-1"></a><span class="ex">[tool.poetry]</span></span>
+<span id="cb9-17"><a href="#cb9-17" aria-hidden="true" tabindex="-1"></a><span class="ex">name</span> = <span class="st">"ianlibdemo"</span></span>
+<span id="cb9-18"><a href="#cb9-18" aria-hidden="true" tabindex="-1"></a><span class="ex">version</span> = <span class="st">"0.1.0"</span></span>
+<span id="cb9-19"><a href="#cb9-19" aria-hidden="true" tabindex="-1"></a><span class="ex">description</span> = <span class="st">"Python packaging - how does it work?"</span></span>
+<span id="cb9-20"><a href="#cb9-20" aria-hidden="true" tabindex="-1"></a><span class="ex">authors</span> = [<span class="st">"Ian Preston"</span>]</span>
+<span id="cb9-21"><a href="#cb9-21" aria-hidden="true" tabindex="-1"></a><span class="ex">license</span> = <span class="st">"GPL-3.0-or-later"</span></span>
+<span id="cb9-22"><a href="#cb9-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-23"><a href="#cb9-23" aria-hidden="true" tabindex="-1"></a><span class="ex">[tool.poetry.dependencies]</span></span>
+<span id="cb9-24"><a href="#cb9-24" aria-hidden="true" tabindex="-1"></a><span class="ex">python</span> = <span class="st">"^3.7"</span></span>
+<span id="cb9-25"><a href="#cb9-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-26"><a href="#cb9-26" aria-hidden="true" tabindex="-1"></a><span class="ex">[tool.poetry.dev-dependencies]</span></span>
+<span id="cb9-27"><a href="#cb9-27" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-28"><a href="#cb9-28" aria-hidden="true" tabindex="-1"></a><span class="ex">[build-system]</span></span>
+<span id="cb9-29"><a href="#cb9-29" aria-hidden="true" tabindex="-1"></a><span class="ex">requires</span> = [<span class="st">"poetry&gt;=0.12"</span>]</span>
+<span id="cb9-30"><a href="#cb9-30" aria-hidden="true" tabindex="-1"></a><span class="ex">build-backend</span> = <span class="st">"poetry.masonry.api"</span></span>
+<span id="cb9-31"><a href="#cb9-31" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-32"><a href="#cb9-32" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-33"><a href="#cb9-33" aria-hidden="true" tabindex="-1"></a><span class="ex">Do</span> you confirm generation<span class="pp">?</span> <span class="er">(</span><span class="ex">yes/no</span><span class="kw">)</span> <span class="ex">[yes]</span> yes</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>At the end of this process I have a <code>pyproject.toml</code> file in the root of my repository with the text listed above inside.</p>
+</section>
+<section id="src-layout" class="level3">
+<h3 class="anchored" data-anchor-id="src-layout">src layout</h3>
+<p>The root folder of this repository is getting crowded. I’ve got various files that either describe the project or the environment I’m supposed to work on it in intermingled with the actual source code for the package. To address this I’ll make a separate folder for the actual package files, and as recommended by hypermodern python I’ll use <a href="https://hynek.me/articles/testing-packaging/">src layout</a></p>
+</section>
+<section id="poetry-install" class="level3">
+<h3 class="anchored" data-anchor-id="poetry-install">poetry install</h3>
+<p>The last step for a basic install is to use poetry to install the package into the environment. Since poetry 1.0 it should be able to detect <code>conda</code> environments and do its installation directly into them based on <a href="https://github.com/python-poetry/poetry/pull/1432">this PR</a>.</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> poetry install</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="ex">Updating</span> dependencies</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a><span class="ex">Resolving</span> dependencies... <span class="er">(</span><span class="ex">0.1s</span><span class="kw">)</span></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a><span class="ex">Writing</span> lock file</span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a><span class="ex">No</span> dependencies to install or update</span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a>  <span class="ex">-</span> Installing ianlibdemo <span class="er">(</span><span class="ex">0.1.0</span><span class="kw">)</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Seems to work, let’s try that old example that wouldn’t run before:</p>
+<div class="sourceCode" id="cb11"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="kw">(</span><span class="ex">ianlibdemo_conda_env</span><span class="kw">)</span> <span class="ex">e975360@N2012</span> /c/tfs/text_demo</span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> ls</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a><span class="ex">example_in.txt</span></span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a><span class="kw">(</span><span class="ex">ianlibdemo_conda_env</span><span class="kw">)</span> <span class="ex">e975360@N2012</span> /c/tfs/text_demo</span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> python <span class="at">-i</span></span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a><span class="ex">Python</span> 3.7.7 <span class="er">(</span><span class="ex">default,</span> May  6 2020, 11:45:54<span class="kw">)</span> <span class="ex">[MSC</span> v.1916 64 bit <span class="er">(</span><span class="ex">AMD64</span><span class="kw">)</span><span class="ex">]</span> :: Anaconda, Inc. on win32</span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a><span class="ex">Type</span> <span class="st">"help"</span>, <span class="st">"copyright"</span>, <span class="st">"credits"</span> or <span class="st">"license"</span> for more information.</span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;&gt;&gt;</span> from <span class="ex">ianlibdemo.capital_mod</span> import capitalize</span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;&gt;&gt;</span> capitalize<span class="kw">(</span><span class="st">"example_in.txt"</span><span class="ex">,</span> <span class="st">"example_out.txt"</span><span class="kw">)</span></span>
+<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;&gt;&gt;</span> quit<span class="kw">()</span></span>
+<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a><span class="kw">(</span><span class="ex">ianlibdemo_conda_env</span><span class="kw">)</span> <span class="ex">e975360@N2012</span> /c/tfs/text_demo</span>
+<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> cat example_in.txt</span>
+<span id="cb11-13"><a href="#cb11-13" aria-hidden="true" tabindex="-1"></a><span class="ex">these</span> words will all get capitalized, except the ones in that super special text file, like is, or, and a.</span>
+<span id="cb11-14"><a href="#cb11-14" aria-hidden="true" tabindex="-1"></a><span class="kw">(</span><span class="ex">ianlibdemo_conda_env</span><span class="kw">)</span> <span class="ex">e975360@N2012</span> /c/tfs/text_demo</span>
+<span id="cb11-15"><a href="#cb11-15" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> cat example_out.txt</span>
+<span id="cb11-16"><a href="#cb11-16" aria-hidden="true" tabindex="-1"></a><span class="ex">These</span> Words Will All Get Capitalized, Except the Ones In That Super Special Text File, Like Is, Or, And A.</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Magic! Note that I have to do one more layer of importing from the <code>ianlibdemo</code> package whereas before I was directly importing the <code>capital_mod</code> module, but otherwise we’re gold.</p>
+<p>Of course this hasn’t really solved my problem yet, I still don’t have an actual package that other people can install. But still, progress!</p>
+</section>
+<section id="poetry-build" class="level3">
+<h3 class="anchored" data-anchor-id="poetry-build">poetry build</h3>
+<p>It turns out that making it to the previous step was essentially all I needed to create a <code>pip</code> installable package. Just running <code>poetry build</code> from the root of the repository creates a <code>dist</code> folder containing a <a href="https://packaging.python.org/glossary/#term-source-distribution-or-sdist">sdist</a> and a <a href="https://packaging.python.org/glossary/#term-wheel">wheel</a></p>
+<section id="test-the-build" class="level4">
+<h4 class="anchored" data-anchor-id="test-the-build">test the build</h4>
+<p>Having built this package, how would I install it?</p>
+<p>To start the test I’ll create a new empty conda environment and make sure I can’t import the <code>ianlibdemo</code> package.</p>
+<div class="sourceCode" id="cb12"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> conda create <span class="at">-n</span> pyonly python</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="ex">...</span></span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> conda activate pyonly</span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> python <span class="at">-i</span></span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;&gt;&gt;</span> import <span class="ex">ianlibdemo</span></span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a><span class="ex">Traceback</span> <span class="er">(</span><span class="ex">most</span> recent call last<span class="kw">)</span><span class="bu">:</span></span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>  <span class="ex">File</span> <span class="st">"&lt;stdin&gt;"</span>, line 1, in <span class="op">&lt;</span>module<span class="op">&gt;</span></span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a><span class="ex">ModuleNotFoundError:</span> No module named <span class="st">'ianlibdemo'</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>This verifies that I have a clean environment without that package installed. I can use <code>pip</code> to install it like so:</p>
+<div class="sourceCode" id="cb13"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> pip install /c/tfs/ianlibdemo/dist/ianlibdemo-0.1.0-py3-none-any.whl</span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a><span class="ex">$</span> python <span class="at">-i</span></span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a><span class="ex">Python</span> 3.8.3 <span class="er">(</span><span class="ex">default,</span> May 19 2020, 06:50:17<span class="kw">)</span> <span class="ex">[MSC</span> v.1916 64 bit <span class="er">(</span><span class="ex">AMD64</span><span class="kw">)</span><span class="ex">]</span> :: Anaconda, Inc. on win32</span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a><span class="ex">Type</span> <span class="st">"help"</span>, <span class="st">"copyright"</span></span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;&gt;&gt;</span> import <span class="ex">ianlibdemo</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>The import ran successfully. I haven’t done a lot of validation that the package works the way I’d expect, but I’ll get to that when we set up testing later. Note that I installed the package using the <code>.whl</code> file that the build process created, but I could have also used the <code>.tar.gz</code> file in the same folder just as easily.</p>
+<p>Since we’ve now built a working package this seems like another good place for a checkpoint. To see the state of the project at this point you can run <code>git checkout eg03</code>.</p>
+</section>
+</section>
+</section>
+<section id="automate-testing" class="level2">
+<h2 class="anchored" data-anchor-id="automate-testing">Automate testing</h2>
+<p>This is already going to be a big post so I’m definitely not going to offer extensive notes on testing, but I’d like to include enough to at least ensure it integrates with the rest of the process, and to save manually testing after each step.</p>
+<section id="add-a-pytest-dependency" class="level3">
+<h3 class="anchored" data-anchor-id="add-a-pytest-dependency">Add a pytest dependency</h3>
+<p>We want to use <a href="https://docs.pytest.org/en/latest/">pytest</a> for testing, so the first step is to add it as a development dependency. Normally this would be a simple one liner, <code>poetry add --dev pytest</code>, but because of <a href="https://github.com/python-poetry/poetry/issues/1290">this bug</a> between conda and poetry, at least at the time of this writing I had to install an update of msgpack before I could get it to run. I’ve amended the <code>environment.yml</code> file to include this fix, so between that and hopefully this bug being resolved in time this shouldn’t be an issue for anyone else following this guide, I just wanted to flag what I encountered and how I resolved it.</p>
+</section>
+<section id="write-tests" class="level3">
+<h3 class="anchored" data-anchor-id="write-tests">Write tests</h3>
+<p>Now in the base of the repository we add a <code>tests</code> folder and add an empty <code>__init__.py</code> file and a <code>test_capitalize.py</code> file. The test file looks like this:</p>
+<div class="sourceCode" id="cb14"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> ianlibdemo <span class="im">import</span> capital_mod</span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> test_capitalize_file(tmp_path):</span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>    in_file <span class="op">=</span> tmp_path <span class="op">/</span> <span class="st">"in_file.txt"</span></span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>    in_content <span class="op">=</span> <span class="st">"this is the lowercase input sentence"</span></span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a>    in_file.write_text(in_content)</span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a>    out_file <span class="op">=</span> tmp_path <span class="op">/</span> <span class="st">"out_file.txt"</span></span>
+<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a>    out_content <span class="op">=</span> <span class="st">"This is the Lowercase Input Sentence</span><span class="ch">\n</span><span class="st">"</span></span>
+<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Output shouldn't exist before we call the function</span></span>
+<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a>    <span class="cf">assert</span> <span class="kw">not</span> out_file.exists()</span>
+<span id="cb14-12"><a href="#cb14-12" aria-hidden="true" tabindex="-1"></a>    capital_mod.capitalize(in_file, out_file)</span>
+<span id="cb14-13"><a href="#cb14-13" aria-hidden="true" tabindex="-1"></a>    <span class="cf">assert</span> out_file.exists()</span>
+<span id="cb14-14"><a href="#cb14-14" aria-hidden="true" tabindex="-1"></a>    <span class="cf">assert</span> out_file.read_text() <span class="op">==</span> out_content</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Now from the base directory of the repository I can run pytest with <code>poetry run pytest</code>.</p>
+<p>To see the project at this stage run <code>git checkout eg04</code>.</p>
+</section>
+</section>
+<section id="publish-to-pypi" class="level2">
+<h2 class="anchored" data-anchor-id="publish-to-pypi">Publish to pypi</h2>
+<p>I’ve built a package, I can test that it works, the next step is to publish it somewhere for others to access. The defacto source for python packages is <a href="https://pypi.org/">PyPi</a>. However, since this is just a demo package I don’t want to publish it there, since it will just add clutter. Fortunately, there is a similar location designed exactly for testing out publishing packages, appropriately named <a href="https://test.pypi.org/">Test PyPi</a>.</p>
+<section id="set-up-for-publishing" class="level3">
+<h3 class="anchored" data-anchor-id="set-up-for-publishing">Set up for publishing</h3>
+<p>In order to publish packages you need an account. The registration process is straightforward. Note that pypi and test pypi use completely separate databases, and you will need an account for each of them. For now we’re just publishing to test pypi so it’s not an issue, but just something to keep in mind.</p>
+<p>Next I want to create an API token. You can just use your username and password to authenticate and publish packages, but tokens are the preferred method. Once you’re logged in you can click on your account, go to account settings, and under API tokens click “add API token”. Give it a descriptive name and save it somewhere secure (I put mine in a LastPass note). As they warn on the page it will only be displayed once, and if you lose it you’ll have to delete it and create a new one.</p>
+<p>Now we need to set up the test pypi repository in poetry. From the <a href="https://python-poetry.org/docs/repositories/">poetry docs</a> you can see that repositories are added to your poetry config:</p>
+<div class="sourceCode" id="cb15"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="ex">poetry</span> config repositories.testpypi https://test.pypi.org/legacy/</span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a><span class="ex">poetry</span> config pypi-token.testpypi <span class="op">&lt;</span>your api key<span class="op">&gt;</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Note that these configurations are global to poetry, so they’re not saved in your repository. If you switch machines, or (I think) change conda environments since we installed poetry with conda you’ll have to redo these configurations.</p>
+</section>
+<section id="publish" class="level3">
+<h3 class="anchored" data-anchor-id="publish">Publish</h3>
+<p>Once this is set up publishing is quite straightforward. If you haven’t already built the package do so with <code>poetry build</code> and then run <code>poetry publish --repository testpypi</code>.</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<figure class="figure">
+<img src="pypack/testpypi.PNG" title="package uploaded" class="img-fluid figure-img">
+</figure>
+<p></p><figcaption class="figure-caption">test pypi</figcaption><p></p>
+</figure>
+</div>
+<p>Look at that! There it is!</p>
+</section>
+<section id="pull-it-back-down-and-test" class="level3">
+<h3 class="anchored" data-anchor-id="pull-it-back-down-and-test">Pull it back down and test</h3>
+<p>Let’s just make sure that all worked.</p>
+<p>First make a clean conda environment with just pytest for testing and activate it:</p>
+<div class="sourceCode" id="cb16"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> create <span class="at">-n</span> test_env pytest</span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> activate test_env</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Navigate to the root of your package folder and try running tests. They should fail, because we don’t have the package installed in this environment:</p>
+<div class="sourceCode" id="cb17"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> ~/Documents/ianlibdemo</span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a><span class="ex">pytest</span></span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a><span class="bu">.</span></span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a><span class="bu">.</span></span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a><span class="bu">.</span></span>
+<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a><span class="ex">tests\test_capitalize.py:1:</span> in <span class="op">&lt;</span>module<span class="op">&gt;</span></span>
+<span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a>    <span class="ex">from</span> ianlibdemo import capital_mod</span>
+<span id="cb17-8"><a href="#cb17-8" aria-hidden="true" tabindex="-1"></a><span class="ex">E</span>   ModuleNotFoundError: No module named <span class="st">'ianlibdemo'</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Now pip install that package and try running tests again:</p>
+<div class="sourceCode" id="cb18"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="ex">pip</span> install <span class="at">--index-url</span> https://test.pypi.org/simple/ ianlibdemo</span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a><span class="ex">pytest</span></span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a><span class="bu">.</span></span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a><span class="bu">.</span></span>
+<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a><span class="bu">.</span></span>
+<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a><span class="ex">========================</span> 1 passed, 1 warning in 0.09s =========================</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Looks good!</p>
+</section>
+</section>
+<section id="publish-to-a-private-repository" class="level2">
+<h2 class="anchored" data-anchor-id="publish-to-a-private-repository">Publish to a private repository</h2>
+<p>Not all of the code we develop should be published on the public internet. Some of it you just want accessible to an internal team. I have a private package index running using <a href="https://hub.docker.com/r/pypiserver/pypiserver">this docker container</a> - setting that up will be its own post. Once you have that all set up though the process is exactly the same as for the public pypi so I’ll leave it at that for this guide.</p>
+<p>None of the steps used to publish this package required changes to the library repository, so you can still use <code>git checkout eg04</code> to view the state of the repository at this point.</p>
+</section>
+<section id="adding-dependencies" class="level2">
+<h2 class="anchored" data-anchor-id="adding-dependencies">Adding dependencies</h2>
+<p>One thing I realized I should ensure is that all of this works with libraries that depend on other libraries. Let’s add a dependency on pandas and give that a shot.</p>
+<p>Fortunately adding a dependency is easy. Since I want to require <code>pandas</code> I just run <code>poetry add pandas</code> and it’s now a dependency. I added a module called <code>fun_pandas</code> and a test for it in my tests suite. After that I rebuilt the package and uploaded it to a repository as described above, pulled it back down and tested it like before and everything worked! It’s nice when that happens.</p>
+<p>To see the project at this stage you can run <code>git checkout eg05</code>.</p>
+</section>
+<section id="now-do-conda" class="level2">
+<h2 class="anchored" data-anchor-id="now-do-conda">Now do conda</h2>
+<p>The next thing I want to work out is how to build a <code>conda</code> package. The first step is to add <code>conda-build</code> to my environment. The next step is to define a <code>meta.yaml</code> file to specify how to do the build.</p>
+<section id="sort-of-working-build" class="level3">
+<h3 class="anchored" data-anchor-id="sort-of-working-build">Sort of working build</h3>
+<p>Rather than just dump the final working file, I think it will be useful to step through from the first version I got working to the final one I’m happy with. A lot of the steps for setting this up are hacky, so seeing what doesn’t work is as important as seeing what does for people who are trying to figure out how to apply this to their own projects.</p>
+<p>Here’s the first version of my <code>meta.yaml</code> that actually built:</p>
+<div class="sourceCode" id="cb19"><pre class="sourceCode yml code-with-copy"><code class="sourceCode yaml"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="kw">{</span><span class="at">% raw %</span><span class="kw">}</span></span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a><span class="kw">{</span><span class="at">% set name =  </span><span class="st">"ianlibdemo"</span><span class="at"> %</span><span class="kw">}</span></span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a><span class="kw">{</span><span class="at">% set version = </span><span class="st">"0.2.0"</span><span class="at"> %</span><span class="kw">}</span></span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a><span class="fu">package</span><span class="kw">:</span></span>
+<span id="cb19-6"><a href="#cb19-6" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">name</span><span class="kw">:</span><span class="at"> </span><span class="st">"{{ name|lower }}"</span></span>
+<span id="cb19-7"><a href="#cb19-7" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">version</span><span class="kw">:</span><span class="at"> </span><span class="st">"{{ version }}"</span></span>
+<span id="cb19-8"><a href="#cb19-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-9"><a href="#cb19-9" aria-hidden="true" tabindex="-1"></a><span class="fu">source</span><span class="kw">:</span></span>
+<span id="cb19-10"><a href="#cb19-10" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">path</span><span class="kw">:</span><span class="at"> ./dist/{{ name }}-{{ version }}-py3-none-any.whl</span></span>
+<span id="cb19-11"><a href="#cb19-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-12"><a href="#cb19-12" aria-hidden="true" tabindex="-1"></a><span class="fu">build</span><span class="kw">:</span></span>
+<span id="cb19-13"><a href="#cb19-13" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">script</span><span class="kw">:</span><span class="at"> </span><span class="st">"{{ PYTHON }} -m pip install ./{{ name }}-{{ version }}-py3-none-any.whl --no-deps --ignore-installed -vv "</span></span>
+<span id="cb19-14"><a href="#cb19-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-15"><a href="#cb19-15" aria-hidden="true" tabindex="-1"></a><span class="fu">requirements</span><span class="kw">:</span></span>
+<span id="cb19-16"><a href="#cb19-16" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">host</span><span class="kw">:</span></span>
+<span id="cb19-17"><a href="#cb19-17" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="kw">-</span><span class="at"> pip</span></span>
+<span id="cb19-18"><a href="#cb19-18" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="kw">-</span><span class="at"> python</span></span>
+<span id="cb19-19"><a href="#cb19-19" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">run</span><span class="kw">:</span></span>
+<span id="cb19-20"><a href="#cb19-20" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="kw">-</span><span class="at"> python</span></span>
+<span id="cb19-21"><a href="#cb19-21" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="kw">-</span><span class="at"> pandas</span></span>
+<span id="cb19-22"><a href="#cb19-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb19-23"><a href="#cb19-23" aria-hidden="true" tabindex="-1"></a><span class="fu">test</span><span class="kw">:</span></span>
+<span id="cb19-24"><a href="#cb19-24" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">imports</span><span class="kw">:</span></span>
+<span id="cb19-25"><a href="#cb19-25" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="kw">-</span><span class="at"> ianlibdemo</span></span>
+<span id="cb19-26"><a href="#cb19-26" aria-hidden="true" tabindex="-1"></a><span class="kw">{</span><span class="at">% endraw %</span><span class="kw">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>From an environment with <code>conda-build</code> installed I can build a package by running <code>conda-build .</code> from the base of the repository. It creates a conda package as a <code>tar.bz2</code> file in a deeply nested directory. From there I can install it into an environment with something like:</p>
+<div class="sourceCode" id="cb20"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="ex">conda</span> install /c/Users/e975360/.conda/envs/conda_build_test/conda-bld/win-64/ianlibdemo-0.2.0-py38_0.tar.bz2</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Running pytest in an environment with that package installed resulted in one passed test and one failure for the one requiring pandas. As we’ll see below, that issue will get solved if I can load it to a package repository so I’ll leave that alone at this point.</p>
+<section id="issues-with-this-build" class="level4">
+<h4 class="anchored" data-anchor-id="issues-with-this-build">Issues with this build</h4>
+<ul>
+<li>First off, note that it’s called <code>meta.yaml</code> not <code>meta.yml</code>. Despite <code>.yml</code> being the common and preferred extension for this file type (see <a href="https://stackoverflow.com/questions/21059124/is-it-yaml-or-yml#:~:text=yml%22%20is%20%22the%20file%20extension,and%20is%20much%20more%20common.">this SO thread</a>) it has to end with <code>.yaml</code> or <code>conda-build</code> can’t find it.</li>
+<li>Also note that I’m pointing it to the <code>.whl</code> file that I built with poetry, rather than the <code>.tar.gz</code> that’s in the same folder. In theory I should be able to do either, and most examples online point to <code>.tar.gz</code> files, but I got errors about not having poetry in my build environment, and when I tried to add poetry I got a version conflict because apparently the main conda repository only has the python2.7 version of poetry and… it just seemed easier to use the <code>.whl</code>.</li>
+<li>It makes a build that claims to be specific to windows and python 3.8 when in fact this should run on any OS and any python 3.</li>
+<li>I have to repeat the file name in two places</li>
+<li>I’m specifying the version number in two places now since it’s already in the <code>pyproject.toml</code> file. There’s a risk of them getting out of sync</li>
+<li>Similar to the version number I have to specify dependencies in this file as well as <code>pyproject.toml</code> (pandas in this case). Unfortunately, since conda packages can have slightly different names than their pypi counterparts, and I have to actually specify python as a dependency here I don’t think there’s an automated way to keep these in sync. Fortunately I don’t expect dependencies to change as often as the package version so this will be less of a burden to manage.</li>
+<li>To do anything with the created package I have to scroll up through a big install log and find the path to the file</li>
+<li>I get a bunch of build environments and intermediate files created on my machine (maybe this is why <a href="https://docs.conda.io/projects/conda-build/en/latest/user-guide/tutorials/build-pkgs-skeleton.html">the build guide</a> suggests using docker).</li>
+</ul>
+</section>
+<section id="fixing-the-issues" class="level4">
+<h4 class="anchored" data-anchor-id="fixing-the-issues">Fixing the issues</h4>
+<p>Setting the build to work for any OS and python is an easy fix. Under the build section you just add one line. The build section now looks like this:</p>
+<div class="sourceCode" id="cb21"><pre class="sourceCode yml code-with-copy"><code class="sourceCode yaml"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="kw">{</span><span class="at">% raw %</span><span class="kw">}</span></span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a><span class="fu">build</span><span class="kw">:</span></span>
+<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">noarch</span><span class="kw">:</span><span class="at"> python</span></span>
+<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">script</span><span class="kw">:</span><span class="at"> </span><span class="st">"{{ PYTHON }} -m pip install ./{{ name }}-{{ version }}-py3-none-any.whl --no-deps --ignore-installed -vv "</span></span>
+<span id="cb21-5"><a href="#cb21-5" aria-hidden="true" tabindex="-1"></a><span class="kw">{</span><span class="at">% endraw %</span><span class="kw">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Defining the package file in once place is similarly easy. <a href="https://jinja.palletsprojects.com/en/2.11.x/">Jinja</a> lets you concatenate variables with the <code>~</code> symbol. The updated relevant section looks like this:</p>
+<div class="sourceCode" id="cb22"><pre class="sourceCode yml code-with-copy"><code class="sourceCode yaml"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="kw">{</span><span class="at">% raw %</span><span class="kw">}</span></span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a><span class="kw">{</span><span class="at">% set name =  </span><span class="st">"ianlibdemo"</span><span class="at"> %</span><span class="kw">}</span></span>
+<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a><span class="kw">{</span><span class="at">% set version = </span><span class="st">"0.2.0"</span><span class="at"> %</span><span class="kw">}</span></span>
+<span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a><span class="kw">{</span><span class="at">% set wheel = name ~ </span><span class="st">"-"</span><span class="at"> ~ version ~ </span><span class="st">"-py3-none-any.whl"</span><span class="at"> %</span><span class="kw">}</span></span>
+<span id="cb22-5"><a href="#cb22-5" aria-hidden="true" tabindex="-1"></a><span class="fu">package</span><span class="kw">:</span></span>
+<span id="cb22-6"><a href="#cb22-6" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">name</span><span class="kw">:</span><span class="at"> </span><span class="st">"{{ name|lower }}"</span></span>
+<span id="cb22-7"><a href="#cb22-7" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">version</span><span class="kw">:</span><span class="at"> </span><span class="st">"{{ version }}"</span></span>
+<span id="cb22-8"><a href="#cb22-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-9"><a href="#cb22-9" aria-hidden="true" tabindex="-1"></a><span class="fu">source</span><span class="kw">:</span></span>
+<span id="cb22-10"><a href="#cb22-10" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">path</span><span class="kw">:</span><span class="at"> ./dist/{{ wheel }}</span></span>
+<span id="cb22-11"><a href="#cb22-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb22-12"><a href="#cb22-12" aria-hidden="true" tabindex="-1"></a><span class="fu">build</span><span class="kw">:</span></span>
+<span id="cb22-13"><a href="#cb22-13" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">noarch</span><span class="kw">:</span><span class="at"> python</span></span>
+<span id="cb22-14"><a href="#cb22-14" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">script</span><span class="kw">:</span><span class="at"> </span><span class="st">"{{ PYTHON }} -m pip install ./{{ wheel }} --no-deps --ignore-installed -vv "</span></span>
+<span id="cb22-15"><a href="#cb22-15" aria-hidden="true" tabindex="-1"></a><span class="kw">{</span><span class="at">% endraw %</span><span class="kw">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<section id="adding-a-makefile" class="level5">
+<h5 class="anchored" data-anchor-id="adding-a-makefile">Adding a Makefile</h5>
+<p>The rest of the issues outlined above aren’t directly the result of the <code>meta.yaml</code> file. To resolve them I’ll need to write some scripts, and to tie that all together I’ll use my good friend <a href="https://en.wikipedia.org/wiki/Make_(software)">Make</a>.</p>
+<p>To begin I add some boilerplate to the beginning of the file to handle conda environments</p>
+<pre class="make"><code># Oneshell means I can run multiple lines in a recipe in the same shell, so I don't have to
+# chain commands together with semicolon
+.ONESHELL:
+# Need to specify bash in order for conda activate to work.
+SHELL=/bin/bash
+# Note that the extra activate is needed to ensure that the activate floats env to the front of PATH
+CONDA_ACTIVATE=source $$(conda info --base)/etc/profile.d/conda.sh ; conda activate ; conda activate
+ENV_NAME = ianlibdemo_conda_env</code></pre>
+<p>Next I create a python script that will read the version number from <code>pyproject.toml</code> and update the version in <code>meta.yaml</code> with it. I won’t reproduce that script here but it’s in the <code>scripts</code> folder of the <code>ianlibdemo</code> repository.</p>
+<p>Finally I add a target to sync the versions. I can then make that a pre-requisite of building the <code>conda</code> package.</p>
+<pre class="make"><code>.PHONY: versionsync
+
+versionsync:
+    $(CONDA_ACTIVATE) $(PROJECT_NAME)
+    python scripts/version_sync.py</code></pre>
+<p><code>.PHONY:</code> means that target should be run each time it’s called. By default <code>Make</code> won’t redo a target if an output file already exists.</p>
+<p>Now running <code>make versionsync</code> from the root of the repository will take the version from <code>pyproject.toml</code> and put it in <code>meta.yaml</code>. Eventually I’ll also want to ensure that the python package has been built by poetry before building the conda package.</p>
+<p>PS: I documented how you can activate conda environments from within makefiles and bash scripts <a href="http://blog.ianpreston.ca/2020/05/13/conda_envs.html">here</a>. Since I had to refer back to it when doing this I thought it would be helpful to include a pointer.</p>
+<p>The next issue I described above is that running <code>conda-build</code> generates the package in some obscure subdirectory and you have to scroll back up through the log file to find it. If I want to upload the package to a repository or install it directly that’s going to be a hassle. Fortunately <code>conda-build</code> comes with a <code>--output</code> flag that you can run to return where your package file would be saved if you actually ran <code>conda-build</code>. Knowing this I can write a small bash script which first builds the package and then uses the <code>--output</code> flag to find the generated package and copy it into my <code>dist</code> directory.</p>
+<p>The new part of the Makefile looks like this:</p>
+<div class="sourceCode" id="cb25"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="ex">conda:</span></span>
+<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a>    <span class="va">$(</span><span class="ex">CONDA_ACTIVATE</span><span class="va">)</span> <span class="va">$(</span><span class="ex">ENV_NAME</span><span class="va">)</span></span>
+<span id="cb25-3"><a href="#cb25-3" aria-hidden="true" tabindex="-1"></a>    <span class="fu">bash</span> scripts/conda_build.sh</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>And the bash script looks like this:</p>
+<div class="sourceCode" id="cb26"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="co">#!/bin/bash</span></span>
+<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a><span class="ex">conda-build</span> .</span>
+<span id="cb26-3"><a href="#cb26-3" aria-hidden="true" tabindex="-1"></a><span class="va">CONDA_PACK</span><span class="op">=</span><span class="va">$(</span><span class="ex">conda-build</span> . <span class="at">--output</span><span class="va">)</span></span>
+<span id="cb26-4"><a href="#cb26-4" aria-hidden="true" tabindex="-1"></a><span class="fu">cp</span> <span class="va">$CONDA_PACK</span> dist/</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>I’m going to make a cleanup function later to remove all build artifacts so we’ll leave that alone for now.</p>
+</section>
+</section>
+</section>
+<section id="publish-to-a-public-channel" class="level3">
+<h3 class="anchored" data-anchor-id="publish-to-a-public-channel">Publish to a public channel</h3>
+<p>To publish to an external public conda channel I have to install the <code>anaconda-client</code> package in my environment. The first time I do an upload I will need to log in with <code>anaconda login</code> and provide my username and password.</p>
+<p>After that I can add a new recipe to my makefile to publish the package:</p>
+<div class="sourceCode" id="cb27"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a><span class="ex">conda_ext_pub:</span> conda</span>
+<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a>    <span class="va">$(</span><span class="ex">CONDA_ACTIVATE</span><span class="va">)</span> <span class="va">$(</span><span class="ex">ENV_NAME</span><span class="va">)</span></span>
+<span id="cb27-3"><a href="#cb27-3" aria-hidden="true" tabindex="-1"></a>    <span class="ex">anaconda</span> upload <span class="va">$$</span><span class="er">(</span><span class="ex">conda-build</span> . <span class="at">--output</span><span class="kw">)</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p><code>conda_ext_pub</code> depends on the <code>conda</code> recipe so this will build the package first and then upload it to Anaconda.org. After running <code>make conda_ext_pub</code> I can see that the package was indeed published to Anaconda.org:</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="pypack/anaconda.PNG" class="img-fluid figure-img"></p>
+<p></p><figcaption class="figure-caption">Anaconda</figcaption><p></p>
+</figure>
+</div>
+<p>As with the previous installations I can create a new blank environment with just pytest installed, install this package into it with <code>conda install -c ian.e.preston ianlibdemo</code> and now both my tests pass, as <code>pandas</code> is installed as well.</p>
+</section>
+<section id="publish-to-a-private-channel" class="level3">
+<h3 class="anchored" data-anchor-id="publish-to-a-private-channel">Publish to a private channel</h3>
+<p>As with the other private repository, actually setting up the repository is outside the scope of this post. This will assume that you have one created and that packages are stored on some sort of file share that you can access from your build machine. There’s no fancy way to publish conda packages to a private repository. You just drop the package file in the appropriate architecture subfolder (<code>noarch</code> in this case since this is a pure python package) and then run <code>conda index</code> on the repository folder. My server has a file watcher that detects changes and auto runs that, so all we have to do to publish a package is to make sure it’s in the right place. In this example the file share from my local machine is at <code>\\r4001\finpublic\FP&amp;A\channel_test\noarch</code> and the web server is available at http://dml01:8081/.</p>
+<p>To set up publishing I add the following to my makefile:</p>
+<div class="sourceCode" id="cb28"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a><span class="ex">CONDA_LIB_DIR</span> = //r4001/finpublic/FP\&amp;A/channel_test/noarch</span>
+<span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a><span class="bu">.</span></span>
+<span id="cb28-3"><a href="#cb28-3" aria-hidden="true" tabindex="-1"></a><span class="bu">.</span></span>
+<span id="cb28-4"><a href="#cb28-4" aria-hidden="true" tabindex="-1"></a><span class="bu">.</span></span>
+<span id="cb28-5"><a href="#cb28-5" aria-hidden="true" tabindex="-1"></a><span class="ex">conda_int_pub:</span> conda</span>
+<span id="cb28-6"><a href="#cb28-6" aria-hidden="true" tabindex="-1"></a>    <span class="va">$(</span><span class="ex">CONDA_ACTIVATE</span><span class="va">)</span> <span class="va">$(</span><span class="ex">ENV_NAME</span><span class="va">)</span></span>
+<span id="cb28-7"><a href="#cb28-7" aria-hidden="true" tabindex="-1"></a>    <span class="fu">cp</span> <span class="va">$$</span><span class="er">(</span><span class="ex">conda-build</span> . <span class="at">--output</span><span class="kw">)</span> <span class="va">$(</span><span class="ex">CONDA_LIB_DIR</span><span class="va">)</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>After that I can install the package into a library by running <code>conda install -c http://dml01:8081 ianlibdemo</code>.</p>
+<p>To see the project at this stage you can run <code>git checkout eg06</code>.</p>
+</section>
+</section>
+<section id="put-it-all-together" class="level2">
+<h2 class="anchored" data-anchor-id="put-it-all-together">Put it all together</h2>
+<p>All of the pieces are here, so the final thing to do is to put them all together. I started that process in the last section by creating a makefile, now I just have to finish it up by tying the pip packaging and publishing in with the conda packaging and publishing.</p>
+<section id="clean-slate" class="level3">
+<h3 class="anchored" data-anchor-id="clean-slate">Clean slate</h3>
+<p>After a package file is built and published we don’t really have any further need for it locally, but it’s not automatically deleted. Let’s make a <code>clean</code> task in Make that will clear out any previous builds. That way any new process can start fresh.</p>
+<p>The clean task looks like this:</p>
+<div class="sourceCode" id="cb29"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a><span class="ex">clean:</span></span>
+<span id="cb29-2"><a href="#cb29-2" aria-hidden="true" tabindex="-1"></a>    <span class="co"># remove pip packages</span></span>
+<span id="cb29-3"><a href="#cb29-3" aria-hidden="true" tabindex="-1"></a>    <span class="fu">rm</span> <span class="at">-rf</span> ./dist/<span class="pp">*</span></span>
+<span id="cb29-4"><a href="#cb29-4" aria-hidden="true" tabindex="-1"></a>    <span class="co"># remove conda packages and build artifacts</span></span>
+<span id="cb29-5"><a href="#cb29-5" aria-hidden="true" tabindex="-1"></a>    <span class="va">$(</span><span class="ex">CONDA_ACTIVATE</span><span class="va">)</span> <span class="va">$(</span><span class="ex">ENV_NAME</span><span class="va">)</span></span>
+<span id="cb29-6"><a href="#cb29-6" aria-hidden="true" tabindex="-1"></a>    <span class="fu">bash</span> scripts/conda_clean.sh</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>and <code>conda_clean.sh</code> looks like this:</p>
+<div class="sourceCode" id="cb30"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a><span class="co">#!/bin/bash</span></span>
+<span id="cb30-2"><a href="#cb30-2" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">CONDA_BLD_PATH</span><span class="op">=</span><span class="va">${CONDA_PREFIX}</span>/conda-bld</span>
+<span id="cb30-3"><a href="#cb30-3" aria-hidden="true" tabindex="-1"></a><span class="fu">rm</span> <span class="at">-rf</span> <span class="va">$CONDA_BLD_PATH</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</section>
+<section id="full-build-chain" class="level3">
+<h3 class="anchored" data-anchor-id="full-build-chain">Full build chain</h3>
+<p>The last step is to add make tasks to build and publish the pip packages and set them as appropriate dependencies for the conda steps.</p>
+<p>First, add a task to build the pip installable package:</p>
+<div class="sourceCode" id="cb31"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a><span class="ex">pip:</span> clean</span>
+<span id="cb31-2"><a href="#cb31-2" aria-hidden="true" tabindex="-1"></a>    <span class="va">$(</span><span class="ex">CONDA_ACTIVATE</span><span class="va">)</span> <span class="va">$(</span><span class="ex">ENV_NAME</span><span class="va">)</span></span>
+<span id="cb31-3"><a href="#cb31-3" aria-hidden="true" tabindex="-1"></a>    <span class="ex">poetry</span> build</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Next add tasks to publish to external and internal pip sources:</p>
+<div class="sourceCode" id="cb32"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a><span class="ex">pip_ext_pub:</span> pip</span>
+<span id="cb32-2"><a href="#cb32-2" aria-hidden="true" tabindex="-1"></a>    <span class="va">$(</span><span class="ex">CONDA_ACTIVATE</span><span class="va">)</span> <span class="va">$(</span><span class="ex">ENV_NAME</span><span class="va">)</span></span>
+<span id="cb32-3"><a href="#cb32-3" aria-hidden="true" tabindex="-1"></a>    <span class="ex">poetry</span> publish <span class="at">--repository</span> testpypi</span>
+<span id="cb32-4"><a href="#cb32-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb32-5"><a href="#cb32-5" aria-hidden="true" tabindex="-1"></a><span class="ex">pip_int_pub:</span> pip</span>
+<span id="cb32-6"><a href="#cb32-6" aria-hidden="true" tabindex="-1"></a>    <span class="va">$(</span><span class="ex">CONDA_ACTIVATE</span><span class="va">)</span> <span class="va">$(</span><span class="ex">ENV_NAME</span><span class="va">)</span></span>
+<span id="cb32-7"><a href="#cb32-7" aria-hidden="true" tabindex="-1"></a>    <span class="ex">poetry</span> publish <span class="at">--repository</span> localpypi</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Finally as an example we can make wrapper tasks that will publish pip and conda packages to external/internal sources:</p>
+<div class="sourceCode" id="cb33"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a><span class="ex">all_int_pub:</span> pip_int_pub conda_int_pub</span>
+<span id="cb33-2"><a href="#cb33-2" aria-hidden="true" tabindex="-1"></a>    <span class="bu">echo</span> <span class="st">"publishing to internal conda and pip repository"</span></span>
+<span id="cb33-3"><a href="#cb33-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb33-4"><a href="#cb33-4" aria-hidden="true" tabindex="-1"></a><span class="ex">all_ext_pub:</span> pip_ext_pub conda_ext_pub</span>
+<span id="cb33-5"><a href="#cb33-5" aria-hidden="true" tabindex="-1"></a>    <span class="bu">echo</span> <span class="st">"publishing to external conda and pip repository"</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>At this point if you want to build and publish your package you can just run <code>make all_int_pub</code> and it will clear out old build artifacts, build a new pip installable package, upload it to the internal pip package repository, sync the version number with conda, build a conda package and publish that to the internal conda package repository. Not bad!</p>
+<p>This is concludes the changes I’m planning to make in this repository. If you just clone the repository as is you should see it in this state, or you can run <code>git checkout eg07</code>.</p>
+</section>
+</section>
+</section>
+<section id="conclusion-and-next-steps." class="level1">
+<h1>Conclusion and next steps.</h1>
+<p>This guide demonstrated how to turn some python code into an installable package, and distribute that package to internal and external users via pip or conda. At the end of this you should be able to reproduce this process for your own project. But there’s always more to do, so what are some next steps to think about?</p>
+<p>First of all, a lot of what we’ve done to set this project up would be broadly applicable to any library built under similar circumstances. It’d be a shame to have to rewrite or copy paste that Makefile into every library you build with minor alterations for example. It would be a good idea to use a templating tool like <a href="https://cookiecutter.readthedocs.io/en/latest/">cookiecutter</a> to automate the files and folder structure that will be consistent across projects. Stay tuned, I’m working on putting that together next.</p>
+<p>Next, there’s still lots of aspects of developing and maintaining a library that we haven’t touched. Things like linting, testing, coverage reporting… Take a look at the rest of the <a href="https://cjolowicz.github.io/posts/hypermodern-python-01-setup/">Hypermodern Python</a> series for some ideas there.</p>
+<p>Finally, I haven’t described how you actually set up an internal package repository for conda or pip packages. I’ll have a follow up post on that coming soon too.</p>
+</section>
+<section id="resources-ive-consulted" class="level1">
+<h1>Resources I’ve consulted</h1>
+<p>This section will serve as a link dump for things I’ve referenced while going through this process. In no particular order they are:</p>
+<ul>
+<li><a href="https://www.youtube.com/watch?v=xiI1i525ljE">SciPy 2018 talk - the sheer joy of packaging</a></li>
+<li><a href="https://snarky.ca/what-the-heck-is-pyproject-toml/">What the heck is pyproject.toml?</a></li>
+<li><a href="https://snarky.ca/a-tutorial-on-python-package-building/">A tutorial on packaging up your python code for pypi</a></li>
+<li><a href="https://docs.conda.io/projects/conda-build/en/latest/index.html">conda build docs</a></li>
+<li><a href="https://dx13.co.uk/articles/2020/01/02/python-packaging-in-2020/">Python packaging in 2020</a></li>
+<li><a href="https://hackersandslackers.com/python-poetry-package-manager/">Package python projects the proper way with poetry</a></li>
+<li><a href="https://github.com/dojeda/poetry2conda">poetry2conda</a></li>
+<li><a href="https://cjolowicz.github.io/posts/hypermodern-python-01-setup/">Hypermodern Python</a></li>
+<li><a href="https://packaging.python.org/guides/hosting-your-own-index/">Host your own index</a></li>
+</ul>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    target: function(trigger) {
+      return trigger.previousElementSibling;
+    }
+  });
+  clipboard.on('success', function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  });
+  function tippyHover(el, contentFn) {
+    const config = {
+      allowHTML: true,
+      content: contentFn,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start'
+    };
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      return note.innerHTML;
+    });
+  }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+</body></html>

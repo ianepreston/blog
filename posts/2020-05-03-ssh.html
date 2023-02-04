@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.2.335">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="dcterms.date" content="2020-05-03">
+<meta name="description" content="How to generate certificate authorities so your clients and hosts can all talk to each other easily.">
+
+<title>Ian’s blog - Managing SSH keys for a home network</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1.6em;
+  vertical-align: middle;
+}
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+    color: #aaaaaa;
+  }
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code span.at { color: #7d9029; } /* Attribute */
+code span.bn { color: #40a070; } /* BaseN */
+code span.bu { color: #008000; } /* BuiltIn */
+code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code span.ch { color: #4070a0; } /* Char */
+code span.cn { color: #880000; } /* Constant */
+code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code span.dt { color: #902000; } /* DataType */
+code span.dv { color: #40a070; } /* DecVal */
+code span.er { color: #ff0000; font-weight: bold; } /* Error */
+code span.ex { } /* Extension */
+code span.fl { color: #40a070; } /* Float */
+code span.fu { color: #06287e; } /* Function */
+code span.im { color: #008000; font-weight: bold; } /* Import */
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code span.op { color: #666666; } /* Operator */
+code span.ot { color: #007020; } /* Other */
+code span.pp { color: #bc7a00; } /* Preprocessor */
+code span.sc { color: #4070a0; } /* SpecialChar */
+code span.ss { color: #bb6688; } /* SpecialString */
+code span.st { color: #4070a0; } /* String */
+code span.va { color: #19177c; } /* Variable */
+code span.vs { color: #4070a0; } /* VerbatimString */
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+</style>
+
+
+<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../">
+<script src="../site_libs/quarto-html/quarto.js"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../site_libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 20,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit"
+  }
+}</script>
+
+
+<link rel="stylesheet" href="../styles.css">
+</head>
+
+<body class="nav-fixed">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg navbar-dark ">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container">
+    <a class="navbar-brand" href="../index.html">
+    <span class="navbar-title">Ian’s blog</span>
+    </a>
+  </div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll ms-auto">
+  <li class="nav-item">
+    <a class="nav-link" href="../about.html">
+ <span class="menu-text">about</span></a>
+  </li>  
+  <li class="nav-item compact">
+    <a class="nav-link" href="https://github.com/ianepreston"><i class="bi bi-github" role="img">
+</i> 
+ <span class="menu-text"></span></a>
+  </li>  
+</ul>
+              <div id="quarto-search" class="" title="Search"></div>
+          </div> <!-- /navcollapse -->
+      </div> <!-- /container-fluid -->
+    </nav>
+</header>
+<!-- content -->
+<header id="title-block-header" class="quarto-title-block default page-columns page-full">
+  <div class="quarto-title-banner page-columns page-full">
+    <div class="quarto-title column-body">
+      <h1 class="title">Managing SSH keys for a home network</h1>
+                  <div>
+        <div class="description">
+          How to generate certificate authorities so your clients and hosts can all talk to each other easily.
+        </div>
+      </div>
+                          <div class="quarto-categories">
+                <div class="quarto-category">ssh</div>
+                <div class="quarto-category">linux</div>
+                <div class="quarto-category">bash</div>
+              </div>
+                  </div>
+  </div>
+    
+  
+  <div class="quarto-title-meta">
+
+      
+      <div>
+      <div class="quarto-title-meta-heading">Published</div>
+      <div class="quarto-title-meta-contents">
+        <p class="date">May 3, 2020</p>
+      </div>
+    </div>
+    
+      
+    </div>
+    
+  
+  </header><div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#introduction" id="toc-introduction" class="nav-link active" data-scroll-target="#introduction">Introduction</a></li>
+  <li><a href="#who-this-is-for" id="toc-who-this-is-for" class="nav-link" data-scroll-target="#who-this-is-for">Who this is for</a></li>
+  <li><a href="#the-actual-process" id="toc-the-actual-process" class="nav-link" data-scroll-target="#the-actual-process">The actual process</a>
+  <ul class="collapse">
+  <li><a href="#get-the-drive-ready" id="toc-get-the-drive-ready" class="nav-link" data-scroll-target="#get-the-drive-ready">Get the drive ready</a></li>
+  <li><a href="#generate-ca-keys" id="toc-generate-ca-keys" class="nav-link" data-scroll-target="#generate-ca-keys">Generate CA keys</a>
+  <ul class="collapse">
+  <li><a href="#generate-known_hosts-file" id="toc-generate-known_hosts-file" class="nav-link" data-scroll-target="#generate-known_hosts-file">Generate known_hosts file</a></li>
+  </ul></li>
+  <li><a href="#generate-the-host-key-and-sign-it" id="toc-generate-the-host-key-and-sign-it" class="nav-link" data-scroll-target="#generate-the-host-key-and-sign-it">Generate the host key and sign it</a>
+  <ul class="collapse">
+  <li><a href="#warning-do-not-put-a-passphrase-on-host-keys" id="toc-warning-do-not-put-a-passphrase-on-host-keys" class="nav-link" data-scroll-target="#warning-do-not-put-a-passphrase-on-host-keys">WARNING: DO NOT PUT A PASSPHRASE ON HOST KEYS</a></li>
+  </ul></li>
+  <li><a href="#configure-ssh-to-use-host-certificates" id="toc-configure-ssh-to-use-host-certificates" class="nav-link" data-scroll-target="#configure-ssh-to-use-host-certificates">Configure SSH to use host certificates</a></li>
+  <li><a href="#create-user-key" id="toc-create-user-key" class="nav-link" data-scroll-target="#create-user-key">Create user key</a></li>
+  <li><a href="#give-it-a-test-drive" id="toc-give-it-a-test-drive" class="nav-link" data-scroll-target="#give-it-a-test-drive">Give it a test drive</a></li>
+  <li><a href="#set-up-an-ssh-config-file" id="toc-set-up-an-ssh-config-file" class="nav-link" data-scroll-target="#set-up-an-ssh-config-file">Set up an ssh config file</a></li>
+  </ul></li>
+  <li><a href="#external-servers" id="toc-external-servers" class="nav-link" data-scroll-target="#external-servers">External servers</a></li>
+  <li><a href="#android" id="toc-android" class="nav-link" data-scroll-target="#android">Android</a></li>
+  <li><a href="#auto-config-scripts" id="toc-auto-config-scripts" class="nav-link" data-scroll-target="#auto-config-scripts">Auto config scripts</a>
+  <ul class="collapse">
+  <li><a href="#set-up-host-authentication" id="toc-set-up-host-authentication" class="nav-link" data-scroll-target="#set-up-host-authentication">Set up host authentication</a></li>
+  <li><a href="#setup-user-authentication" id="toc-setup-user-authentication" class="nav-link" data-scroll-target="#setup-user-authentication">Setup user authentication</a></li>
+  </ul></li>
+  <li><a href="#conclusion" id="toc-conclusion" class="nav-link" data-scroll-target="#conclusion">Conclusion</a></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content quarto-banner-title-block" id="quarto-document-content">
+
+
+
+
+<section id="introduction" class="level1">
+<h1>Introduction</h1>
+<p>This guide covers how I set up and manage ssh keys on my home network. It’s not meant as an explainer on what ssh is or why you should use it, more a recipe for how I do things.</p>
+<ul>
+<li><em>Edit October 16 2020 - Added scripts to automate this setup</em></li>
+</ul>
+</section>
+<section id="who-this-is-for" class="level1">
+<h1>Who this is for</h1>
+<p>Mostly me so I remember how to do this if I have to rebuild my network, or want to add new clients. I’m not an expert in security, so definitely do your own research before implementing any of this, and I would certainly say that this is a hobbyist implementation in general and not suitable for an organization.</p>
+<p>I got the inspiration for this from <a href="https://gravitational.com/blog/how-to-ssh-properly/">How to SSH properly</a>. It’s a nice and thorough guide, but it’s a bit enterprise oriented for my purposes. The idea here will be to make something that’s more maintainable for a local setup.</p>
+</section>
+<section id="the-actual-process" class="level1">
+<h1>The actual process</h1>
+<p>The idea is to have my certificate authority keys live on a USB drive. That way when I set up a new machine I can plug in the drive and sign the keys, and then the rest of the time the keys are completely removed from network access. As long as I’m smart and don’t lose/destroy the USB drive it seems like a great idea. The main advantage from just using regular keys rather than signing them is that I don’t have to add a line to <code>authorized_keys</code> on every host every time I add a client, and I can keep a nice clean <code>known_hosts</code> on each of my clients. For this example my host machine will be named <code>mars</code> and the client machine will be named <code>luna</code>. I’ll do the preliminary setup from <code>luna</code>, but any machine should be fine.</p>
+<section id="get-the-drive-ready" class="level2">
+<h2 class="anchored" data-anchor-id="get-the-drive-ready">Get the drive ready</h2>
+<p>I have a 64GB USB key that I’m going to store the CAs on. That’s way too big for what I need, and I wouldn’t mind having it handy to shuttle other files around (I’m not going to be taking it anywhere, on account of it has CAs for my network on it, but still). So I created a big exfat partition that took up most of the disk for files and such, along with a 200MB ntfs partition right at the end for storing keys. I went with exfat for the storage partition because it’s readable in both Windows and Linux (once you install <code>exfat-utils</code> and <code>exfat-fuse</code>), is designed for flash media, and can handle large files. I went with NTFS for the secrets partition because I have to have file permissions on the private keys or it won’t work, and windows machines won’t read EXT4. It does mean I’ll have to install NTFS support on any Linux boxes I want to run it from, which is a hassle, but I can live with that.</p>
+</section>
+<section id="generate-ca-keys" class="level2">
+<h2 class="anchored" data-anchor-id="generate-ca-keys">Generate CA keys</h2>
+<p>From the usb drive:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ssh-keygen</span> <span class="at">-t</span> ed25519 <span class="at">-f</span> user_ca <span class="at">-C</span> user_ca</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">ssh-keygen</span> <span class="at">-t</span> ed25519 <span class="at">-f</span> host_ca <span class="at">-C</span> host_ca</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Generate a host and user signing key using ed25519 encryption. Generates public private key pairs named host/user_ca and host/user_ca.pub for the public keys. RSA is the default, but all of my systems support ed25519 and I understand it’s better in terms of security and performance so I might as well take this opportunity to update.</p>
+<section id="generate-known_hosts-file" class="level3">
+<h3 class="anchored" data-anchor-id="generate-known_hosts-file">Generate known_hosts file</h3>
+<p>This will go in the <code>~/.ssh</code> folder of clients in order to validate access.</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="at">-n</span> <span class="st">"@cert-authority * "</span> <span class="op">&gt;</span> known_hosts</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span> host_ca.pub <span class="op">&gt;&gt;</span> known_hosts</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</section>
+</section>
+<section id="generate-the-host-key-and-sign-it" class="level2">
+<h2 class="anchored" data-anchor-id="generate-the-host-key-and-sign-it">Generate the host key and sign it</h2>
+<p>For any machines that I want to be able to ssh into I need to generate and sign a host key. From the same folder as the CA keys were generated:</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ssh-keygen</span> <span class="at">-t</span> ed25519 <span class="at">-f</span> mars_host_ed25519_key</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="fu">ssh-keygen</span> <span class="at">-s</span> host_ca <span class="at">-I</span> mars <span class="at">-h</span> mars_host_ed25519_key.pub</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<section id="warning-do-not-put-a-passphrase-on-host-keys" class="level3">
+<h3 class="anchored" data-anchor-id="warning-do-not-put-a-passphrase-on-host-keys">WARNING: DO NOT PUT A PASSPHRASE ON HOST KEYS</h3>
+<p>The first line operates the same as before. The second line signs the public key. <code>-I mars</code> is the certificate’s identity, apparently it can be used to revoke a certificate in the future although I’m not totally clear on how at this point. You can use the <code>-n</code> flag to specify which hostname in particular this key is valid for but I don’t really see the need in as small a setup as I’m doing. <code>-h</code> identifies this as a host key.</p>
+<p>At the end of this, three new files are generated: <code>mars_host_ed25519_key</code>, <code>mars_host_ed25519_key-cert.pub</code>, and <code>mars_host_ed25519_key.pub</code>.</p>
+</section>
+</section>
+<section id="configure-ssh-to-use-host-certificates" class="level2">
+<h2 class="anchored" data-anchor-id="configure-ssh-to-use-host-certificates">Configure SSH to use host certificates</h2>
+<p>Move the three generated files from the last section and copy <code>user_ca.pub</code> to <code>/etc/ssh</code> on your host and set the permissions to match the other files there. In this example I’ve physically moved the key over to the host machine and mounted it. If your host currently has ssh enabled with password based authentication you could <code>scp</code> it over instead:</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> mv mars_host_ed25519_key<span class="pp">*</span> /etc/ssh/</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> cp user_ca.pub /etc/ssh/</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> /etc/ssh/</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> chown root:root mars_host<span class="pp">*</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> chown root:root user_ca.pub</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> chmod 644 mars_host<span class="pp">*</span></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> chmod 600 mars_host_ed25519_key <span class="co"># stricter private key permissions</span></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> chmod 644 user_ca.pub</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Next, edit <code>/etc/ssh/sshd_config</code> to have the lines</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="ex">HostKey</span> /etc/ssh/mars_host_ed25519_key</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="ex">HostCertificate</span> /etc/ssh/mars_host_ed25519_key-cert.pub</span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="ex">TrustedUserCAKeys</span> /etc/ssh/user_ca.pub</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>There was a commented out line in the file for <code>HostKey</code> so I put it below there. Placement shouldn’t really matter but it will hopefully be easier to find if I have to track this file down later.</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> systemctl restart sshd</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Once you’re sure everything is working you’ll want to disable password authentication. Be aware that if you screw up keys and have the second line set you’ll have to physically connect to the machine to resolve it. For my home network this is no big deal, but just be aware. Go into <code>/etc/ssh/sshd_config</code> and set the following lines and restart ssh again:</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="ex">PubkeyAuthentication</span> yes</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="ex">PasswordAuthentication</span> no</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</section>
+<section id="create-user-key" class="level2">
+<h2 class="anchored" data-anchor-id="create-user-key">Create user key</h2>
+<p>Still in the folder with the ca key:</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ssh-keygen</span> <span class="at">-f</span> luna_ed25519 <span class="at">-t</span> ed25519</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="fu">ssh-keygen</span> <span class="at">-s</span> user_ca <span class="at">-I</span> ian@luna <span class="at">-n</span> admin,ansible,ipreston,pi luna_ed25519.pub</span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="fu">mv</span> luna<span class="pp">*</span> ~/.ssh/</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a><span class="fu">cp</span> known_hosts ~/.ssh/</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>The only new flag in this is <code>-n ipreston,admin,pi</code> which is the comma separated list of users I want this to be valid for. In addition to the username I set up on my server I want this key to be able to connect to my pfsense admin user and my raspberry pi, which I generally just leave with the default <code>pi</code> user.</p>
+</section>
+<section id="give-it-a-test-drive" class="level2">
+<h2 class="anchored" data-anchor-id="give-it-a-test-drive">Give it a test drive</h2>
+<p>At this point if everything is configured correctly you should be able to ssh from your client to your host and only be prompted for the passkey you set (or without any prompting if you didn’t set a passkey)</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ssh</span> <span class="at">-i</span> ~/.ssh/luna_ed25519 ipreston@mars</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</section>
+<section id="set-up-an-ssh-config-file" class="level2">
+<h2 class="anchored" data-anchor-id="set-up-an-ssh-config-file">Set up an ssh config file</h2>
+<p>If that all worked the next step will be to set a nice alias to save some typing in the future.</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="fu">touch</span> ~/.ssh/config</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="fu">chmod</span> 600 ~/.ssh/config</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>In <code>config</code>:</p>
+<div class="sourceCode" id="cb11"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="ex">Host</span> mars</span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>    <span class="ex">User</span> ipreston</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>    <span class="ex">IdentityFile</span> ~/.ssh/luna_ed25519</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>There are lots of other options you can set in that config but that’s all I need for my setup. After that all you should need to type is <code>ssh mars</code> to be connected to your host with the right user and using the correct authentication.</p>
+</section>
+</section>
+<section id="external-servers" class="level1">
+<h1>External servers</h1>
+<p>There’s no real sense in signing keys for external services. For example, I use GitHub with SSH, but they only allow CA authentication for enterprise (fair enough). There’s also no particular reason to re-use my LAN keys for GitHub, so I created a new key and set <code>~/.ssh/config</code> to use the correct identity automatically:</p>
+<p>Use the same commands as the user key setup stage, except don’t bother signing the key. Add the public key to GitHub as you normally would (<a href="https://help.github.com/en/github/authenticating-to-github/adding-a-new-ssh-key-to-your-github-account">GitHub docs</a>) and then edit <code>~/.ssh/config</code> to add something like the following:</p>
+<div class="sourceCode" id="cb12"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="ex">Host</span> github.com</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>    <span class="ex">IdentityFile</span> ~/.ssh/luna_github_ed25519</span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>    <span class="ex">HostName</span> github.com</span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>    <span class="ex">User</span> git</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</section>
+<section id="android" class="level1">
+<h1>Android</h1>
+<p>I don’t ssh a ton from Android, but every so often it’s handy to be able to do. My former go-to app was Connectbot, but I never really liked how it managed keys, and I couldn’t get it to work with the CA. I ended up going with termux. To set it up:</p>
+<ul>
+<li>Generate and sign keys as normal.</li>
+<li>copy the key pairs, <code>config</code> and <code>known_hosts</code> onto your android device</li>
+<li>Install termux (it’s in the play store)</li>
+<li>Open termux</li>
+<li>Install openssh with <code>pkg install openssh</code></li>
+<li>Allow access to internal storage with <code>termux-setup-storage</code> and accepting the request</li>
+<li>Navigate to where you copied the files (somewhere in <code>~/storage/shared</code>) and copy them to <code>~/.ssh</code> using <code>cp</code>, it’s just regular bash in termux.</li>
+<li>Everything should work, try connecting to a host.</li>
+</ul>
+</section>
+<section id="auto-config-scripts" class="level1">
+<h1>Auto config scripts</h1>
+<p>These have been tested to set up the host and user authentication on Arch Linux. Presumably they’ll work on other distros as well. Android will still need to be done manually probably.</p>
+<p>To set them up save them both in a directory, and then in a CA subfolder create user and host cert keys as well as a known_hosts file and config file as described above. In the config where you’d normally have the hostname associated with the key file just put HOST and the script will replace it with whatever your hostname is, which is also how it creates keys.</p>
+<section id="set-up-host-authentication" class="level2">
+<h2 class="anchored" data-anchor-id="set-up-host-authentication">Set up host authentication</h2>
+<p>This script when run as root will generate a signed host key, move it to the correct directory, modify SSH configuration to authenticate using it and then restart ssh.</p>
+<div class="sourceCode" id="cb13"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="co">#!/usr/bin/env bash</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Bash "strict" mode, -o pipefail removed</span></span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a><span class="va">SOURCED</span><span class="op">=</span>false <span class="kw">&amp;&amp;</span> <span class="bu">[</span> <span class="st">"</span><span class="va">${0}</span><span class="st">"</span> <span class="ot">=</span> <span class="st">"</span><span class="va">${BASH_SOURCE</span><span class="op">[</span><span class="dv">0</span><span class="op">]</span><span class="va">}</span><span class="st">"</span> <span class="bu">]</span> <span class="kw">||</span> <span class="va">SOURCED</span><span class="op">=</span>true</span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> <span class="ot">! </span><span class="va">$SOURCED</span><span class="kw">;</span> <span class="cf">then</span></span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a>  <span class="bu">set</span> <span class="at">-eEu</span></span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a>  <span class="bu">shopt</span> <span class="at">-s</span> extdebug</span>
+<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a>  <span class="bu">trap</span> <span class="st">'s=$?; echo "$0: Error on line "$LINENO": $BASH_COMMAND"; exit $s'</span> ERR</span>
+<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a>  <span class="va">IFS</span><span class="op">=</span><span class="st">$'</span><span class="dt">\n\t</span><span class="st">'</span></span>
+<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a><span class="cf">fi</span></span>
+<span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-12"><a href="#cb13-12" aria-hidden="true" tabindex="-1"></a><span class="co"># Text modifiers</span></span>
+<span id="cb13-13"><a href="#cb13-13" aria-hidden="true" tabindex="-1"></a><span class="va">Bold</span><span class="op">=</span><span class="st">"\033[1m"</span></span>
+<span id="cb13-14"><a href="#cb13-14" aria-hidden="true" tabindex="-1"></a><span class="va">Reset</span><span class="op">=</span><span class="st">"\033[0m"</span></span>
+<span id="cb13-15"><a href="#cb13-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-16"><a href="#cb13-16" aria-hidden="true" tabindex="-1"></a><span class="co"># Colors</span></span>
+<span id="cb13-17"><a href="#cb13-17" aria-hidden="true" tabindex="-1"></a><span class="va">Red</span><span class="op">=</span><span class="st">"\033[31m"</span></span>
+<span id="cb13-18"><a href="#cb13-18" aria-hidden="true" tabindex="-1"></a><span class="va">Green</span><span class="op">=</span><span class="st">"\033[32m"</span></span>
+<span id="cb13-19"><a href="#cb13-19" aria-hidden="true" tabindex="-1"></a><span class="va">Yellow</span><span class="op">=</span><span class="st">"\033[33m"</span></span>
+<span id="cb13-20"><a href="#cb13-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-21"><a href="#cb13-21" aria-hidden="true" tabindex="-1"></a><span class="fu">error_msg()</span> <span class="kw">{</span></span>
+<span id="cb13-22"><a href="#cb13-22" aria-hidden="true" tabindex="-1"></a>  <span class="va">T_COLS</span><span class="op">=</span><span class="va">$(</span><span class="fu">tput</span> cols<span class="va">)</span></span>
+<span id="cb13-23"><a href="#cb13-23" aria-hidden="true" tabindex="-1"></a>  <span class="bu">echo</span> <span class="at">-e</span> <span class="st">"</span><span class="va">${Red}$1${Reset}</span><span class="st">\n"</span> <span class="kw">|</span> <span class="fu">fold</span> <span class="at">-sw</span> <span class="va">$((T_COLS</span> <span class="op">-</span> <span class="dv">1</span><span class="va">))</span></span>
+<span id="cb13-24"><a href="#cb13-24" aria-hidden="true" tabindex="-1"></a>  <span class="bu">exit</span> 1</span>
+<span id="cb13-25"><a href="#cb13-25" aria-hidden="true" tabindex="-1"></a><span class="kw">}</span></span>
+<span id="cb13-26"><a href="#cb13-26" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-27"><a href="#cb13-27" aria-hidden="true" tabindex="-1"></a><span class="fu">check_root()</span> <span class="kw">{</span></span>
+<span id="cb13-28"><a href="#cb13-28" aria-hidden="true" tabindex="-1"></a>  <span class="bu">echo</span> <span class="st">"Checking root permissions..."</span></span>
+<span id="cb13-29"><a href="#cb13-29" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-30"><a href="#cb13-30" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> <span class="kw">[[</span> <span class="st">"</span><span class="va">$(</span><span class="fu">id</span> <span class="at">-u</span><span class="va">)</span><span class="st">"</span> <span class="ot">!=</span> <span class="st">"0"</span> <span class="kw">]];</span> <span class="cf">then</span></span>
+<span id="cb13-31"><a href="#cb13-31" aria-hidden="true" tabindex="-1"></a>    <span class="ex">error_msg</span> <span class="st">"ERROR! You must execute the script as the 'root' user."</span></span>
+<span id="cb13-32"><a href="#cb13-32" aria-hidden="true" tabindex="-1"></a>  <span class="cf">fi</span></span>
+<span id="cb13-33"><a href="#cb13-33" aria-hidden="true" tabindex="-1"></a><span class="kw">}</span></span>
+<span id="cb13-34"><a href="#cb13-34" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-35"><a href="#cb13-35" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-36"><a href="#cb13-36" aria-hidden="true" tabindex="-1"></a><span class="fu">generate_and_sign_host_key()</span> <span class="kw">{</span></span>
+<span id="cb13-37"><a href="#cb13-37" aria-hidden="true" tabindex="-1"></a>  <span class="va">private_suffix</span><span class="op">=</span><span class="st">"_host_ed25519_key"</span></span>
+<span id="cb13-38"><a href="#cb13-38" aria-hidden="true" tabindex="-1"></a>  <span class="va">private_key</span><span class="op">=</span><span class="st">"</span><span class="va">$HOSTNAME$private_suffix</span><span class="st">"</span></span>
+<span id="cb13-39"><a href="#cb13-39" aria-hidden="true" tabindex="-1"></a>  <span class="va">public_key</span><span class="op">=</span><span class="st">"</span><span class="va">$private_key</span><span class="st">.pub"</span></span>
+<span id="cb13-40"><a href="#cb13-40" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ssh-keygen</span> <span class="at">-t</span> ed25519 <span class="at">-f</span> <span class="va">$private_key</span> <span class="at">-N</span> <span class="st">""</span></span>
+<span id="cb13-41"><a href="#cb13-41" aria-hidden="true" tabindex="-1"></a>  <span class="fu">chown</span> root:root <span class="va">$private_key</span><span class="pp">*</span></span>
+<span id="cb13-42"><a href="#cb13-42" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Have to lock it down before signing</span></span>
+<span id="cb13-43"><a href="#cb13-43" aria-hidden="true" tabindex="-1"></a>  <span class="fu">chmod</span> 600 <span class="va">$private_key</span></span>
+<span id="cb13-44"><a href="#cb13-44" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ssh-keygen</span> <span class="at">-s</span> CA/host_ca <span class="at">-I</span> <span class="va">$HOSTNAME</span> <span class="at">-h</span> <span class="va">$public_key</span></span>
+<span id="cb13-45"><a href="#cb13-45" aria-hidden="true" tabindex="-1"></a>  <span class="fu">cp</span> CA/user_ca.pub /etc/ssh/</span>
+<span id="cb13-46"><a href="#cb13-46" aria-hidden="true" tabindex="-1"></a>  <span class="fu">chown</span> root:root /etc/ssh/user_ca.pub</span>
+<span id="cb13-47"><a href="#cb13-47" aria-hidden="true" tabindex="-1"></a>  <span class="fu">chmod</span> 644 /etc/ssh/user_ca.pub</span>
+<span id="cb13-48"><a href="#cb13-48" aria-hidden="true" tabindex="-1"></a>  <span class="fu">chmod</span> 644 <span class="va">$private_key</span><span class="pp">*</span></span>
+<span id="cb13-49"><a href="#cb13-49" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Set back to stricter private key access</span></span>
+<span id="cb13-50"><a href="#cb13-50" aria-hidden="true" tabindex="-1"></a>  <span class="fu">chmod</span> 600 <span class="va">$private_key</span></span>
+<span id="cb13-51"><a href="#cb13-51" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mv</span> <span class="va">$private_key</span><span class="pp">*</span> /etc/ssh/</span>
+<span id="cb13-52"><a href="#cb13-52" aria-hidden="true" tabindex="-1"></a><span class="kw">}</span></span>
+<span id="cb13-53"><a href="#cb13-53" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-54"><a href="#cb13-54" aria-hidden="true" tabindex="-1"></a><span class="fu">update_sshd_config()</span> <span class="kw">{</span></span>
+<span id="cb13-55"><a href="#cb13-55" aria-hidden="true" tabindex="-1"></a>  <span class="va">private_suffix</span><span class="op">=</span><span class="st">"_host_ed25519_key"</span></span>
+<span id="cb13-56"><a href="#cb13-56" aria-hidden="true" tabindex="-1"></a>  <span class="va">private_key</span><span class="op">=</span><span class="st">"</span><span class="va">$HOSTNAME$private_suffix</span><span class="st">"</span></span>
+<span id="cb13-57"><a href="#cb13-57" aria-hidden="true" tabindex="-1"></a>  <span class="va">hostkey</span><span class="op">=</span><span class="st">"HostKey /etc/ssh/</span><span class="va">$private_key</span><span class="st">"</span></span>
+<span id="cb13-58"><a href="#cb13-58" aria-hidden="true" tabindex="-1"></a>  <span class="va">cert</span><span class="op">=</span><span class="st">"HostCertificate /etc/ssh/</span><span class="va">$private_key</span><span class="st">-cert.pub"</span></span>
+<span id="cb13-59"><a href="#cb13-59" aria-hidden="true" tabindex="-1"></a>  <span class="va">ca</span><span class="op">=</span><span class="st">"TrustedUserCAKeys /etc/ssh/user_ca.pub"</span></span>
+<span id="cb13-60"><a href="#cb13-60" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-61"><a href="#cb13-61" aria-hidden="true" tabindex="-1"></a>  <span class="va">sshd</span><span class="op">=</span><span class="st">"/etc/ssh/sshd_config"</span></span>
+<span id="cb13-62"><a href="#cb13-62" aria-hidden="true" tabindex="-1"></a>  <span class="fu">sed</span> <span class="at">-i</span> <span class="st">"/^#HostKey\s\/etc\/ssh\/ssh_host_ed25519_key/a </span><span class="va">$ca</span><span class="st">"</span> <span class="va">$sshd</span></span>
+<span id="cb13-63"><a href="#cb13-63" aria-hidden="true" tabindex="-1"></a>  <span class="fu">sed</span> <span class="at">-i</span> <span class="st">"/^#HostKey\s\/etc\/ssh\/ssh_host_ed25519_key/a </span><span class="va">$cert</span><span class="st">"</span> <span class="va">$sshd</span></span>
+<span id="cb13-64"><a href="#cb13-64" aria-hidden="true" tabindex="-1"></a>  <span class="fu">sed</span> <span class="at">-i</span> <span class="st">"/^#HostKey\s\/etc\/ssh\/ssh_host_ed25519_key/a </span><span class="va">$hostkey</span><span class="st">"</span> <span class="va">$sshd</span></span>
+<span id="cb13-65"><a href="#cb13-65" aria-hidden="true" tabindex="-1"></a>  <span class="fu">sed</span> <span class="at">-i</span> <span class="st">'s/^#PasswordAuthentication\syes/PasswordAuthentication no/g'</span> <span class="va">$sshd</span></span>
+<span id="cb13-66"><a href="#cb13-66" aria-hidden="true" tabindex="-1"></a><span class="kw">}</span></span>
+<span id="cb13-67"><a href="#cb13-67" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb13-68"><a href="#cb13-68" aria-hidden="true" tabindex="-1"></a><span class="ex">check_root</span></span>
+<span id="cb13-69"><a href="#cb13-69" aria-hidden="true" tabindex="-1"></a><span class="ex">generate_and_sign_host_key</span></span>
+<span id="cb13-70"><a href="#cb13-70" aria-hidden="true" tabindex="-1"></a><span class="ex">update_sshd_config</span></span>
+<span id="cb13-71"><a href="#cb13-71" aria-hidden="true" tabindex="-1"></a><span class="ex">systemctl</span> restart sshd</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</section>
+<section id="setup-user-authentication" class="level2">
+<h2 class="anchored" data-anchor-id="setup-user-authentication">Setup user authentication</h2>
+<p>Whatever user your run this as should end up with a configured SSH setup that will allow access into any similarly configured hosts.</p>
+<div class="sourceCode" id="cb14"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="co">#!/usr/bin/env bash</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Bash "strict" mode, -o pipefail removed</span></span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a><span class="va">SOURCED</span><span class="op">=</span>false <span class="kw">&amp;&amp;</span> <span class="bu">[</span> <span class="st">"</span><span class="va">${0}</span><span class="st">"</span> <span class="ot">=</span> <span class="st">"</span><span class="va">${BASH_SOURCE</span><span class="op">[</span><span class="dv">0</span><span class="op">]</span><span class="va">}</span><span class="st">"</span> <span class="bu">]</span> <span class="kw">||</span> <span class="va">SOURCED</span><span class="op">=</span>true</span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> <span class="ot">! </span><span class="va">$SOURCED</span><span class="kw">;</span> <span class="cf">then</span></span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>  <span class="bu">set</span> <span class="at">-eEu</span></span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a>  <span class="bu">shopt</span> <span class="at">-s</span> extdebug</span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a>  <span class="bu">trap</span> <span class="st">'s=$?; echo "$0: Error on line "$LINENO": $BASH_COMMAND"; exit $s'</span> ERR</span>
+<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a>  <span class="va">IFS</span><span class="op">=</span><span class="st">$'</span><span class="dt">\n\t</span><span class="st">'</span></span>
+<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a><span class="cf">fi</span></span>
+<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-12"><a href="#cb14-12" aria-hidden="true" tabindex="-1"></a><span class="co"># Text modifiers</span></span>
+<span id="cb14-13"><a href="#cb14-13" aria-hidden="true" tabindex="-1"></a><span class="va">Bold</span><span class="op">=</span><span class="st">"\033[1m"</span></span>
+<span id="cb14-14"><a href="#cb14-14" aria-hidden="true" tabindex="-1"></a><span class="va">Reset</span><span class="op">=</span><span class="st">"\033[0m"</span></span>
+<span id="cb14-15"><a href="#cb14-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-16"><a href="#cb14-16" aria-hidden="true" tabindex="-1"></a><span class="co"># Colors</span></span>
+<span id="cb14-17"><a href="#cb14-17" aria-hidden="true" tabindex="-1"></a><span class="va">Red</span><span class="op">=</span><span class="st">"\033[31m"</span></span>
+<span id="cb14-18"><a href="#cb14-18" aria-hidden="true" tabindex="-1"></a><span class="va">Green</span><span class="op">=</span><span class="st">"\033[32m"</span></span>
+<span id="cb14-19"><a href="#cb14-19" aria-hidden="true" tabindex="-1"></a><span class="va">Yellow</span><span class="op">=</span><span class="st">"\033[33m"</span></span>
+<span id="cb14-20"><a href="#cb14-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-21"><a href="#cb14-21" aria-hidden="true" tabindex="-1"></a><span class="fu">error_msg()</span> <span class="kw">{</span></span>
+<span id="cb14-22"><a href="#cb14-22" aria-hidden="true" tabindex="-1"></a>  <span class="va">T_COLS</span><span class="op">=</span><span class="va">$(</span><span class="fu">tput</span> cols<span class="va">)</span></span>
+<span id="cb14-23"><a href="#cb14-23" aria-hidden="true" tabindex="-1"></a>  <span class="bu">echo</span> <span class="at">-e</span> <span class="st">"</span><span class="va">${Red}$1${Reset}</span><span class="st">\n"</span> <span class="kw">|</span> <span class="fu">fold</span> <span class="at">-sw</span> <span class="va">$((T_COLS</span> <span class="op">-</span> <span class="dv">1</span><span class="va">))</span></span>
+<span id="cb14-24"><a href="#cb14-24" aria-hidden="true" tabindex="-1"></a>  <span class="bu">exit</span> 1</span>
+<span id="cb14-25"><a href="#cb14-25" aria-hidden="true" tabindex="-1"></a><span class="kw">}</span></span>
+<span id="cb14-26"><a href="#cb14-26" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-27"><a href="#cb14-27" aria-hidden="true" tabindex="-1"></a><span class="fu">check_root()</span> <span class="kw">{</span></span>
+<span id="cb14-28"><a href="#cb14-28" aria-hidden="true" tabindex="-1"></a>  <span class="bu">echo</span> <span class="st">"Checking root permissions..."</span></span>
+<span id="cb14-29"><a href="#cb14-29" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-30"><a href="#cb14-30" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> <span class="kw">[[</span> <span class="st">"</span><span class="va">$(</span><span class="fu">id</span> <span class="at">-u</span><span class="va">)</span><span class="st">"</span> <span class="ot">==</span> <span class="st">"0"</span> <span class="kw">]];</span> <span class="cf">then</span></span>
+<span id="cb14-31"><a href="#cb14-31" aria-hidden="true" tabindex="-1"></a>    <span class="ex">error_msg</span> <span class="st">"ERROR! Don't run this as root."</span></span>
+<span id="cb14-32"><a href="#cb14-32" aria-hidden="true" tabindex="-1"></a>  <span class="cf">fi</span></span>
+<span id="cb14-33"><a href="#cb14-33" aria-hidden="true" tabindex="-1"></a><span class="kw">}</span></span>
+<span id="cb14-34"><a href="#cb14-34" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-35"><a href="#cb14-35" aria-hidden="true" tabindex="-1"></a><span class="fu">update_known_hosts()</span> <span class="kw">{</span></span>
+<span id="cb14-36"><a href="#cb14-36" aria-hidden="true" tabindex="-1"></a>  <span class="fu">cp</span> CA/known_hosts <span class="va">$HOME</span>/.ssh/known_hosts</span>
+<span id="cb14-37"><a href="#cb14-37" aria-hidden="true" tabindex="-1"></a><span class="kw">}</span></span>
+<span id="cb14-38"><a href="#cb14-38" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-39"><a href="#cb14-39" aria-hidden="true" tabindex="-1"></a><span class="fu">gen_keys()</span> <span class="kw">{</span></span>
+<span id="cb14-40"><a href="#cb14-40" aria-hidden="true" tabindex="-1"></a>  <span class="fu">cp</span> CA/user_ca .</span>
+<span id="cb14-41"><a href="#cb14-41" aria-hidden="true" tabindex="-1"></a>  <span class="fu">chown</span> <span class="va">$USER</span> user_ca</span>
+<span id="cb14-42"><a href="#cb14-42" aria-hidden="true" tabindex="-1"></a>  <span class="fu">chmod</span> 600 user_ca</span>
+<span id="cb14-43"><a href="#cb14-43" aria-hidden="true" tabindex="-1"></a>  <span class="va">private_suffix</span><span class="op">=</span><span class="st">"_ed25519"</span></span>
+<span id="cb14-44"><a href="#cb14-44" aria-hidden="true" tabindex="-1"></a>  <span class="va">private_key</span><span class="op">=</span><span class="va">$HOME</span>/.ssh/<span class="va">$HOSTNAME$private_suffix</span></span>
+<span id="cb14-45"><a href="#cb14-45" aria-hidden="true" tabindex="-1"></a>  <span class="va">public_key</span><span class="op">=</span><span class="st">"</span><span class="va">$private_key</span><span class="st">.pub"</span></span>
+<span id="cb14-46"><a href="#cb14-46" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ssh-keygen</span> <span class="at">-f</span> <span class="va">$private_key</span> <span class="at">-t</span> ed25519 <span class="at">-N</span> <span class="st">""</span></span>
+<span id="cb14-47"><a href="#cb14-47" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ssh-keygen</span> <span class="at">-s</span> user_ca <span class="at">-I</span> <span class="va">$USER</span>@<span class="va">$HOSTNAME</span> <span class="at">-n</span> admin,ipreston,cornucrapia,pi,ansible <span class="va">$public_key</span></span>
+<span id="cb14-48"><a href="#cb14-48" aria-hidden="true" tabindex="-1"></a>  <span class="fu">rm</span> user_ca</span>
+<span id="cb14-49"><a href="#cb14-49" aria-hidden="true" tabindex="-1"></a><span class="kw">}</span></span>
+<span id="cb14-50"><a href="#cb14-50" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-51"><a href="#cb14-51" aria-hidden="true" tabindex="-1"></a><span class="fu">update_config()</span> <span class="kw">{</span></span>
+<span id="cb14-52"><a href="#cb14-52" aria-hidden="true" tabindex="-1"></a>  <span class="va">user_config</span><span class="op">=</span><span class="st">"</span><span class="va">$HOME</span><span class="st">/.ssh/config"</span></span>
+<span id="cb14-53"><a href="#cb14-53" aria-hidden="true" tabindex="-1"></a>  <span class="fu">cp</span> CA/config <span class="va">$user_config</span></span>
+<span id="cb14-54"><a href="#cb14-54" aria-hidden="true" tabindex="-1"></a>  <span class="fu">chown</span> <span class="va">$USER</span> <span class="va">$user_config</span></span>
+<span id="cb14-55"><a href="#cb14-55" aria-hidden="true" tabindex="-1"></a>  <span class="fu">chmod</span> 600 <span class="va">$user_config</span></span>
+<span id="cb14-56"><a href="#cb14-56" aria-hidden="true" tabindex="-1"></a>  <span class="fu">sed</span> <span class="at">-i</span> <span class="at">-e</span> <span class="st">"s/HOST/</span><span class="va">$HOSTNAME</span><span class="st">/g"</span> <span class="va">$user_config</span></span>
+<span id="cb14-57"><a href="#cb14-57" aria-hidden="true" tabindex="-1"></a><span class="kw">}</span></span>
+<span id="cb14-58"><a href="#cb14-58" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-59"><a href="#cb14-59" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-60"><a href="#cb14-60" aria-hidden="true" tabindex="-1"></a><span class="ex">check_root</span></span>
+<span id="cb14-61"><a href="#cb14-61" aria-hidden="true" tabindex="-1"></a><span class="fu">mkdir</span> <span class="at">-p</span> <span class="va">$HOME</span>/.ssh</span>
+<span id="cb14-62"><a href="#cb14-62" aria-hidden="true" tabindex="-1"></a><span class="ex">update_known_hosts</span></span>
+<span id="cb14-63"><a href="#cb14-63" aria-hidden="true" tabindex="-1"></a><span class="ex">gen_keys</span></span>
+<span id="cb14-64"><a href="#cb14-64" aria-hidden="true" tabindex="-1"></a><span class="ex">update_config</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</section>
+</section>
+<section id="conclusion" class="level1">
+<h1>Conclusion</h1>
+<p>That’s basically it, whenever I add a new client or host I can connect the USB key, run <code>setup_host.sh</code> as root and then <code>setup_user.sh</code> as any users. All previously configured clients or hosts will automatically have the correct permissions.</p>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    target: function(trigger) {
+      return trigger.previousElementSibling;
+    }
+  });
+  clipboard.on('success', function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  });
+  function tippyHover(el, contentFn) {
+    const config = {
+      allowHTML: true,
+      content: contentFn,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start'
+    };
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      return note.innerHTML;
+    });
+  }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+</body></html>

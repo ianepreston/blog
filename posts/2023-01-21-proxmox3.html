@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.2.335">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="dcterms.date" content="2023-01-21">
+<meta name="description" content="Homelab cluster adventures continue">
+
+<title>Ian’s blog - Home cluster part 3 - Setup VM templates on proxmox</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1.6em;
+  vertical-align: middle;
+}
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+    color: #aaaaaa;
+  }
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code span.at { color: #7d9029; } /* Attribute */
+code span.bn { color: #40a070; } /* BaseN */
+code span.bu { color: #008000; } /* BuiltIn */
+code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code span.ch { color: #4070a0; } /* Char */
+code span.cn { color: #880000; } /* Constant */
+code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code span.dt { color: #902000; } /* DataType */
+code span.dv { color: #40a070; } /* DecVal */
+code span.er { color: #ff0000; font-weight: bold; } /* Error */
+code span.ex { } /* Extension */
+code span.fl { color: #40a070; } /* Float */
+code span.fu { color: #06287e; } /* Function */
+code span.im { color: #008000; font-weight: bold; } /* Import */
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code span.op { color: #666666; } /* Operator */
+code span.ot { color: #007020; } /* Other */
+code span.pp { color: #bc7a00; } /* Preprocessor */
+code span.sc { color: #4070a0; } /* SpecialChar */
+code span.ss { color: #bb6688; } /* SpecialString */
+code span.st { color: #4070a0; } /* String */
+code span.va { color: #19177c; } /* Variable */
+code span.vs { color: #4070a0; } /* VerbatimString */
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+</style>
+
+
+<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../">
+<script src="../site_libs/quarto-html/quarto.js"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../site_libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 20,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit"
+  }
+}</script>
+
+
+<link rel="stylesheet" href="../styles.css">
+</head>
+
+<body class="nav-fixed">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg navbar-dark ">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container">
+    <a class="navbar-brand" href="../index.html">
+    <span class="navbar-title">Ian’s blog</span>
+    </a>
+  </div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll ms-auto">
+  <li class="nav-item">
+    <a class="nav-link" href="../about.html">
+ <span class="menu-text">about</span></a>
+  </li>  
+  <li class="nav-item compact">
+    <a class="nav-link" href="https://github.com/ianepreston"><i class="bi bi-github" role="img">
+</i> 
+ <span class="menu-text"></span></a>
+  </li>  
+</ul>
+              <div id="quarto-search" class="" title="Search"></div>
+          </div> <!-- /navcollapse -->
+      </div> <!-- /container-fluid -->
+    </nav>
+</header>
+<!-- content -->
+<header id="title-block-header" class="quarto-title-block default page-columns page-full">
+  <div class="quarto-title-banner page-columns page-full">
+    <div class="quarto-title column-body">
+      <h1 class="title">Home cluster part 3 - Setup VM templates on proxmox</h1>
+                  <div>
+        <div class="description">
+          Homelab cluster adventures continue
+        </div>
+      </div>
+                          <div class="quarto-categories">
+                <div class="quarto-category">configuration</div>
+                <div class="quarto-category">linux</div>
+                <div class="quarto-category">proxmox</div>
+              </div>
+                  </div>
+  </div>
+    
+  
+  <div class="quarto-title-meta">
+
+      
+      <div>
+      <div class="quarto-title-meta-heading">Published</div>
+      <div class="quarto-title-meta-contents">
+        <p class="date">January 21, 2023</p>
+      </div>
+    </div>
+    
+      
+    </div>
+    
+  
+  </header><div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#introduction" id="toc-introduction" class="nav-link active" data-scroll-target="#introduction">Introduction</a></li>
+  <li><a href="#basic-menu-driven-install" id="toc-basic-menu-driven-install" class="nav-link" data-scroll-target="#basic-menu-driven-install">Basic menu driven install</a>
+  <ul class="collapse">
+  <li><a href="#create-the-vm" id="toc-create-the-vm" class="nav-link" data-scroll-target="#create-the-vm">Create the VM</a></li>
+  <li><a href="#configure-the-vm" id="toc-configure-the-vm" class="nav-link" data-scroll-target="#configure-the-vm">Configure the VM</a></li>
+  </ul></li>
+  <li><a href="#create-a-template-image" id="toc-create-a-template-image" class="nav-link" data-scroll-target="#create-a-template-image">Create a template image</a>
+  <ul class="collapse">
+  <li><a href="#thoughts-on-manual-templates" id="toc-thoughts-on-manual-templates" class="nav-link" data-scroll-target="#thoughts-on-manual-templates">Thoughts on manual templates</a></li>
+  <li><a href="#cleaning-up" id="toc-cleaning-up" class="nav-link" data-scroll-target="#cleaning-up">Cleaning up</a></li>
+  </ul></li>
+  <li><a href="#automate-creating-a-template" id="toc-automate-creating-a-template" class="nav-link" data-scroll-target="#automate-creating-a-template">Automate creating a template</a>
+  <ul class="collapse">
+  <li><a href="#automate-creating-another-template" id="toc-automate-creating-another-template" class="nav-link" data-scroll-target="#automate-creating-another-template">Automate creating another template</a></li>
+  <li><a href="#examine-the-template-creation-script-and-modify-it" id="toc-examine-the-template-creation-script-and-modify-it" class="nav-link" data-scroll-target="#examine-the-template-creation-script-and-modify-it">Examine the template creation script and modify it</a></li>
+  <li><a href="#get-back-to-making-rocky-linux-work" id="toc-get-back-to-making-rocky-linux-work" class="nav-link" data-scroll-target="#get-back-to-making-rocky-linux-work">Get back to making Rocky Linux work</a></li>
+  <li><a href="#try-arch-linux" id="toc-try-arch-linux" class="nav-link" data-scroll-target="#try-arch-linux">Try Arch Linux</a></li>
+  <li><a href="#try-flatcar-linux" id="toc-try-flatcar-linux" class="nav-link" data-scroll-target="#try-flatcar-linux">Try flatcar Linux</a></li>
+  </ul></li>
+  <li><a href="#automate-deploying-vms-from-templates" id="toc-automate-deploying-vms-from-templates" class="nav-link" data-scroll-target="#automate-deploying-vms-from-templates">Automate deploying VMs from templates</a></li>
+  <li><a href="#take-another-shot-at-cross-node-deployable-templates" id="toc-take-another-shot-at-cross-node-deployable-templates" class="nav-link" data-scroll-target="#take-another-shot-at-cross-node-deployable-templates">Take another shot at cross node deployable templates</a></li>
+  <li><a href="#automate-creating-templates-across-nodes" id="toc-automate-creating-templates-across-nodes" class="nav-link" data-scroll-target="#automate-creating-templates-across-nodes">Automate creating templates across nodes</a></li>
+  <li><a href="#automate-scheduled-rebuilds-of-the-templates" id="toc-automate-scheduled-rebuilds-of-the-templates" class="nav-link" data-scroll-target="#automate-scheduled-rebuilds-of-the-templates">Automate scheduled rebuilds of the templates</a></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content quarto-banner-title-block" id="quarto-document-content">
+
+
+
+
+<section id="introduction" class="level1">
+<h1>Introduction</h1>
+<p>This is the third post ( <a href="https://blog.ianpreston.ca/configuration/linux/2022/11/21/proxmox.html">part 1</a>, <a href="https://blog.ianpreston.ca/configuration/linux/proxmox/2022/12/31/proxmox2.html">part 2</a>) documenting my adventures setting up a home cluster. In this one I will try a few different methods of getting VMs installed on proxmox. As with the previous posts, this is not intended to be a how to guide from an expert. I haven’t used proxmox before working on this project, so I’m mostly doing this to document what I do for future reference, or maybe provide others with the perspective of what it’s like to work on proxmox as a relative beginner.</p>
+</section>
+<section id="basic-menu-driven-install" class="level1">
+<h1>Basic menu driven install</h1>
+<section id="create-the-vm" class="level2">
+<h2 class="anchored" data-anchor-id="create-the-vm">Create the VM</h2>
+<p>The most obvious way to install a VM is through the UI. I know I won’t want to take this approach indefinitely as it involves manual work and isn’t reproducible (at least not easily), but it seems like the right place to start, both to ensure I don’t have any unforeseen issues with my setup, and also to provide a baseline for comparison when I try other methods later.</p>
+<p>Selecting one of my nodes from the web interface I click “Create VM”. In the first tab I pick the node to install to and give it a name, we’ll do <code>ubuntu-test</code> for this. I could also assign it to a <a href="https://pve.proxmox.com/wiki/User_Management#pveum_resource_pools">resource pool</a> if I had any of those created but I don’t so I won’t. The other thing I can assign is a VM ID, which is the unique numeric identifier proxmox uses internally. At this point I’m fine to let proxmox manage that though so I’ll leave it on the default.</p>
+<p>Checking the advanced options I can also configure the VM to start at boot so it will come back up if I reboot my cluster. I can also configure the order it starts/stops. The start at boot setting seems like it would be handy for production services, but I’m just testing so I’ll leave it for now.</p>
+<p>On the next tab I can configure the OS. I’ve already configured my NAS (set up in part 2) to hold things like ISO images for installing and uploaded an Ubuntu 22.10 server image, so I’ll select that. The guest OS settings are already correctly set on Linux with a modern kernel so I’m all good there.</p>
+<p>Next up is the System tab. The first option is Graphic Card. There’s a ton of options under this one, but at this point I don’t have any intention of installing anything that will care so I’ll leave it at default. Maybe at some point I’ll have a system with a GPU that I want to pass through, or will need a Windows server, but not right now. I also have to pick a machine option. Based on <a href="https://pve.proxmox.com/pve-docs/pve-admin-guide.html#qm_virtual_machines_settings">the docs</a> as long as I don’t want to do PCIe passthrough I can stick with the default, so I will for now. Next I pick a SCSI controller. Again, referring to <a href="https://pve.proxmox.com/pve-docs/pve-admin-guide.html#qm_hard_disk">the docs</a> the <code>VirtIO SCSI Single</code> option that it had selected by default seems perfect for me. There’s also a checkbox for <code>Qemu Agent</code>. Reading <a href="https://pve.proxmox.com/wiki/Qemu-guest-agent">the docs</a> this seems like a handy thing to have, so I’ll turn it on (looks like mostly it’s for cleaner shutdown and pausing during disk backups). The last thing on this tab is whether to enable TPM. Since I’m not making a Windows image I don’t need this, so I’ll leave it unchecked.</p>
+<p>Following that we’re on to Disks. I can create multiple disks I’m sure, but for now let’s just set up one. First I make sure that the backing storage is my <code>local-zfs</code> storage, which is the NVME drive on the host, rather than my NAS. I haven’t configured the SSD in these hosts yet, I’m planning to set up <a href="https://docs.ceph.com/en/quincy/">ceph</a> on them but that’s for a future post. The other basic thing to set on this page is disk size. I’m not planning to keep this image around, so I’ll stick with the default 32GB for now. The <code>Bus/Device</code> field defaults to the SCSI interface I set up on the last tab so that seems fine. There’s an option for cache mode as well. Right now I’m not really sure what that does, but from <a href="https://pve.proxmox.com/pve-docs/pve-admin-guide.html#qm_hard_disk">the docs</a> the default of no cache seems like it will work for me, so I’ll leave it. Taking a look at <a href="https://pve.proxmox.com/pve-docs/pve-admin-guide.html#qm_hard_disk_discard">the docs</a> it seems like I want to have the <code>Discard</code> option checked so I’ll do that. From <a href="https://pve.proxmox.com/pve-docs/pve-admin-guide.html#qm_virtual_machines_settings">the docs</a> <code>IO Thread</code> only seems like it really matters if I have multiple disks attached, but I don’t see the harm of turning it on so let’s do that. I’ll check <code>SSD emulation</code> since the underlying disk really is an SSD and the guest OS might as well think so too. I’ll uncheck the <code>backup</code> option on this one, since I’m planning to just destroy this VM shortly after I create it and I don’t need backups hanging around. I want to be able to try replicating this VM to different hosts, and I’d want this disk to be included, so I’ll leave <code>skip replication</code> unchecked. The last thing I have to pick is the <code>Async IO</code> option. From reading <a href="https://kb.blockbridge.com/technote/proxmox-aio-vs-iouring/">this</a> it seems like the default <code>io_uring</code> will work for me, I’m not deep enough on how this sort of thing works to have strong opinions or requirements so I’ll go with the default.</p>
+<p>Now we come to CPU. For <code>sockets</code> I’ll leave it at 1, since all my hosts have only 1 physical socket. For cores my hosts have either 4 or 6 cores, so there’s definitely no point going over 6. Since this is just a test machine let’s just give it 2. For CPU type I’m going to leave it on the Default (<code>kvm64</code>). From the docs on CPU type if I set the CPU to <code>host</code> it will exactly match the CPU flags and type of my host system, but I might have migration issues across hosts, since they’re not all the exact same CPU. The default will allow easier migration, but might disable some specific CPU flags that would be beneficial. For now I’ll stick with the easy option. There’s some other stuff for CPU limits and extra CPU flags here that I’m also going to leave alone for now.</p>
+<p>Now we’re on to memory. Each of these hosts has <code>32GB</code> of memory, so I don’t really have to be cheap here, at least while I’m testing. Under advanced I can set a memory floor and enable/disable ballooning. From the docs, I want to have <code>ballooning</code> enabled, even if I have the memory floor and ceiling set the same, so that my host can see how much memory the VM is actually using. If I was running a bunch of VMs with dynamic memory requirements I could see overallocating the max across them and setting the floor for each. In this case I’m just going to leave it at the default <code>2GB</code> since I’m not going to actually run anything on this VM.</p>
+<p>Almost done, next up is network. I’ve only got one bridge right now so I’ll leave that selected. I’m not currently doing any VLAN stuff in my network so I’ll leave the <code>VLAN tag</code> entry blank. For model I’ll stick with <code>VirtIO</code> as the docs say that’s the one to pick for best performance as long as your host supports it. The <code>firewall</code> option is checked by default. I haven’t looked into the proxmox firewall at all at this point, but let’s leave that on for now. I can also do some rate limiting and other fancy network config here but I’m going to leave those on the default for now.</p>
+<p>The only thing to do now is confirm my settings and actually create the VM. I’ll check <code>start after created</code> so it fires up right away.</p>
+</section>
+<section id="configure-the-vm" class="level2">
+<h2 class="anchored" data-anchor-id="configure-the-vm">Configure the VM</h2>
+<p>After waiting a little bit I can see my newly created VM listed under the node I set it up on. Clicking into that VM and selecting the <code>Console</code> section I can see that I’m in the Ubuntu server installation wizard. Since this isn’t a post about installing Ubuntu server I’ll work through the menus without writing everything down. Going through the install worked fine until it came time to reboot and it failed to unmount the virtual CD-ROM that had the installation ISO. I went to the hardware tab on the VM in the proxmox interface, removed the CD-ROM and rebooted. After the reboot the VM came up fine, and I was able to ssh into it from my desktop.</p>
+</section>
+</section>
+<section id="create-a-template-image" class="level1">
+<h1>Create a template image</h1>
+<p>After confirming the manual VM creation process worked, I started looking into automating the process. From what I could see, most automation tools like ansible or terraform require you to have a VM template created that they can use. There are also some tools to automate the creation of templates, but let’s not get ahead of ourselves. There’s tons of docs on getting a template created and I started getting a bit of analysis paralysis going through them all, so let’s try the <a href="https://docs.technotim.live/posts/cloud-init-cloud-image/">Techno Tim</a> guide and see where that leads.</p>
+<p>I was able to mostly follow the guide, and other than having to change references from <code>local-lvm</code> to <code>local-zfs</code> for storage of the disk I didn’t encounter any obvious errors. I created a new machine and it started up, but I couldn’t access it over the web interface for the shell, or see info about its IP (no qemu guest agent installed). In the cloud-init config I set the IP to be DHCP, just to see what would happen. I wasn’t able to resolve the host by name to try and ssh in using that. After checking my router I found a host just named <code>ubuntu</code> and was able to ssh into its IP with the username and ssh key I specified in the cloud init template. For a further test I created a second clone from the template. One thing I noticed was that I had to create it on the same node as the template. Presumably I can migrate it later. The second VM came up, got a new ID in proxmox, and pulled a different IP showing a different MAC address in my router. I was able to ssh into it the same way. After confirming that I shut it down and migrated it to another node, just to see how that would go. The migration went fine, the VM came back up, got the same IP, and I was able to ssh back into it.</p>
+<section id="thoughts-on-manual-templates" class="level2">
+<h2 class="anchored" data-anchor-id="thoughts-on-manual-templates">Thoughts on manual templates</h2>
+<p>This wasn’t too bad. There are a few tweaks I’d want to apply, like adding the guest agent into the machine, but overall template creation is pretty easy. I could see wanting to update my templates semi regularly when new versions of base OSs come out though, and I’d like to understand more of the theory behind how this actually works, since a lot of what I did was pretty much copy paste. To do that, I’ll clear these out and look into some other template creation options.</p>
+</section>
+<section id="cleaning-up" class="level2">
+<h2 class="anchored" data-anchor-id="cleaning-up">Cleaning up</h2>
+<p>I don’t want lingering stuff from this experiment hanging out on my nodes, so let’s go in and see what I have to get rid of. First is the created VMs - I can stop and remove them from the UI easily enough. Same deal for the template VM. I checked the local storage through the UI as well and it looks like any virtual disks I created were removed when I got rid of the VM. The only other thing to remove was that initially downloaded cloud image, so I went into the shell for the node and just ran <code>rm</code> to get rid of that.</p>
+</section>
+</section>
+<section id="automate-creating-a-template" class="level1">
+<h1>Automate creating a template</h1>
+<p>Creating templates doesn’t immediately feel like the sort of thing I’ll have to do super often and will therefore want to automate. In researching how I would do it though I found a few use cases, namely to schedule the creation of updated templates to avoid a long running <code>apt update &amp;&amp; apt upgrade</code> cycle on each newly created image. I found a nice looking <a href="https://gtgb.io/2022/07/23/proxmox-vm-templating/">post</a> that had a fairly reasonable looking workflow using a few shell scripts. Further research suggested that the “production” way to do this would be with <a href="https://developer.hashicorp.com/packer">packer</a>. That seems more complicated, but it would help me learn a more broadly applicable skill that I might be able to transfer to other projects. I honestly can’t tell if that’s a good use of my time or just <a href="https://en.wiktionary.org/wiki/yak_shaving">yak shaving</a> so I’ll try and get by without for now.</p>
+<p>Following the post linked above, there’s only one pre-requisite on the proxmox nodes to run the scripts, and that’s <code>libguestfs-tools</code> in order to modify the cloud image bases we’ll be building templates from. That’s easy enough to add to the ansible playbook I’ve been using throughout this series to configure my proxmox nodes. After that there’s just four scripts I have to tweak slightly for my own requirements and then get onto at least one node. I can also set these up in ansible with some templates, which should make them easier to modify and otherwise maintain. Plus then I have them stored somewhere if I have to rebuild these nodes in the future. The repository associated with the above post is <a href="https://github.com/geektx/Proxmox-VM-Template">here</a>.</p>
+<p>As a starting point I copied in the scripts as templates into an ansible role. I swapped out all the variables that were hard coded in the scripts for ansible variables, and then set what I wanted to initially test on as ansible variables in the defaults for the role. The idea is that this way if I want to build multiple templates I can just call this role with a variables file that overrides the specific things I want to change (image id, cloud image). After a little bit of fiddling I got the files copied over and ran the script, which did create a template for me. So far one advantage over the manual template from before is that this image has <code>qemu-guest-agent</code> installed, so I can see the hosts IP in the summary tab. There’s still some more stuff I’d like to sort out though.</p>
+<p>By changing the storage location of the template from local storage of the node to my NAS I was able to clone the template to another node in my cluster. That image then came up in a bootloop though. Even more fun, I couldn’t stop it from the web interface, which meant I couldn’t delete it. I had to ssh into the node it was running on, run <code>ps aux | grep "/usr/bin/kvm -id &lt;VM ID&gt;"</code> and then <code>kill -9</code> that PID. Crazy. I tried creating it on the same node as the template with a target of local storage but got the same issue.</p>
+<p>After looking at the docs it seems like if I want to automate building images from templates I’ll be using the template name, rather than a VM ID anyway. So I think I’ll try modifying the script to create a template with the same name but different ID on each of my nodes, which should let me provision VMs to any node. First let’s clean up the template some more though. As a future project maybe I’ll come back and figure out why building the template on my NAS causes it to boot loop, but that’s a problem for future me.</p>
+<p>One thing I definitely want to be able to do is scale VMs I create off these templates up or down. 2 cores, 2GB of RAM and 2GB of disk will not always do it. To test this I create a VM from the template without modification and ssh into it. <code>df -h</code> confirms that I have 2GB of disk assigned to the VM by default. <code>lscpu</code> shows 2 cores. <code>free -h</code> confirms I have 2GB of RAM. Let’s turn the VM off and adjust those. From the Hardware tab of the VM from the proxmox UI I adjust the CPU up to 3 cores and RAM up to 4GB. Disk resizing cannot be done from the UI, so from the terminal based on <a href="https://pve.proxmox.com/wiki/Resize_disks#1._Resizing_guest_disk">the docs</a> I run <code>qm resize 100 scsi0 +5G</code> to add 5GB to the disk. Let’s fire the machine back up and see what happened. <code>lscpu</code> indeed now shows 3 cores, that’s cool. <code>free -h</code> shows the updated amount of RAM. Even <code>df -h</code> shows the correct amount of disk. That last one is frankly surprising to me because the docs indicate that only the disks should have been resized, not the logical volumes or anything else, which would have meant some commands being run within the VM to make the space available. That has also been my experience with VMs at work. Maybe it’s something fancy in the Ubuntu image I’m using? Either way, pretty sweet for now.</p>
+<p>Another thing to change is how the VM authenticates over SSH. The default way I’ve been doing it is to just put my laptop’s public key in <code>~/.ssh/authorized_keys</code> using cloud-init. This works ok, but it’s not how I manage ssh in the rest of my network. See <a href="https://blog.ianpreston.ca/ssh/linux/bash/2020/05/03/ssh.html">my earlier post</a> for details, but the tldr is I want to us a certificate authority to allow any signed key to authenticate as a user, and all my host keys to authenticate themselves with a CA. The former is a bit of a convenience as I could just add a couple keys for my other devices to my <code>keyfiles</code> file and keep them up to date if I rotated keys. The Host key thing will be super handy though, since otherwise I’ll have to manually verify that I trust the host key of each new VM I start up, and if I ever tear down and replace a VM I’ll get errors on host validation. So let’s fix that. The first step is to copy the host CA key and the user CA public key into a folder on my NAS that’s accessible from proxmox so I can inject those keys into the templates. I could have ansible copy them over and encrypt them in the playbook, but I think having them on the NAS is slightly more convenient and secure, even if I’d have encrypted the keys with <code>ansible-vault</code>. Next I need to modify the template creation script to copy those files in, and modify <code>sshd_config</code> to use them. While I’m at it I can turn off password authentication over SSH for a little more security. This actually went surprisingly smoothly. I updated the <code>build_image</code> script to copy in the public key for the user CA as well as the private host CA key. Then I set it to run a very slightly modified version of the host setup script I created in my earlier post. After re-running the template build script and creating a VM from the new template I was able to ssh in from my laptop without having passed in a key file to the cloud-init template, or being prompted to validate the host key. Magic!</p>
+<p>A note on name resolution. I think I remember seeing/reading this somewhere but it didn’t come back to me until I started troubleshooting. When I first create a machine from a template, if I tell it to use DHCP for IP address acquisition it gets a lease from my router with the hostname <code>ubuntu</code>. So if I want to ping/ssh the machine by name I have to use <code>ubuntu.local.ipreston.net</code> instead of <code>&lt;vm-name&gt;.local.ipreston.net</code>. I typically like to use DHCP on my servers and then just do static mappings in my router to pin them to an IP, rather than hard coding the IP itself, mostly so that I can get easy name resolution without having to put manual entries into my DNS. Even my proxmox nodes themselves which do use static IPs, I created a static mapping in my DHCP server to their MAC addresses so that all my IPs would be available in one place. Anyway, after you reboot the VM once it gets a lease with its actual hostname so just reboot it once, or manually alter the hostname when you do your static mapping.</p>
+<section id="automate-creating-another-template" class="level2">
+<h2 class="anchored" data-anchor-id="automate-creating-another-template">Automate creating another template</h2>
+<p>Having a working Ubuntu template is pretty handy, but what if I want to branch out? Can I apply this approach to other distros? I’m pretty sure this approach will work fine with another debian based distro, and probably even another fairly standard Linux like CentOS will be fine (although I should test). But what about weird ones? Specifically I want to see if I can get this working on <a href="https://www.flatcar.org/">flatcar Linux</a> since I want to try using it for my kubernetes nodes. Let’s walk before we try running though and extend to another version of Ubuntu.</p>
+<p>The first thing I want to do is tweak how I’m numbering my templates. Right now each template gets a variable set for its whole VM ID. I’d like to break that out into chunks. The first digit should just always be 8 (at least for now) to indicate a template and keep it out of the range of actual VMs I’m deploying. The next one I’m thinking should be the node the template is created on, and then the last two digits can be an identifier for the specific template. This actually wasn’t bad at all. The one variable definition gets a little long, but basically I just go from one line in defaults of <code>build_vm_id: "8000"</code> to</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode yml code-with-copy"><code class="sourceCode yaml"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">build_vm_start_digit</span><span class="kw">:</span><span class="at"> </span><span class="st">"8"</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">build_vm_host_digit</span><span class="kw">:</span><span class="at"> </span><span class="st">"{{ ansible_hostname[-1] }}"</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">build_vm_template_num</span><span class="kw">:</span><span class="at"> </span><span class="st">"0"</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="fu">build_vm_id</span><span class="kw">:</span><span class="at"> </span><span class="st">"{{ build_vm_start_digit }}{{ build_vm_host_digit }}{{ '%02d' | format(build_vm_template_num|int) }"</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>This relies on all my proxmox nodes having hostnames of the format <code>pve&lt;Num&gt;</code> but I can work with that. The number of digits in my IDs will change if I get more than 9 nodes or 99 templates too, but I’m not really expecting that to happen, and I don’t even think that would necessarily break anything if it did, so I won’t worry about it for now.</p>
+<p>With that slight modification to the role complete I set my playbook to call the role twice, modifying the variables from the defaults for just the template name, the template number, and the URL of the cloud image to build from for Ubuntu Jammy and Kinetic.</p>
+<p>Around this time I realized it was going to be a little tedious running the template build script each time I added a template, so I added a <a href="https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_handlers.html">handler</a> to the role to execute the template build script whenever it made a change. It took a little bit of tweaking to figure out that I needed the full path of the script I wanted to run, as well as set it as the working directory so I could call the subscript that defines all the build variables. After those changes the handler triggered properly and built my templates whenever the script changed, or I added a new template to build.</p>
+<p>At this point the general template creation process is working quite nicely for Ubuntu versions, but what about other distros? Let’s give debian a shot. I grabbed the <code>cloudgeneric</code> version of debian bullseye from their official cloud images page and plugged it into my playbook. No problem at all. The template built, I was able to build an image from it just the same as the Ubuntu ones.</p>
+<p>Let’s get a bit braver and branch out to an even more different distro Rocky Linux. This one might come in handy if I want to try out anything enterprisey or just want to see what the Red Hat experience is like. I found their generic cloud images <a href="https://rockylinux.org/alternative-images/">here</a> and plugged the link into my playbook. The template built ok, but trying to run the VM I ran into problems where it got stuck on a line that said <code>Probing EDD (edd=off to disable)... ok</code> and just hung out there. Similar to the weird boot loop I got deploying from my NAS I wasn’t able to shut down the VM from the Web UI and had to go into the terminal on the node and <code>ps aux | grep "/usr/bin/kvm -id &lt;VM ID&gt;"</code> to find its PID and <code>kill -9</code> it before I could remove the VM. I guess I have to do some troubleshooting. A little searching finds that this error is pretty common, although it doesn’t actually relate to the message, but something that’s happening after. There are a few potential kernel configs I might be able to change, but as I’m poking around in the machine I notice something interesting, it’s got way more disk to start than my Ubuntu templates did. I wonder if I’m somehow filling the disk, so I use that command from the previous section and resize the disk on a newly cloned template before starting it up. Disappointingly this did not solve the problem. Another weird thing I noticed during the start up is that CPU usage on the VM is pinned at right around 50%. Since I gave it 2 cores that suggests that one core is working flat out on something. Several of the posts indicated that after about 10 minutes the system would come up. That’s obviously a terrible startup time, but I’d like to give it a while to see if I at least have the same problem. So I go do some reading and let this VM run for a while… and discover that tragically the usually perfect strategy of ignoring a problem and hoping it goes away doesn’t work in this case.</p>
+</section>
+<section id="examine-the-template-creation-script-and-modify-it" class="level2">
+<h2 class="anchored" data-anchor-id="examine-the-template-creation-script-and-modify-it">Examine the template creation script and modify it</h2>
+<p>Something about how I have my VM configured is not playing nice with Rocky Linux. It could just be a very specific thing that I only want to modify for that distro, but I also just copy-pasted most of the other template creation parameters from some guy on the internet. So before I assume that my basic parameters are the best and it’s only Rocky that needs to be modified, let’s examine those options that I’m using and see if I want to modify any of them. Maybe while I’m at it I’ll fix my Rocky issue (or introduce new ones to working distros), but at a minimum I’ll have a better understanding of what’s going on.</p>
+<p>The first little bit of the script downloads a cloud image, and then uses virt-customize to update packages, install a list of packages (just qemu-guest-agent and cloud-init by default), copy in a build-info file with some metadata about the template build, copy in some ssh related files and have a script to set them up on first boot (note to self, maybe that’s the part that’s breaking in Rocky, I’ve only tested that script in debian and Arch based distros so far). That stuff (except maybe the ssh part) is all straightforward and I understand what it’s trying to do, so let’s skip to the next line:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ex">qm</span> destroy <span class="va">${build_vm_id}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Remove the old template before you build a new one, makes sense.</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="ex">qm</span> create <span class="va">${build_vm_id}</span> <span class="at">--memory</span> <span class="va">${vm_mem}</span> <span class="at">--cores</span> <span class="va">${vm_cores}</span> <span class="at">--net0</span> virtio,bridge=vmbr0 <span class="at">--name</span> <span class="va">${template_name}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Create a new VM (that we’ll turn into a template later) with an ID of <code>build_vm_id</code>, memory and cores set to our variables, and a <code>virtio</code> network adapter, which is what I did in the manual template creation. Finally we give it a name based on the <code>template_name</code> variable. So far so good, but I had a lot more options available when I built a VM manually earlier in this post, anything else I should set? Reading back through my manual config I set basically everything else to defaults so I think I’m good here. Let’s see what’s next.</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="ex">qm</span> importdisk <span class="va">${build_vm_id}</span> <span class="va">${image_name}</span> <span class="va">${storage_location}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Ok, this is fine, I’m importing the disk image I downloaded and modified to the VM I created and putting it in the storage location I specify. All seems fine. Maybe I’ll need to revisit this if I take another crack at storing these templates on my NAS, but fine for now.</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="ex">qm</span> set <span class="va">${build_vm_id}</span> <span class="at">--scsihw</span> <span class="va">${scsihw}</span> <span class="at">--scsi0</span> <span class="va">${storage_location}</span>:vm-<span class="va">${build_vm_id}</span>-disk-0</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Ok, here’s where I deviate from what I picked in the manual build. In my defaults (based on the script I copied in) I had <code>scsihw</code> set to <code>virtio-scsi-pci</code>, whereas in my manual build I went with <code>virtio-scsi-single</code>. I’m struggling to find the actual difference between these settings, but let’s change it for kicks for now.</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="ex">qm</span> set <span class="va">${build_vm_id}</span> <span class="at">--ide0</span> <span class="va">${storage_location}</span>:cloudinit</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Add the cloud-init drive, seems fine. It’s emulating a CD drive so ide makes sense.</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="ex">qm</span> set <span class="va">${build_vm_id}</span> <span class="at">--nameserver</span> <span class="va">${nameserver}</span> <span class="at">--ostype</span> l26 <span class="at">--searchdomain</span> <span class="va">${searchdomain}</span> <span class="at">--ciuser</span> <span class="va">${cloud_init_user}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Add a couple defaults to the cloud-init template and set the ostype to linux (l26). No worries there.</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="ex">qm</span> set <span class="va">${build_vm_id}</span> <span class="at">--boot</span> c <span class="at">--bootdisk</span> scsi0</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p><code>--boot c</code> tells it to boot from hard disk (as opposed to CD or network) and we set the bootdisk to the image that’s been mounted to the VM. Seems fine.</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="ex">qm</span> set <span class="va">${build_vm_id}</span> <span class="at">--agent</span> enabled=1</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>This turns on qemu agent, which we want.</p>
+<p>One thing I noticed from going through this is I had some lines that set multiple options, even though they weren’t necessarily related. So I cleaned that up to be one option per line. Easier to parse and modify that way.</p>
+<p>I took a quick look back at the manual config section and didn’t see anything else that stood out, so I guess I have to get back to fixing Rocky Linux.</p>
+</section>
+<section id="get-back-to-making-rocky-linux-work" class="level2">
+<h2 class="anchored" data-anchor-id="get-back-to-making-rocky-linux-work">Get back to making Rocky Linux work</h2>
+<p>Ok, that was a fun side quest, but let’s get back to figuring out Rocky. I re-run my template creation playbook, just in case that storage config changed anything. I also found <a href="https://forum.proxmox.com/threads/getting-probing-edd-edd-off-to-disable-ok-when-booted.97414/">a proxmox forum post</a> where someone was having the same problem with a particular RHEL image, but no solution. That post also said it worked fine with RHEL 7 and the issue was with 6. I’m trying Rocky 9 (I believe they use the same version as RHEL for compatibility) so I don’t know if that’s helpful. <a href="https://leo.leung.xyz/wiki/No_Console_Output">This post</a> suggests the output just means my console output is being redirected somewhere else, so I’m not seeing whatever the actual issue is. I guess I should fix that first regardless. One suggested solution there is to change the default tty from serial. An alternative approach there, is to check out the <a href="https://pve.proxmox.com/wiki/Serial_Terminal">proxmox docs</a> and enable serial out on the VM with <code>qm set &lt;VM ID&gt; -serial0 socket</code>. Let’s add that line to my template and see if I get anything. A little bit of progress in that it doesn’t just tell me I don’t have serial on that machine, but I also only see <code>starting serial terminal on interface serial0 (press Ctrl+O to exit)</code>, which isn’t exactly informative. Let’s ditch my ssh script setup on first boot, just to make sure that’s not what’s hanging the template. Removing it from the template script gives me the same issue, so the problem is elsewhere. Just for kicks, let’s try a different Rocky cloud image. I found <a href="https://medium.com/geekculture/create-a-rocky-linux-virtual-machine-vm-with-terraform-and-proxmox-6692a49f7b43">this blog</a> that’s using the <code>GenericCloud</code> image rather than the <code>GenericCloudBase</code> image I was using. I’m not sure why I picked <code>GenericCloudBase</code> to begin with so let’s swap over and see what happens. Still nothing. Ok, the blog also has a bunch more cloud-init modules installed than I do. Maybe one of them will fix things. Let’s add them to the package list for that template. Still no luck. Ok, back to basics. We have a blog post where someone made a template, and apparently it worked. Let’s try manually working through those instructions and see what happens. Well, first problem their link goes to a pinned daily build of Rocky that’s no longer available on the site. Fine, we’ll do the latest one and hope that there’s not just some daily build issue that’s leading to all of this. So I get the same error following the guide. After a little more digging I find a link in the rocky vault to the exact image that the blog was using. Let’s apply my template to that image. Slightly better luck. It still bootloops, but I can actually see things in the console and by being very speedy I was even able to get a screencap of the kernel panic error it’s throwing.</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<figure class="figure">
+<img src="proxmox3/panic.png" title="Rocky Panic" class="img-fluid figure-img">
+</figure>
+<p></p><figcaption class="figure-caption">Nodes</figcaption><p></p>
+</figure>
+</div>
+<p>Finding out that this was the issue led me to a <a href="https://forum.proxmox.com/threads/kernel-panic-installing-rocky-or-almalinux.114885/">proxmox forum</a> post where it turns out lots of people are having this issue with Rocky 9 if they set their CPU to the default <code>kvm64</code>. I reset my VM to use <code>host</code> for the CPU. That fixed the boot loop error but led to another error. At this point I decided I didn’t feel like running Rocky Linux very much.</p>
+</section>
+<section id="try-arch-linux" class="level2">
+<h2 class="anchored" data-anchor-id="try-arch-linux">Try Arch Linux</h2>
+<p>Rocky was supposed to be an intermediate difficulty distro to test out my template process. I don’t actually have a use case for it, I just figured it would be more different than debian but less different than flatcar when it comes to testing. I’m really hoping that I just got unlucky and that other distros won’t be so hard. Let’s see if that’s correct. I don’t have an immediate use case for Rocky, but I do like running Arch, it’s what my current server has. Let’s try that. Building the template goes fine, and this one actually boots to a login prompt from the proxmox UI, so we’re on a happier path than with Rocky already. At first it seemed like Arch wasn’t updating my default user. I started up the image and tried to ssh in but got a <code>connection refused</code> error. Trying to ssh in as the default <code>arch</code> user that the image uses got a <code>permission denied</code> error instead. After some testing it turns out that cloud-init just takes longer to complete on first boot in Arch, I think because it has to do more package updating. If I just left the VM running for a bit I was able to ssh right in.</p>
+</section>
+<section id="try-flatcar-linux" class="level2">
+<h2 class="anchored" data-anchor-id="try-flatcar-linux">Try flatcar Linux</h2>
+<p>I’ve never used flatcar before, but it sounds interesting and <a href="https://eevans.co/blog/garage/">this blog</a> recommended it for self hosting kubernetes so I’d like to have it available in my environment. I found <a href="https://github.com/Doc-Tiebeau/proxmox-flatcar">this repository</a> which had its own scripts to create a flatcar template. Most of it looks broadly similar to the approach I’ve been taking, so let’s try it out. I notice that flatcar images come in <code>.img.bz2</code> format instead of <code>.img</code> or <code>.qcow2</code> like the other files I’ve downloaded. I may have to add in some logic to the script to extract images in that case. As a first step though I just tried running the whole workflow as is. That got me a template built, but the VM I created off it couldn’t find any bootable media, suggesting the disk creation didn’t work as intended. Probably because I have to extract it first. After adding a little bit of logic to my image building script:</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> <span class="bu">[</span> <span class="st">"</span><span class="va">${image_name</span><span class="op">##</span><span class="pp">*</span>.<span class="va">}</span><span class="st">"</span> <span class="ot">==</span> <span class="st">"bz2"</span> <span class="bu">]</span><span class="kw">;</span> <span class="cf">then</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>    <span class="fu">bzip2</span> <span class="at">-d</span> <span class="va">${image_name}</span></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>    <span class="va">image_name</span><span class="op">=</span><span class="st">"</span><span class="va">${image_name</span><span class="op">%</span>.<span class="pp">*</span><span class="va">}</span><span class="st">"</span></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a><span class="cf">fi</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>I got the VM to boot. I could auto login as user <code>core</code> over serial, but it looks like none of my other <code>cloud-init</code> config stuff worked. This post is already getting super long though so I’m going to save getting a fully working flatcar image for a separate post and declare victory on my general goal of “be able to make templates automatically”.</p>
+</section>
+</section>
+<section id="automate-deploying-vms-from-templates" class="level1">
+<h1>Automate deploying VMs from templates</h1>
+<p>I’m not entirely done with templates at this point. I still want to schedule their rebuild so that I can have fresh templates to build VMs, and I need to figure out some way to be able to deploy VMs based off these templates to any node, either by recreating them on each node, or figuring out why creating them off shared storage didn’t work before. How exactly I go about some of that might depend on how I actually want to deploy VMs from these templates though, so let’s figure that out and come back to templates later.</p>
+<p>Once again I’m at a decision point. I can keep using <a href="https://docs.ansible.com/ansible/latest/collections/community/general/proxmox_module.html">ansible</a> to deploy VMs, or I can switch to <a href="https://registry.terraform.io/providers/Telmate/proxmox/latest/docs">terraform</a>. While for templates I avoided the hashicorp product and the associated learning curve, I’ve actually used terraform a bit before, and I know that it’s something I’ll want to learn for other applications like deploying cloud resources, so in this case it seems to be worth the extra effor to figure out.</p>
+</section>
+<section id="take-another-shot-at-cross-node-deployable-templates" class="level1">
+<h1>Take another shot at cross node deployable templates</h1>
+</section>
+<section id="automate-creating-templates-across-nodes" class="level1">
+<h1>Automate creating templates across nodes</h1>
+</section>
+<section id="automate-scheduled-rebuilds-of-the-templates" class="level1">
+<h1>Automate scheduled rebuilds of the templates</h1>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    target: function(trigger) {
+      return trigger.previousElementSibling;
+    }
+  });
+  clipboard.on('success', function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  });
+  function tippyHover(el, contentFn) {
+    const config = {
+      allowHTML: true,
+      content: contentFn,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start'
+    };
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      return note.innerHTML;
+    });
+  }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+</body></html>

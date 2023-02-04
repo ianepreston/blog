@@ -1,0 +1,835 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.2.335">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="dcterms.date" content="2020-05-06">
+<meta name="description" content="Documenting everything I did to configure my pfsense router.">
+
+<title>Ian’s blog - Building pfsense</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1.6em;
+  vertical-align: middle;
+}
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+    color: #aaaaaa;
+  }
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code span.at { color: #7d9029; } /* Attribute */
+code span.bn { color: #40a070; } /* BaseN */
+code span.bu { color: #008000; } /* BuiltIn */
+code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code span.ch { color: #4070a0; } /* Char */
+code span.cn { color: #880000; } /* Constant */
+code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code span.dt { color: #902000; } /* DataType */
+code span.dv { color: #40a070; } /* DecVal */
+code span.er { color: #ff0000; font-weight: bold; } /* Error */
+code span.ex { } /* Extension */
+code span.fl { color: #40a070; } /* Float */
+code span.fu { color: #06287e; } /* Function */
+code span.im { color: #008000; font-weight: bold; } /* Import */
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code span.op { color: #666666; } /* Operator */
+code span.ot { color: #007020; } /* Other */
+code span.pp { color: #bc7a00; } /* Preprocessor */
+code span.sc { color: #4070a0; } /* SpecialChar */
+code span.ss { color: #bb6688; } /* SpecialString */
+code span.st { color: #4070a0; } /* String */
+code span.va { color: #19177c; } /* Variable */
+code span.vs { color: #4070a0; } /* VerbatimString */
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+</style>
+
+
+<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../">
+<script src="../site_libs/quarto-html/quarto.js"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../site_libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 20,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit"
+  }
+}</script>
+
+
+<link rel="stylesheet" href="../styles.css">
+</head>
+
+<body class="nav-fixed">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg navbar-dark ">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container">
+    <a class="navbar-brand" href="../index.html">
+    <span class="navbar-title">Ian’s blog</span>
+    </a>
+  </div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll ms-auto">
+  <li class="nav-item">
+    <a class="nav-link" href="../about.html">
+ <span class="menu-text">about</span></a>
+  </li>  
+  <li class="nav-item compact">
+    <a class="nav-link" href="https://github.com/ianepreston"><i class="bi bi-github" role="img">
+</i> 
+ <span class="menu-text"></span></a>
+  </li>  
+</ul>
+              <div id="quarto-search" class="" title="Search"></div>
+          </div> <!-- /navcollapse -->
+      </div> <!-- /container-fluid -->
+    </nav>
+</header>
+<!-- content -->
+<header id="title-block-header" class="quarto-title-block default page-columns page-full">
+  <div class="quarto-title-banner page-columns page-full">
+    <div class="quarto-title column-body">
+      <h1 class="title">Building pfsense</h1>
+                  <div>
+        <div class="description">
+          Documenting everything I did to configure my pfsense router.
+        </div>
+      </div>
+                          <div class="quarto-categories">
+                <div class="quarto-category">configuration</div>
+                <div class="quarto-category">pfsense</div>
+                <div class="quarto-category">networking</div>
+              </div>
+                  </div>
+  </div>
+    
+  
+  <div class="quarto-title-meta">
+
+      
+      <div>
+      <div class="quarto-title-meta-heading">Published</div>
+      <div class="quarto-title-meta-contents">
+        <p class="date">May 6, 2020</p>
+      </div>
+    </div>
+    
+      
+    </div>
+    
+  
+  </header><div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#rationale" id="toc-rationale" class="nav-link active" data-scroll-target="#rationale">Rationale</a>
+  <ul class="collapse">
+  <li><a href="#who-this-is-for" id="toc-who-this-is-for" class="nav-link" data-scroll-target="#who-this-is-for">Who this is for</a></li>
+  <li><a href="#what-this-will-cover" id="toc-what-this-will-cover" class="nav-link" data-scroll-target="#what-this-will-cover">What this will cover</a></li>
+  </ul></li>
+  <li><a href="#resources" id="toc-resources" class="nav-link" data-scroll-target="#resources">Resources</a></li>
+  <li><a href="#base-install" id="toc-base-install" class="nav-link" data-scroll-target="#base-install">Base Install</a></li>
+  <li><a href="#wizard-setup" id="toc-wizard-setup" class="nav-link" data-scroll-target="#wizard-setup">Wizard Setup</a></li>
+  <li><a href="#wifi" id="toc-wifi" class="nav-link" data-scroll-target="#wifi">WiFi</a>
+  <ul class="collapse">
+  <li><a href="#addendum" id="toc-addendum" class="nav-link" data-scroll-target="#addendum">Addendum</a></li>
+  </ul></li>
+  <li><a href="#webui-overview-and-general-setup" id="toc-webui-overview-and-general-setup" class="nav-link" data-scroll-target="#webui-overview-and-general-setup">WebUI Overview and general setup</a>
+  <ul class="collapse">
+  <li><a href="#system-general-setup" id="toc-system-general-setup" class="nav-link" data-scroll-target="#system-general-setup">System / General Setup</a></li>
+  <li><a href="#system-advanced-admin-access" id="toc-system-advanced-admin-access" class="nav-link" data-scroll-target="#system-advanced-admin-access">System / Advanced / Admin Access</a></li>
+  <li><a href="#system-advanced-firewall-nat" id="toc-system-advanced-firewall-nat" class="nav-link" data-scroll-target="#system-advanced-firewall-nat">System / Advanced / Firewall &amp; NAT</a></li>
+  <li><a href="#system-advanced-networking" id="toc-system-advanced-networking" class="nav-link" data-scroll-target="#system-advanced-networking">System / Advanced / Networking</a></li>
+  <li><a href="#system-advanced-miscellaneous" id="toc-system-advanced-miscellaneous" class="nav-link" data-scroll-target="#system-advanced-miscellaneous">System / Advanced / Miscellaneous</a></li>
+  <li><a href="#system-advanced-notifications" id="toc-system-advanced-notifications" class="nav-link" data-scroll-target="#system-advanced-notifications">System / Advanced / Notifications</a></li>
+  <li><a href="#interfaces-wan-and-lan" id="toc-interfaces-wan-and-lan" class="nav-link" data-scroll-target="#interfaces-wan-and-lan">Interfaces / WAN (and LAN)</a></li>
+  <li><a href="#dashboard" id="toc-dashboard" class="nav-link" data-scroll-target="#dashboard">Dashboard</a></li>
+  </ul></li>
+  <li><a href="#ntp-server" id="toc-ntp-server" class="nav-link" data-scroll-target="#ntp-server">NTP Server</a></li>
+  <li><a href="#dhcp" id="toc-dhcp" class="nav-link" data-scroll-target="#dhcp">DHCP</a>
+  <ul class="collapse">
+  <li><a href="#static-mappings" id="toc-static-mappings" class="nav-link" data-scroll-target="#static-mappings">Static Mappings</a></li>
+  </ul></li>
+  <li><a href="#dns" id="toc-dns" class="nav-link" data-scroll-target="#dns">DNS</a></li>
+  <li><a href="#pfblocker---ad-and-geoblocking" id="toc-pfblocker---ad-and-geoblocking" class="nav-link" data-scroll-target="#pfblocker---ad-and-geoblocking">Pfblocker - ad and geoblocking</a></li>
+  <li><a href="#dynamic-dns" id="toc-dynamic-dns" class="nav-link" data-scroll-target="#dynamic-dns">Dynamic DNS</a></li>
+  <li><a href="#openvpn---secure-remote-access" id="toc-openvpn---secure-remote-access" class="nav-link" data-scroll-target="#openvpn---secure-remote-access">OpenVPN - secure remote access</a>
+  <ul class="collapse">
+  <li><a href="#basic-setup" id="toc-basic-setup" class="nav-link" data-scroll-target="#basic-setup">Basic Setup</a>
+  <ul class="collapse">
+  <li><a href="#dns-resolution" id="toc-dns-resolution" class="nav-link" data-scroll-target="#dns-resolution">DNS resolution</a></li>
+  </ul></li>
+  <li><a href="#create-users" id="toc-create-users" class="nav-link" data-scroll-target="#create-users">Create Users</a></li>
+  <li><a href="#export-keys-to-devices" id="toc-export-keys-to-devices" class="nav-link" data-scroll-target="#export-keys-to-devices">Export keys to devices</a></li>
+  </ul></li>
+  <li><a href="#conclusion" id="toc-conclusion" class="nav-link" data-scroll-target="#conclusion">Conclusion</a></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content quarto-banner-title-block" id="quarto-document-content">
+
+
+
+
+<section id="rationale" class="level1">
+<h1>Rationale</h1>
+<section id="who-this-is-for" class="level2">
+<h2 class="anchored" data-anchor-id="who-this-is-for">Who this is for</h2>
+<p>This guide is mostly for me. I’m trying to get better at documenting all the tech stuff I do on my home system, both to ensure I have a decent understanding of what I’m doing, and also to ensure I can reproduce it if I need to rebuild at some point in the future. This guide is heavily reliant on the guidance from Mark Furneaux in his <a href="https://www.youtube.com/watch?v=agieD5uiwYY&amp;list=PLE726R7YUJTePGvo0Zga2juUBxxFTH4Bk&amp;index=1">YouTube series</a> on the topic. The first video in that playlist provides a good overview of what pfsense is and why you might want to install it. If you watch that video and think you might like to install pfsense, but don’t want to watch about 9 hours of YouTube to figure out how to set it up, this might come in handy for you as well.</p>
+</section>
+<section id="what-this-will-cover" class="level2">
+<h2 class="anchored" data-anchor-id="what-this-will-cover">What this will cover</h2>
+<p>At a high level this will cover installing and configuring a pfsense box along with a Unifi wireless access point. Hardware selection is not covered here. The table of contents describes the sections of pfsense settings and applications that will be set up over the course of this guide.</p>
+</section>
+</section>
+<section id="resources" class="level1">
+<h1>Resources</h1>
+<p>Besides the <a href="https://docs.netgate.com/">excellent pfsense documentation</a> I relied heavily on a series of YouTube videos from <a href="https://www.youtube.com/watch?v=agieD5uiwYY">Mark Furneaux</a>.</p>
+</section>
+<section id="base-install" class="level1">
+<h1>Base Install</h1>
+<p>The instructions on the <a href="https://docs.netgate.com/pfsense/en/latest/install/installing-pfsense.html">install page</a> are pretty good. The link for <a href="https://docs.netgate.com/reference/create-flash-media.html">creating install media</a> is also comprehensive. Since I didn’t deviate from their instructions in any meaningful way and there’s no reason to expect their documentation to go away I’m not going to reiterate the steps in any detail here. Basically flash the installer image to a USB key, boot that in your system and follow the wizard.</p>
+</section>
+<section id="wizard-setup" class="level1">
+<h1>Wizard Setup</h1>
+<p>Next we go through the Wizard. I did the bare minimum of config here, preferring to leave the details for once I had a minimally working system set up. From a browser head to <a href="https://192.168.1.1">the default IP</a>. You’ll get prompted that the connection is not secure. We’ll deal with certificates later. For now just hit advanced and proceed.</p>
+<p>The first thing you should see is a login page. The default login is admin/pfsense. After that there’s a welcome page for the Wizard, followed by a page describing all the support options that are available. After that we get to the first page to actually populate.</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<figure class="figure">
+<img src="pfsense/pfsense_01_wizard_01.PNG" title="first wizard page" class="img-fluid figure-img">
+</figure>
+<p></p><figcaption class="figure-caption">wizard page</figcaption><p></p>
+</figure>
+</div>
+<p>All that’s necessary on this page is to give your router a name (I went with behemoth because I’m doing an <a href="https://en.wikipedia.org/wiki/The_Expanse_(novel_series)">expanse</a> themed naming scheme). You also need to name your local domain. localcomain seems fine so I left it at that. DNS can be configured here but I left it alone and will configure it later.</p>
+<p>Next is time zone, left to default NTP for now but set to my timezone.</p>
+<p>My WAN interface is DHCP so I just leave all default.</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<figure class="figure">
+<img src="pfsense/pfsense_01_wizard_02.PNG" title="second wizard page" class="img-fluid figure-img">
+</figure>
+<p></p><figcaption class="figure-caption">wizard page</figcaption><p></p>
+</figure>
+</div>
+<p>The next step is to configure your LAN interface. You can leave it on <code>192.168.1.1</code> but I prefer to change it. The reason is that <code>192.168.[1/0].1</code> is a super common address range. If I use that range on my LAN, and then try and VPN back into it from someone else’s network using the same address range it tends to cause issues. The <a href="https://docs.netgate.com/pfsense/en/latest/book/network/understanding-public-and-private-ip-addresses.html">pfsense book</a> has a good chapter on this. The 24 subnet mask is equivalent to <code>255.255.255.0</code>. If you haven’t seen that notation before, or need to brush up the <a href="https://docs.netgate.com/pfsense/en/latest/book/network/understanding-cidr-subnet-mask-notation.html">pfsense book</a> also has a decent high level introduction.</p>
+<p>Next step is to update the admin password - make it something secure and save it somewhere. I use LastPass for everything password related.</p>
+<p>Wizard over! You’ll be prompted to reload, and if you changed the LAN IP you might need to release and renew your IP again before it will load up.</p>
+<p>Navigate to <a href="https://behemoth">https://behemoth</a> (or whatever you picked for your hostname)- connected!</p>
+</section>
+<section id="wifi" class="level1">
+<h1>WiFi</h1>
+<p>So getting WiFi going was a bit of an adventure. This might be too niche for anyone else to benefit from, but I’m sure going to appreciate having it written down somewhere if I need to do it again. My <a href="https://en.wikipedia.org/wiki/Wireless_access_point">WAP</a> is a Ubiquiti Unifi AP AC Lite. All Ubiquiti hardware is managed through a controller. You can buy a physical device from them to serve this function, but they’re at least $130 so nuts to that. When I was planning out this build I read that you can install the controller software right on your pfsense box. That seemed ideal… until I tried it. After much weeping and gnashing of teeth I ended up burning my pfsense install to the ground and starting over. Given I actually hadn’t done much on the setup yet and messing around with getting the controller working involved installing a bunch of software I didn’t want any more and wasn’t sure I could get rid of that seemed like the safest bet. On to plan B. Eventually I’ll probably get a Raspberry pi as a dedicated host for the controller, but for now I don’t have a spare one so I decided to throw it on my server.</p>
+<p>The <a href="https://hub.docker.com/r/linuxserver/unifi-controller">saints over at LinuxServer</a> have a container made so I went with that. After resolving a port conflict with one of my other services the controller launched just fine.</p>
+<p>After navigating to my server’s IP on port 8443 I got a login prompt where I had to name my controller and then sign into (or create) my ubiquiti account. I set everything to auto optimize and to create one SSID for both 5GHz and 2.4GHz networks.</p>
+<p>Up to here everything is super slick, but then I hit problems.</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<figure class="figure">
+<img src="pfsense/wifi_01.PNG" title="wifi" class="img-fluid figure-img">
+</figure>
+<p></p><figcaption class="figure-caption">Wi-Fi</figcaption><p></p>
+</figure>
+</div>
+<p>My WAP showed up on the home page but it was just stuck on “Adopting (Update Required)”. Initial googling suggested that I would have to manually push a firmware update before I could adopt. This didn’t actually solve the issue, but just for reference here’s how you do that:</p>
+<p>Check your router to determine what IP the WAP has been assigned. Google for the firmware for your hardware, on the Unifi page you’ll get a download icon and after accepting the terms you’ll get a direct download link. SSH into the WAP, the default username and password are both ubnt.</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">curl</span> <span class="op">&lt;</span>firmware_binary_link_location<span class="op">&gt;</span> -o /tmp/fwupdate.bin</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="ex">syswrapper.sh</span> upgrade2 <span class="kw">&amp;</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>The prompt on the WAP should now show the latest firmware version when you SSH back in. Again, this didn’t fix my issue, but knowing how to push firmware updates might come in handy later so I wanted it recorded.</p>
+<p>The actual solution was to hard code where the controller should be broadcasting from. Here’s the <a href="https://community.ui.com/questions/UniFi-is-stuck-at-Adopting/596ee99e-5828-4fa2-930d-e6d3b68deba6">forum post</a> describing it. I had to put in the IP of my server for some reason. I could resolve it by hostname from my other PC, but the WAP itself could only ping it based on the IP. I’ll revisit this after I mess with DNS more later on pfsense.</p>
+<p>First click settings in the lower left of the controller page:</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="pfsense/wifi_02.PNG" class="img-fluid figure-img"></p>
+<p></p><figcaption class="figure-caption">WIFI</figcaption><p></p>
+</figure>
+</div>
+<p>Then on the controller page hard code the IP and host and set “Override host with controller hostname/IP”. I also set “Make controller discoverable on the L2 network” since it’s a locally hosted controller, but I’m not sure that actually made a difference. Doesn’t hurt.</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="pfsense/wifi_03.PNG" class="img-fluid figure-img"></p>
+<p></p><figcaption class="figure-caption">WIFI</figcaption><p></p>
+</figure>
+</div>
+<p>For now I’m online!</p>
+<section id="addendum" class="level2">
+<h2 class="anchored" data-anchor-id="addendum">Addendum</h2>
+<p>I have an old Kobo reader. After switching to the Unifi AP I couldn’t get it on the WiFi. An even older Kindle would connect, and my newer Kobo connected after manually entering the SSID, but no luck with the older one. Eventually I found <a href="https://www.reddit.com/r/kobo/comments/6p86sj/no_wifi_since_last_firmware_update/">this reddit thread</a> with the solution. From the Unifi control panel I went to settings -&gt; wireless networks -&gt; &lt;my SSID&gt; -&gt; advanced and unchecked “enable minimum data rate control” for the 2G network. After applying that and trying to connect a few more times I made it online with the Kobo.</p>
+</section>
+</section>
+<section id="webui-overview-and-general-setup" class="level1">
+<h1>WebUI Overview and general setup</h1>
+<p>This section of the guide will follow along with <a href="https://www.youtube.com/watch?v=rgupXMlz3is">part 5.1 of Mark Furneaux’s guide</a>. The video is about 4 years old and based on pfsense 2.3 whereas I’m using 2.4.5, so there may be some minor cosmetic differences. I also want a text representation of his guide, as it will be easier to refer back to later.</p>
+<section id="system-general-setup" class="level2">
+<h2 class="anchored" data-anchor-id="system-general-setup">System / General Setup</h2>
+<p>Only two minor changes here: <img src="pfsense/pfsense_02_general_01.PNG" title="theming" class="img-fluid" alt="theming"></p>
+</section>
+<section id="system-advanced-admin-access" class="level2">
+<h2 class="anchored" data-anchor-id="system-advanced-admin-access">System / Advanced / Admin Access</h2>
+<p>Turn off https since we don’t have a certificate authority (maybe I’ll figure that part out later)</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="pfsense/pfsense_02_general_02.PNG" class="img-fluid figure-img"></p>
+<p></p><figcaption class="figure-caption">admin</figcaption><p></p>
+</figure>
+</div>
+<p>Change browser tab text so I know what page each tab is on.</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="pfsense/pfsense_02_general_03.PNG" class="img-fluid figure-img"></p>
+<p></p><figcaption class="figure-caption">text</figcaption><p></p>
+</figure>
+</div>
+<p>Enable SSH and change the default port to 2222 (security through obscurity). I’m going to set up keys later, for now let it work with a password but come back and update this later.</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="pfsense/pfsense_02_general_04.PNG" class="img-fluid figure-img"></p>
+<p></p><figcaption class="figure-caption">ssh</figcaption><p></p>
+</figure>
+</div>
+<p>Fun piece of trivia, right as I enabled this my web front-end froze. The actual router was still functioning, but I couldn’t get any web admin. Part of it was that I had to switch from https to http in the URL, but even after that I would hit the login, it would accept my password, and just take me back to the login page. I found <a href="https://www.reddit.com/r/PFSENSE/comments/6r5xpq/switched_to_http_now_webconfigurator_wont_get/">this reddit thread</a> which had the same issue. For me I could connect in using a private browsing window, which led me to try restarting my browser, which fixed it. Computers…</p>
+</section>
+<section id="system-advanced-firewall-nat" class="level2">
+<h2 class="anchored" data-anchor-id="system-advanced-firewall-nat">System / Advanced / Firewall &amp; NAT</h2>
+<p>Set Firewall optimization to conservative. I have plenty of CPU and RAM for the size of my network, so why not give idle connections a little longer to hang out? Apparently this can improve VOIP performance.</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="pfsense/pfsense_02_general_05.PNG" class="img-fluid figure-img"></p>
+<p></p><figcaption class="figure-caption">firewall</figcaption><p></p>
+</figure>
+</div>
+</section>
+<section id="system-advanced-networking" class="level2">
+<h2 class="anchored" data-anchor-id="system-advanced-networking">System / Advanced / Networking</h2>
+<p>For now I’m just going to disable IPv6. I don’t think my ISP supports it and I don’t see the need for it on my LAN. Maybe I’ll revisit that later, but for now turning it off seems like the safer approach.</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="pfsense/pfsense_02_general_06.PNG" class="img-fluid figure-img"></p>
+<p></p><figcaption class="figure-caption">ipv6</figcaption><p></p>
+</figure>
+</div>
+<p>Set everything possible to work on hardware. Given that I have Intel NICs in my router I think I can safely run all of these things. I ran iperf3 between two wired connections as well as <a href="https://www.speedtest.net">speedtest</a> before enabling the settings and then again after. Note that you have to reboot after changing these settings. After the reboot performance was essentially unchanged so I took that as a good sign and kept the settings.</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="pfsense/pfsense_02_general_07.PNG" class="img-fluid figure-img"></p>
+<p></p><figcaption class="figure-caption">hardware</figcaption><p></p>
+</figure>
+</div>
+</section>
+<section id="system-advanced-miscellaneous" class="level2">
+<h2 class="anchored" data-anchor-id="system-advanced-miscellaneous">System / Advanced / Miscellaneous</h2>
+<p>I don’t expect a lot of super heavy CPU needs on this system, so I might as well save some power and heat. I’ll put it on Adaptive to start, but I’ll check out Hiadaptive if some services seem to chug.</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="pfsense/pfsense_02_general_08.PNG" class="img-fluid figure-img"></p>
+<p></p><figcaption class="figure-caption">hiadaptive</figcaption><p></p>
+</figure>
+</div>
+<p>My CPU supports AES-NI and I’ll want that enabled for better VPN performance later.</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="pfsense/pfsense_02_general_09.PNG" class="img-fluid figure-img"></p>
+<p></p><figcaption class="figure-caption">aesni</figcaption><p></p>
+</figure>
+</div>
+</section>
+<section id="system-advanced-notifications" class="level2">
+<h2 class="anchored" data-anchor-id="system-advanced-notifications">System / Advanced / Notifications</h2>
+<p>I want email notifications if something gets borked on my router. I don’t want to use my actual gmail address to send these notifications though, as I’d like to keep the security on it a lot more locked down. I created a new gmail account just for the router, and then in my account settings (for the router email <em>do not</em> do this for your actual email) I set “less secure apps” to on so that I could enable sending emails with the following settings:</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="pfsense/pfsense_02_general_10.PNG" class="img-fluid figure-img"></p>
+<p></p><figcaption class="figure-caption">notifications</figcaption><p></p>
+</figure>
+</div>
+<p>After all that I hit “test SMTP settings” and received an email informing me it worked. Hurray!</p>
+</section>
+<section id="interfaces-wan-and-lan" class="level2">
+<h2 class="anchored" data-anchor-id="interfaces-wan-and-lan">Interfaces / WAN (and LAN)</h2>
+<p>I’m going to disable IPv6 here since as I discussed I don’t want to use it.</p>
+<p>For the LAN I first have to disable the DHCPv6 service:</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="pfsense/pfsense_02_general_12.PNG" class="img-fluid figure-img"></p>
+<p></p><figcaption class="figure-caption">dhcp6</figcaption><p></p>
+</figure>
+</div>
+<p>And then on each respective interface’s page I can disable IPv6</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="pfsense/pfsense_02_general_11.PNG" class="img-fluid figure-img"></p>
+<p></p><figcaption class="figure-caption">dhcp6</figcaption><p></p>
+</figure>
+</div>
+</section>
+<section id="dashboard" class="level2">
+<h2 class="anchored" data-anchor-id="dashboard">Dashboard</h2>
+<p>Let’s add some widgets! Everyone loves widgets.</p>
+<p>Add S.M.A.R.T status so I can see if my hard drive is failing. Services Status to see what’s running. Interface statistics to see if I’m getting any errors, and finally traffic graphs because who doesn’t like a nice live graph?</p>
+</section>
+</section>
+<section id="ntp-server" class="level1">
+<h1>NTP Server</h1>
+<p><a href="https://www.youtube.com/watch?v=h8A5tcUIOcw">YouTube guide here</a></p>
+<p>In addition to the pool server that’s automatically configured I’ll add a couple extras to improve synchronization:</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="pfsense/pfsense_03_ntp_01.PNG" class="img-fluid figure-img"></p>
+<p></p><figcaption class="figure-caption">ntp</figcaption><p></p>
+</figure>
+</div>
+<p>I’ll also enable RDD graphs because it might be fun to see a chart of time drift and recalibration for my system, why not?</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="pfsense/pfsense_03_ntp_02.PNG" class="img-fluid figure-img"></p>
+<p></p><figcaption class="figure-caption">ntp</figcaption><p></p>
+</figure>
+</div>
+<p>Now that I’ve got a nice fancy NTP server it will be nice to have all the machines on my network in sync for time by using the local pfsense NTP server.</p>
+<p>On Windows (I always forget where to find this on Windows) you go to control panel -&gt; date and time -&gt; Internet Time -&gt; Change settings -&gt; change the server to your pfsense router. In my case that’s <code>behemoth.localdomain</code>. On windows at least it seems like you have to include the <code>.localdomain</code> part.</p>
+<p>On Linux, following <a href="https://www.digitalocean.com/community/tutorials/how-to-set-up-time-synchronization-on-ubuntu-18-04">this digitalocean guide</a> first I need to check if I’m using <code>timesyncd</code> (probably) or ntp:</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="pfsense/pfsense_03_ntp_03.PNG" class="img-fluid figure-img"></p>
+<p></p><figcaption class="figure-caption">ntp</figcaption><p></p>
+</figure>
+</div>
+<p>Since in this case I’m on timesyncd I’ll have to turn that service off, install ntp, enable it, and then point it to my pfsense box:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> timedatectl set-ntp no</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Confirm it was disabled</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="ex">timedatectl</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Install ntp (this is for Ubuntu, similar for Arch or whatever)</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> apt update <span class="kw">&amp;&amp;</span> <span class="fu">sudo</span> apt install ntp <span class="at">-y</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Check that it loaded</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="ex">ntpq</span> <span class="at">-p</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a><span class="co"># check that timedatectl picked it up correctly</span></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a><span class="ex">timedatectl</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>After that I have to edit <code>/etc/ntp.conf</code> and replace the default pools with just one for my router. Finally I restart the NTP service with <code>sudo service ntp restart</code> and I can run <code>ntpq -p</code> one more time to make sure it’s pointing to my server. Everything looks good and now I’ve spent way more time than is reasonable making sure my clocks are perfectly in sync.</p>
+</section>
+<section id="dhcp" class="level1">
+<h1>DHCP</h1>
+<p><a href="https://www.youtube.com/watch?v=QC_nXreJCvc">YouTube guide here</a></p>
+<p>There are two basic settings I want to change for DHCP. They’re both fairly minor. The first just sets it so that the logs for DHCP activity show my local time zone instead of UTC, which will make them easier to interpret. The second just lets me make pretty graphs if I want.</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="pfsense/pfsense_04_dhcp_01.PNG" class="img-fluid figure-img"></p>
+<p></p><figcaption class="figure-caption">dhcp</figcaption><p></p>
+</figure>
+</div>
+<p>Since I went to all the trouble of setting up NTP, I’ll set up DHCP to push that server. Note that I had to use the IP of my router here, not the hostname. This doesn’t guarantee DHCP clients will use the NTP server, but it provides the option, so why not?</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="pfsense/pfsense_04_dhcp_02.PNG" class="img-fluid figure-img"></p>
+<p></p><figcaption class="figure-caption">dhcp</figcaption><p></p>
+</figure>
+</div>
+<section id="static-mappings" class="level2">
+<h2 class="anchored" data-anchor-id="static-mappings">Static Mappings</h2>
+<p>For most of the devices on my network I’d like to give them easy to type and remember names, even if they don’t have the functionality to specify a hostname (or even if they do just to be safe). For one thing this makes it easy to connect to devices, but even for things I don’t want to connect to (like an e-reader) it’s nice to give them an obvious name. That way if I’m looking at the DHCP leases on my network it will be easier to notice a new device. To do this there are two steps. The first is adding a DHCP static mapping for each device, and the second is enabling DNS to resolve those names (skipping ahead a bit since DNS is next). While you can do static mappings from the DHCP services page, it’s actually easier to do from the DHCP status page. Beside each device that’s connected there’s an “add static mask icon” which you can click. After that you just have to fill in an IP, the hostname you want, and an optional description:</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="pfsense/pfsense_04_dhcp_03.PNG" class="img-fluid figure-img"></p>
+<p></p><figcaption class="figure-caption">static mask</figcaption><p></p>
+</figure>
+</div>
+<p>Since I’m going to set up most of my network this way I’m also going to narrow the range for regular DHCP leases to be handed out back on the DHCP Server service page:</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="pfsense/pfsense_04_dhcp_04.PNG" class="img-fluid figure-img"></p>
+<p></p><figcaption class="figure-caption">static mask</figcaption><p></p>
+</figure>
+</div>
+<p>After this I’ll have to trigger a release/renew cycle for all devices on the network. The easiest way to do this is probably just reboot the router.</p>
+<p>To set a proper hostname on a device here are the instructions relevant to me:</p>
+<p>On Linux: edit <code>/etc/hostname</code> to be whatever you want the hostname to be.</p>
+<p>On Android: Who knows? I can’t seem to make this give a proper name. Fortunately I can rely on the name from pfsense.</p>
+<p>On Windows: Hit start, type “pc name” and select the entry that comes up, click “Rename this PC” and change it to whatever you want.</p>
+<p>The last step is to set the DNS resolver to resolve these names. In services -&gt; DNS resolver I check these two boxes:</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="pfsense/pfsense_04_dhcp_05.PNG" class="img-fluid figure-img"></p>
+<p></p><figcaption class="figure-caption">resolver</figcaption><p></p>
+</figure>
+</div>
+<p>I think I only need the second one since I gave every client on my network a static lease, but the other one seems nice to have as well, so I’ll enable it.</p>
+</section>
+</section>
+<section id="dns" class="level1">
+<h1>DNS</h1>
+<p><a href="https://www.youtube.com/watch?v=s3VXLIXGazM">Relevant YouTube section</a></p>
+<p>To speed up name resolution, I’m going to run <a href="https://code.google.com/archive/p/namebench/downloads">namebench</a>, wait about an hour for it to complete, and then add the three DNS servers that it finds are the fastest, along with <code>8.8.8.8</code> which is Google’s DNS sever to my DNS server settings under System -&gt; General setup:</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="pfsense/pfsense_05_dns_01.PNG" class="img-fluid figure-img"></p>
+<p></p><figcaption class="figure-caption">servers</figcaption><p></p>
+</figure>
+</div>
+<p>Respect to my ISP, all the fastest DNS servers are from them, and the two fastest are the ones I was assigned by DHCP. So this probably didn’t really do anything for me. Oh well.</p>
+<p>I’m going to add a couple extra settings in services -&gt; DNS resolver:</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="pfsense/pfsense_05_dns_02.PNG" class="img-fluid figure-img"></p>
+<p></p><figcaption class="figure-caption">resolver</figcaption><p></p>
+</figure>
+</div>
+<p>These should make response times for DNS queries a little faster at the cost of trivial CPU increase.</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="pfsense/pfsense_05_dns_03.PNG" class="img-fluid figure-img"></p>
+<p></p><figcaption class="figure-caption">cache</figcaption><p></p>
+</figure>
+</div>
+<p>Why not store more names? I have tons of RAM.</p>
+</section>
+<section id="pfblocker---ad-and-geoblocking" class="level1">
+<h1>Pfblocker - ad and geoblocking</h1>
+<p>Now we get to the fun stuff. This blocks ads/spam/etc at the network level, which is awesome.</p>
+<p>I’m using <a href="https://www.youtube.com/watch?v=OJ8HHwpGxHw">this guide from Lawrence systems</a> as the basis for my setup.</p>
+<p>First thing’s first is to install the package, I went with the development version since that’s what was installed in the tutorial I was following:</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="pfsense/pfsense_06_pfblocker_01.PNG" class="img-fluid figure-img"></p>
+<p></p><figcaption class="figure-caption">pfblocker install</figcaption><p></p>
+</figure>
+</div>
+<p>Head over to the settings page:</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="pfsense/pfsense_06_pfblocker_02_install.PNG" class="img-fluid figure-img"></p>
+<p></p><figcaption class="figure-caption">pfblocker install</figcaption><p></p>
+</figure>
+</div>
+<p>Then go through the wizard (this may come up automatically, it didn’t for me):</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="pfsense/pfsense_06_pfblocker_02_wizard.PNG" class="img-fluid figure-img"></p>
+<p></p><figcaption class="figure-caption">pfblocker install</figcaption><p></p>
+</figure>
+</div>
+<p>You get some warnings about how this will wipe your setup. That’s fine, we’re installing fresh. Then you get the first actual input prompt. The defaults are fine for me so I leave them:</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="pfsense/pfsense_06_pfblocker_02_wizard2.PNG" class="img-fluid figure-img"></p>
+<p></p><figcaption class="figure-caption">pfblocker install</figcaption><p></p>
+</figure>
+</div>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="pfsense/pfsense_06_pfblocker_02_wizard3.PNG" class="img-fluid figure-img"></p>
+<p></p><figcaption class="figure-caption">pfblocker install</figcaption><p></p>
+</figure>
+</div>
+<p>And that’s the wizard done! It should auto run an update to download all the blocklists and other goodness. Wait for that to finish.</p>
+<p>Set up a MaxMind account for geoblocking and add in my license key:</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="pfsense/pfsense_06_pfblocker_03.PNG" class="img-fluid figure-img"></p>
+<p></p><figcaption class="figure-caption">geoblock</figcaption><p></p>
+</figure>
+</div>
+<p>Enable floating rules (see the video for a discussion on why)</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="pfsense/pfsense_06_pfblocker_04.PNG" class="img-fluid figure-img"></p>
+<p></p><figcaption class="figure-caption">floating</figcaption><p></p>
+</figure>
+</div>
+<p>Enable kill states</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="pfsense/pfsense_06_pfblocker_05.PNG" class="img-fluid figure-img"></p>
+<p></p><figcaption class="figure-caption">kill</figcaption><p></p>
+</figure>
+</div>
+<p>On geoblocking I’m going to deny both for top spammers, and then deny inbound from anywhere except North America. I’m not hosting anything, the only inbound traffic should be me connecting in on VPN (set up later). I’ll have to remember to change this if I go on vacation somewhere off continent. I’m also going to disable logging for now as I don’t really need to look at when this happens. If there’s an issue I’ll turn it back on.</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="pfsense/pfsense_06_pfblocker_06.PNG" class="img-fluid figure-img"></p>
+<p></p><figcaption class="figure-caption">geoip</figcaption><p></p>
+</figure>
+</div>
+<p>And that’s it! I can wait an hour or manually have it reload the settings:</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="pfsense/pfsense_06_pfblocker_07.PNG" class="img-fluid figure-img"></p>
+<p></p><figcaption class="figure-caption">reload</figcaption><p></p>
+</figure>
+</div>
+</section>
+<section id="dynamic-dns" class="level1">
+<h1>Dynamic DNS</h1>
+<p>Looks like VPN certs will want to be associated with a domain so I guess I should buy a domain and set up dynamic DNS first.</p>
+<p>I bought my domain through namecheap. I also repointed this blog to use the domain, so if that all went smoothly this is being read at <a href="blog.ianpreston.ca">blog.ianpreston.ca</a>.</p>
+<p><a href="https://www.namecheap.com/support/knowledgebase/article.aspx/36/11/how-do-i-start-using-dynamic-dns">Namecheap</a> has good docs on setting up dynamic DNS. I enabled it following the instructions above (just hit enable under advanced DNS from your domain page).</p>
+<p>Then I created an <a href="https://www.namecheap.com/support/knowledgebase/article.aspx/43/11/how-do-i-set-up-a-host-for-dynamic-dns">A+ DNS record</a></p>
+<p>Then from pfsense I went to services -&gt; Dynamic DNS and filled in the info for namecheap. Note that the domain part has to be your whole domain. At first I had just the ca part in there with my name and the subdomain in hostname and that didn’t work.</p>
+<p>Refreshing the namecheap page confirmed that the dummy IP I’d entered had updated to the correct one, but a ping didn’t work right away. Presumably it takes a while for the DNS records to propagate.</p>
+</section>
+<section id="openvpn---secure-remote-access" class="level1">
+<h1>OpenVPN - secure remote access</h1>
+<p>I’m following the <a href="https://docs.netgate.com/pfsense/en/latest/vpn/openvpn/index.html">docs</a> and the <a href="https://docs.netgate.com/pfsense/en/latest/book/vpn/index.html">book</a> for this part. For now I’m going to use OpenVPN. At some point in the future I might switch to <a href="https://www.wireguard.com/">WireGuard</a> as it seems to be the new hotness and is integrated into the latest Linux kernel, but I’m going to wait for official pfsense adoption on that one.</p>
+<section id="basic-setup" class="level2">
+<h2 class="anchored" data-anchor-id="basic-setup">Basic Setup</h2>
+<ul>
+<li>Under VPN -&gt; OpenVPN head to the wizard tab.</li>
+<li>Leave authentication backend as Local User Access</li>
+<li>Fill in details for the CA. I left most things the default</li>
+<li>Same deal for the server cert, most options should persist from the CA</li>
+<li>Set up general server information
+<ul>
+<li>I set hardware crypto on.</li>
+<li>Tunnel network has to be an IP range not used by your LAN, and it shouldn’t be a common one. Since my LAN uses 172.17.1.0/24 I went with 172.17.2.0/24</li>
+<li>I left redirect gateway off because I’m just trying to set up LAN access remotely, I don’t need all my traffic tunneled through here if I’m remote</li>
+<li>Local network points to my LAN so I can access it, so as described above that’s 172.17.1.0/24</li>
+<li>I set concurrent connections to 10. Probably more than I’ll need but why not?</li>
+<li>I enabled Inter-Client Communication</li>
+<li>I set the DNS default domain to localdomain</li>
+<li>I set DNS Server 1 to 172.17.1.1. These two options should allow me to access my servers by hostname even remotely</li>
+<li>I set the NTP server to 172.17.1.1 since I went to all the trouble of configuring it</li>
+<li>I don’t think I need NetBIOS or WINS so I left that blank</li>
+</ul></li>
+<li>Check boxes for both firewall rules</li>
+<li>Wizard complete, now I want to be able to export settings to clients, so over to System -&gt; package manager and install <code>openvpn-client-export</code></li>
+</ul>
+<section id="dns-resolution" class="level3">
+<h3 class="anchored" data-anchor-id="dns-resolution">DNS resolution</h3>
+<p>I’m not sure why I had to set this, but in order to get my client machines to be able to resolve hostnames of servers I had to go into Services -&gt; DNS resolver -&gt; General settings and check “Register connected OpenVPN clients in the DNS resolver”. The way they describe it really sounds like it should allow me to resolve client names, but it fixed my issue so whatever.</p>
+</section>
+</section>
+<section id="create-users" class="level2">
+<h2 class="anchored" data-anchor-id="create-users">Create Users</h2>
+<p>System -&gt; User Manager -&gt; Add User. For users I’m going with the <code>&lt;person&gt;_&lt;device&gt;_vpn</code> naming convention. So for example my phone’s certificate will be <code>ian_phone_vpn</code>. I don’t add the user to admins, and I create and store a nice secure password with LastPass. Make a certificate for the user, all the default’s should be fine, just fill in an appropriately descriptive name.</p>
+</section>
+<section id="export-keys-to-devices" class="level2">
+<h2 class="anchored" data-anchor-id="export-keys-to-devices">Export keys to devices</h2>
+<p>Back to VPN -&gt; OpenVPN -&gt; Client Export Utility. Since I have dynamic DNS configured I changed over Host Name Resolution to my DynamicDNS name rather than my IP which is the default.</p>
+<p>I didn’t mess with any of the defaults. I have the OpenVPN Connect app on my phone so I scrolled down to the user I just created for my phone and clicked “OpenVPN Connect (iOS/Android). Downloaded the file, transferred it to my phone, imported it in the app and was good to go.</p>
+</section>
+</section>
+<section id="conclusion" class="level1">
+<h1>Conclusion</h1>
+<p>That’s it for now! Everything seems to work well. I’ll update this guide if I make any further changes to my setup.</p>
+<p>Last thing to do is go to Diagnostics -&gt; Backup &amp; Restore and save my config, just in case something bad happens.</p>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    target: function(trigger) {
+      return trigger.previousElementSibling;
+    }
+  });
+  clipboard.on('success', function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  });
+  function tippyHover(el, contentFn) {
+    const config = {
+      allowHTML: true,
+      content: contentFn,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start'
+    };
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      return note.innerHTML;
+    });
+  }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+</body></html>

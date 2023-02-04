@@ -1,0 +1,924 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.2.335">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="dcterms.date" content="2020-10-14">
+<meta name="description" content="My bash script for getting a minimal working Arch install.">
+
+<title>Ian’s blog - Automating provisioning Arch - OS installation</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1.6em;
+  vertical-align: middle;
+}
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+    color: #aaaaaa;
+  }
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code span.at { color: #7d9029; } /* Attribute */
+code span.bn { color: #40a070; } /* BaseN */
+code span.bu { color: #008000; } /* BuiltIn */
+code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code span.ch { color: #4070a0; } /* Char */
+code span.cn { color: #880000; } /* Constant */
+code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code span.dt { color: #902000; } /* DataType */
+code span.dv { color: #40a070; } /* DecVal */
+code span.er { color: #ff0000; font-weight: bold; } /* Error */
+code span.ex { } /* Extension */
+code span.fl { color: #40a070; } /* Float */
+code span.fu { color: #06287e; } /* Function */
+code span.im { color: #008000; font-weight: bold; } /* Import */
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code span.op { color: #666666; } /* Operator */
+code span.ot { color: #007020; } /* Other */
+code span.pp { color: #bc7a00; } /* Preprocessor */
+code span.sc { color: #4070a0; } /* SpecialChar */
+code span.ss { color: #bb6688; } /* SpecialString */
+code span.st { color: #4070a0; } /* String */
+code span.va { color: #19177c; } /* Variable */
+code span.vs { color: #4070a0; } /* VerbatimString */
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+</style>
+
+
+<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../">
+<script src="../site_libs/quarto-html/quarto.js"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../site_libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 20,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit"
+  }
+}</script>
+
+
+<link rel="stylesheet" href="../styles.css">
+</head>
+
+<body class="nav-fixed">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg navbar-dark ">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container">
+    <a class="navbar-brand" href="../index.html">
+    <span class="navbar-title">Ian’s blog</span>
+    </a>
+  </div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll ms-auto">
+  <li class="nav-item">
+    <a class="nav-link" href="../about.html">
+ <span class="menu-text">about</span></a>
+  </li>  
+  <li class="nav-item compact">
+    <a class="nav-link" href="https://github.com/ianepreston"><i class="bi bi-github" role="img">
+</i> 
+ <span class="menu-text"></span></a>
+  </li>  
+</ul>
+              <div id="quarto-search" class="" title="Search"></div>
+          </div> <!-- /navcollapse -->
+      </div> <!-- /container-fluid -->
+    </nav>
+</header>
+<!-- content -->
+<header id="title-block-header" class="quarto-title-block default page-columns page-full">
+  <div class="quarto-title-banner page-columns page-full">
+    <div class="quarto-title column-body">
+      <h1 class="title">Automating provisioning Arch - OS installation</h1>
+                  <div>
+        <div class="description">
+          My bash script for getting a minimal working Arch install.
+        </div>
+      </div>
+                          <div class="quarto-categories">
+                <div class="quarto-category">configuration</div>
+                <div class="quarto-category">linux</div>
+                <div class="quarto-category">arch</div>
+                <div class="quarto-category">bash</div>
+              </div>
+                  </div>
+  </div>
+    
+  
+  <div class="quarto-title-meta">
+
+      
+      <div>
+      <div class="quarto-title-meta-heading">Published</div>
+      <div class="quarto-title-meta-contents">
+        <p class="date">October 14, 2020</p>
+      </div>
+    </div>
+    
+      
+    </div>
+    
+  
+  </header><div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#automating-provisioning-arch" id="toc-automating-provisioning-arch" class="nav-link active" data-scroll-target="#automating-provisioning-arch">Automating provisioning Arch</a></li>
+  <li><a href="#introduction" id="toc-introduction" class="nav-link" data-scroll-target="#introduction">Introduction</a>
+  <ul class="collapse">
+  <li><a href="#edit-2020-10-20" id="toc-edit-2020-10-20" class="nav-link" data-scroll-target="#edit-2020-10-20">edit 2020-10-20</a></li>
+  <li><a href="#actual-introduction" id="toc-actual-introduction" class="nav-link" data-scroll-target="#actual-introduction">Actual Introduction</a></li>
+  </ul></li>
+  <li><a href="#inspiration" id="toc-inspiration" class="nav-link" data-scroll-target="#inspiration">Inspiration</a></li>
+  <li><a href="#tldr" id="toc-tldr" class="nav-link" data-scroll-target="#tldr">TLDR</a>
+  <ul class="collapse">
+  <li><a href="#setting-up-wifi" id="toc-setting-up-wifi" class="nav-link" data-scroll-target="#setting-up-wifi">Setting up WiFi</a></li>
+  <li><a href="#make-sure-partitions-are-set-up" id="toc-make-sure-partitions-are-set-up" class="nav-link" data-scroll-target="#make-sure-partitions-are-set-up">Make sure partitions are set up</a></li>
+  <li><a href="#run-the-script" id="toc-run-the-script" class="nav-link" data-scroll-target="#run-the-script">Run the script</a></li>
+  <li><a href="#post-install" id="toc-post-install" class="nav-link" data-scroll-target="#post-install">Post install</a></li>
+  </ul></li>
+  <li><a href="#setting-up-for-testing" id="toc-setting-up-for-testing" class="nav-link" data-scroll-target="#setting-up-for-testing">Setting up for testing</a>
+  <ul class="collapse">
+  <li><a href="#prepping-the-vm" id="toc-prepping-the-vm" class="nav-link" data-scroll-target="#prepping-the-vm">Prepping the VM</a></li>
+  <li><a href="#getting-the-bootstrap-script-to-the-machine" id="toc-getting-the-bootstrap-script-to-the-machine" class="nav-link" data-scroll-target="#getting-the-bootstrap-script-to-the-machine">Getting the bootstrap script to the machine</a></li>
+  </ul></li>
+  <li><a href="#bootstrapping-the-install" id="toc-bootstrapping-the-install" class="nav-link" data-scroll-target="#bootstrapping-the-install">Bootstrapping the install</a>
+  <ul class="collapse">
+  <li><a href="#strict-mode" id="toc-strict-mode" class="nav-link" data-scroll-target="#strict-mode">Strict mode</a></li>
+  <li><a href="#text-formatting" id="toc-text-formatting" class="nav-link" data-scroll-target="#text-formatting">Text formatting</a></li>
+  <li><a href="#setup-paths" id="toc-setup-paths" class="nav-link" data-scroll-target="#setup-paths">Setup paths</a></li>
+  <li><a href="#flags-and-variables" id="toc-flags-and-variables" class="nav-link" data-scroll-target="#flags-and-variables">Flags and variables</a></li>
+  <li><a href="#user-provided-variables" id="toc-user-provided-variables" class="nav-link" data-scroll-target="#user-provided-variables">User provided variables</a></li>
+  <li><a href="#common-helper-functions" id="toc-common-helper-functions" class="nav-link" data-scroll-target="#common-helper-functions">Common helper functions</a></li>
+  <li><a href="#verification-functions" id="toc-verification-functions" class="nav-link" data-scroll-target="#verification-functions">Verification functions</a></li>
+  <li><a href="#prompts-user-interaction" id="toc-prompts-user-interaction" class="nav-link" data-scroll-target="#prompts-user-interaction">Prompts / User interaction</a></li>
+  <li><a href="#installationconfiguration-options" id="toc-installationconfiguration-options" class="nav-link" data-scroll-target="#installationconfiguration-options">Installation/configuration options</a>
+  <ul class="collapse">
+  <li><a href="#partitioning" id="toc-partitioning" class="nav-link" data-scroll-target="#partitioning">Partitioning</a></li>
+  </ul></li>
+  <li><a href="#installation" id="toc-installation" class="nav-link" data-scroll-target="#installation">Installation</a></li>
+  </ul></li>
+  <li><a href="#conclusion-and-next-steps" id="toc-conclusion-and-next-steps" class="nav-link" data-scroll-target="#conclusion-and-next-steps">Conclusion and next steps</a></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content quarto-banner-title-block" id="quarto-document-content">
+
+
+
+
+<section id="automating-provisioning-arch" class="level1">
+<h1>Automating provisioning Arch</h1>
+<p>This is part 1 of a 4 part series describing how I provision my systems. Links to each part are below:</p>
+<ul>
+<li><a href="https://blog.ianpreston.ca/configuration/linux/arch/bash/2020/10/14/arch-bootstrap.html">part 1 - The base OS install</a></li>
+<li><a href="https://blog.ianpreston.ca/configuration/ansible/linux/arch/2020/11/21/ansible.html">part 2 - Software install and system configuration with Ansible</a></li>
+<li><a href="https://blog.ianpreston.ca/configuration/linux/arch/python/2020/11/25/dotfiles.html">part 3 - User level and python environment config with dotfiles and mkrc</a></li>
+<li><a href="https://blog.ianpreston.ca/configuration/linux/arch/2020/11/26/arch-tldr.html">part 4 - The tldr that wraps up how to do the whole thing from start to finish</a>]</li>
+</ul>
+</section>
+<section id="introduction" class="level1">
+<h1>Introduction</h1>
+<section id="edit-2020-10-20" class="level2">
+<h2 class="anchored" data-anchor-id="edit-2020-10-20">edit 2020-10-20</h2>
+<p>As I use this script to provision machines I’m going to end up making edits to it. I’m not going to edit this post every time I do that. The latest version of the provision script is always available <a href="https://github.com/ianepreston/recipes/blob/master/arch_bootstrap/bootstrap.sh">here</a>.</p>
+<p>I’ve also updated the TLDR section a bit based on some experience from the install. That part I will update if I make changes since I use it for reference when building systems.</p>
+</section>
+<section id="actual-introduction" class="level2">
+<h2 class="anchored" data-anchor-id="actual-introduction">Actual Introduction</h2>
+<p>I’ve installed a lot of operating systems a lot of times. The goal of writing out this post is to force me to really think about and clearly document a reproducible workflow for building my workstation.</p>
+<p>A secondary goal is to get better at bash.</p>
+</section>
+</section>
+<section id="inspiration" class="level1">
+<h1>Inspiration</h1>
+<p>There are a lot of very smart people out there doing similar things. In the past I’ve used Luke Smith’s <a href="https://larbs.xyz/">LARBS</a> as a base that I forked and modified. There was also <a href="https://www.reddit.com/r/archlinux/comments/gle74o/how_do_you_provision_your_system/">this recent discussion on Reddit</a> which pointed me to a couple of very interesting repositories to get inspiration from: <a href="https://github.com/brennanfee/provision-arch">Brennan Fee’s provision-arch</a> and <a href="https://github.com/Foxboron/PKGBUILDS">Morten Linderud’s PKGBUILDS</a></p>
+</section>
+<section id="tldr" class="level1">
+<h1>TLDR</h1>
+<p>For future me when I want to actually just install Arch on a system:</p>
+<section id="setting-up-wifi" class="level2">
+<h2 class="anchored" data-anchor-id="setting-up-wifi">Setting up WiFi</h2>
+<p>In the case where I’m doing this on a laptop I’ll likely have to get on WiFi before I can continue.</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">systemctl</span> start iwd.service</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="ex">iwctl</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="ex">device</span> list <span class="co">#magically changed my device name to wlan0 here somehow</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="ex">station</span> wlan0 connect <span class="op">&lt;</span>your SSID<span class="op">&gt;</span>  # You can enclose it in quotes if it has spaces</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="op">&lt;</span>enter <span class="ex">passphrase</span><span class="op">&gt;</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="bu">exit</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="ex">dhcpcd</span> wlan0</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>That should work, try pinging something just to be safe.</p>
+</section>
+<section id="make-sure-partitions-are-set-up" class="level2">
+<h2 class="anchored" data-anchor-id="make-sure-partitions-are-set-up">Make sure partitions are set up</h2>
+<p>I’m a wuss and don’t trust a script to actually create partitions. <code>lsblk</code> will tell you what disks you have. If you need to create/delete partitions before proceeding use <code>cfdisk /dev/sd&lt;letter&gt;</code> to create them. If it’s a completely blank hard drive and you need to create a boot partition make one at the beginning of the disk with 500M of space in <code>cfdisk</code> and then run <code>mkfs.vfat -F32 /dev/sd&lt;letter&gt;1</code> to format it. There’s probably a cleaner way to clean out the LVMs this script creates but for now it’s easier for me to just blow them away in <code>cfdisk</code> and create a fresh partition to install over. <em>edit: I got braver. The new script has an option to just wipe the whole disk if you want.</em></p>
+</section>
+<section id="run-the-script" class="level2">
+<h2 class="anchored" data-anchor-id="run-the-script">Run the script</h2>
+<div class="sourceCode" id="cb2"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">bash</span> <span class="op">&lt;(</span><span class="ex">curl</span> <span class="at">-fsSL</span> http://bootstrap.ianpreston.ca<span class="op">)</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</section>
+<section id="post-install" class="level2">
+<h2 class="anchored" data-anchor-id="post-install">Post install</h2>
+<ul>
+<li>Get the Wifi going again. It’s a different command than you use from the installer:</li>
+</ul>
+<div class="sourceCode" id="cb3"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="ex">nmcli</span> device wifi connect <span class="op">&lt;</span>SSID<span class="op">&gt;</span> password <span class="op">&lt;</span>password<span class="op">&gt;</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<ul>
+<li>Set up ssh keys - plug in the USB</li>
+</ul>
+<div class="sourceCode" id="cb4"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="ex">lsblk</span>  <span class="co"># find where the partition with the keys is stored</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="fu">mkdir</span> ssh  <span class="co"># make a mount point</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> mount /dev/sd<span class="op">&lt;</span>something<span class="op">&gt;</span> ssh</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="fu">cp</span> <span class="at">-R</span> ssh ssh_local  <span class="co"># Have to set permissions on keys (stupid NTFS)</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> ssh_local/CA</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="fu">chmod</span> 600 host_ca</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a><span class="fu">chmod</span> 600 user_ca</span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> ../</span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a><span class="fu">chmod</span> +x setup_host.sh</span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a><span class="fu">chmod</span> +x setup_user.sh</span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> ./setup_host.sh</span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a><span class="ex">./setup_user.sh</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>After this point you should be able to run ansible to complete the setup.</p>
+</section>
+</section>
+<section id="setting-up-for-testing" class="level1">
+<h1>Setting up for testing</h1>
+<p>I ended up working on this project over a period of time. Initially I was using a VM in Virtualbox. I document the steps for setting that up below. After a while I ended up putting docker on my Windows machine that I was using for testing, and found it conflicted with Virtualbox, so I switched to Hyper-V. Finally I got my hands on a beater notebook and ended up finishing up on that.</p>
+<section id="prepping-the-vm" class="level2">
+<h2 class="anchored" data-anchor-id="prepping-the-vm">Prepping the VM</h2>
+<p>First thing to do for any install is <a href="https://www.archlinux.org/download/">download the ISO</a>. I’m going to use <a href="https://www.virtualbox.org/">Virtualbox</a> as my hypervisor. No particular reason, I’ve just used it in the past and am comfortable with it.</p>
+<p>Then I create a base image to work off of.</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="arch/vm_01.PNG" class="img-fluid figure-img"></p>
+<p></p><figcaption class="figure-caption">base_vm</figcaption><p></p>
+</figure>
+</div>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="arch/vm_02.PNG" class="img-fluid figure-img"></p>
+<p></p><figcaption class="figure-caption">vm_disk</figcaption><p></p>
+</figure>
+</div>
+<p>Fire up the new VM, and select the Arch ISO at the prompt:</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="arch/vm_03.PNG" class="img-fluid figure-img"></p>
+<p></p><figcaption class="figure-caption">vm_iso</figcaption><p></p>
+</figure>
+</div>
+<p>After that we’re at the boot prompt. Now comes the fun task of developing a bootstrap script that will automate the install process.</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="arch/vm_04.PNG" class="img-fluid figure-img"></p>
+<p></p><figcaption class="figure-caption">vm_prompt</figcaption><p></p>
+</figure>
+</div>
+</section>
+<section id="getting-the-bootstrap-script-to-the-machine" class="level2">
+<h2 class="anchored" data-anchor-id="getting-the-bootstrap-script-to-the-machine">Getting the bootstrap script to the machine</h2>
+<p>I’ve created a <a href="https://github.com/ianepreston/recipes">repository on GitHub</a> to host code like this. I think I could probably just install git on the boot machine, clone the whole repo, navigate to the bootstrap script, and run it. That’s no fun though. Let’s see if I can find a more complicated approach just to save a few keystrokes.</p>
+<p>The full URL to the raw script is at <a href="https://raw.githubusercontent.com/ianepreston/recipes/arch_bootstrap/arch_bootstrap/bootstrap.sh">this page</a>. That’s pointing to the branch I’m using while I develop the script. When I’ve got it working I’ll hopefully remember to come back here and point it to the master reference. From there I can go to my domain registrar and add a URL redirect record to point an easy to remember subdomain to that path:</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="arch/DNS_01.PNG" class="img-fluid figure-img"></p>
+<p></p><figcaption class="figure-caption">DNS</figcaption><p></p>
+</figure>
+</div>
+<p>So now <a href="http://bootstrap.ianpreston.ca">bootstrap.ianpreston.ca</a> redirects directly to my shell script.</p>
+<p>To actually get the script onto my machine and run it I’ll use <a href="https://curl.haxx.se/">curl</a>. The exact syntax will be</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">bash</span> <span class="op">&lt;(</span><span class="ex">curl</span> <span class="at">-fsSL</span> http://bootstrap.ianpreston.ca<span class="op">)</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p><code>-f</code> Specifies that the script should fail silently. Otherwise if there’s an http error it will return a 404 page, which I’d then try and run. I’d rather it just not return anything and fail that way.</p>
+<p><code>-L</code> Specifies that if the server reports that the page has moved then curl will redo the request.</p>
+<p><code>-sS</code> Means the script should run silently, unless there’s a failure, in which case it will show the output. <code>-S</code> means show error and <code>-s</code> means silent.</p>
+<p>As I’m writing this the shell script doesn’t really do anything, it just prints something out so I know it worked. Here’s where it’s at at this point:</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co">#!/usr/bin/env bash</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="co"># To install: bash &lt;(curl -fsSL http://bootstrap.ianpreston.ca)</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">"We got this far!"</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>As a quick aside, I don’t write bash scripts often, so I often forget how exactly to set up the <a href="https://en.wikipedia.org/wiki/Shebang_(Unix)">shebang</a>. For bash scripts I’ve seen <code>#!/bin/bash</code> and <code>#!/usr/bin/env bash</code>. It seems like in most circumstances they’re interchangeable. <a href="https://unix.stackexchange.com/questions/29608/why-is-it-better-to-use-usr-bin-env-name-instead-of-path-to-name-as-my">This StackOverflow</a> post suggests that the latter is slightly more flexible/portable so I’m going to try and make a habit of using it in my scripts going forward.</p>
+<p>Back at the VM I test my overly elaborate bootstrapping setup and…</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="arch/curl_01.PNG" class="img-fluid figure-img"></p>
+<p></p><figcaption class="figure-caption">curl</figcaption><p></p>
+</figure>
+</div>
+<p>Sweet!</p>
+</section>
+</section>
+<section id="bootstrapping-the-install" class="level1">
+<h1>Bootstrapping the install</h1>
+<p>Borrowing liberally from the <a href="https://wiki.archlinux.org/index.php/installation_guide">Arch Install Guide</a> and the previously mentioned arch bootstrap script by <a href="https://github.com/brennanfee/provision-arch/blob/master/bootstrap/arch-install">Brennan Fee</a> let’s build up a script to auto install Arch. The goal isn’t to do everything with the script, we just need to get to a minimal environment with an SSH server so that Ansible can take over.</p>
+<section id="strict-mode" class="level2">
+<h2 class="anchored" data-anchor-id="strict-mode">Strict mode</h2>
+<p>The first couple lines of Brennan’s script include a bunch of things I don’t really understand. Since part of the goal of this is learning more bash I’m going to dissect them before moving on. The lines in question are:</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="va">SOURCED</span><span class="op">=</span>false <span class="kw">&amp;&amp;</span> <span class="bu">[</span> <span class="st">"</span><span class="va">${0}</span><span class="st">"</span> <span class="ot">=</span> <span class="st">"</span><span class="va">${BASH_SOURCE</span><span class="op">[</span><span class="dv">0</span><span class="op">]</span><span class="va">}</span><span class="st">"</span> <span class="bu">]</span> <span class="kw">||</span> <span class="va">SOURCED</span><span class="op">=</span>true</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> <span class="ot">! </span><span class="va">$SOURCED</span><span class="kw">;</span> <span class="cf">then</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>  <span class="bu">set</span> <span class="at">-eEu</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>  <span class="bu">shopt</span> <span class="at">-s</span> extdebug</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>  <span class="bu">trap</span> <span class="st">'s=$?; echo "$0: Error on line "$LINENO": $BASH_COMMAND"; exit $s'</span> ERR</span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>  <span class="va">IFS</span><span class="op">=</span><span class="st">$'</span><span class="dt">\n\t</span><span class="st">'</span></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a><span class="cf">fi</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Let’s break this up into tiny chunks. <code>SOURCED=false</code> is used to set a <a href="https://www.digitalocean.com/community/tutorials/how-to-read-and-set-environmental-and-shell-variables-on-a-linux-vps">shell variable</a> to <code>false</code>. Next up <code>&amp;&amp;</code> is a <a href="http://www.gnu.org/savannah-checkouts/gnu/bash/manual/bash.html#Lists">list operator</a> which will only run the next command if the previous one succeeded. So if we set <code>SOURCED</code> to <code>false</code> successfully then the next command will be executed.</p>
+<p>Putting something inside square brackets means to evaluate the expression inside and return success or failure based on that. You can use it for <code>if</code> statements, or use it to only execute a subsequent command based on the result of the conditional. Luke Smith has a <a href="https://www.youtube.com/watch?v=p0KKBmfiVl0">good video</a> explaining how to avoid <code>if</code> statements by writing code like the line we’re evaluating.</p>
+<p>So what are we actually evaluating in the square brackets? <a href="https://stackoverflow.com/questions/35006457/choosing-between-0-and-bash-source">This StackOverflow post</a> explains the difference between <code>${0}</code> and <code>${BASH_SOURCE[0]}</code>. I’ll outline the difference below with an example script called a few different ways:</p>
+<p>I’ve got a script called <code>experiment.sh</code> which I’ll be running to check out these smaller components of the script</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="co">#!/usr/bin/env bash</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">"0: [</span><span class="va">$0</span><span class="st">] vs bash_source: [</span><span class="va">${BASH_SOURCE</span><span class="op">[</span><span class="dv">0</span><span class="op">]</span><span class="va">}</span><span class="st">]"</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Here’s the output of running that script a few different ways:</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="ex">root@archiso</span> ~ <span class="co"># bash ./experiment.sh</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="ex">0:</span> [./experiment.sh] vs bash_source: [./experiment.sh]</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="ex">root@archiso</span> ~ <span class="co"># ./experiment.sh</span></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a><span class="ex">0:</span> [./experiment.sh] vs bash_source: [./experiment.sh]</span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a><span class="ex">root@archiso</span> ~ <span class="co"># . ./experiment.sh</span></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a><span class="ex">0:</span> [./experiment.sh] vs bash_source: []</span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a><span class="ex">root@archiso</span> ~ <span class="co"># source ./experiment.sh</span></span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a><span class="ex">0:</span> [./experiment.sh] vs bash_source: []</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>If I execute the script in a subshell, as with the first two examples, then they are equivalent and the expression will evaluate to true. If I <a href="https://linuxize.com/post/bash-source-command/">source</a> the script - that is I tell it to execute the commands in my current shell, then they will not be equivalent.</p>
+<p>Back to the script the shell variable name makes sense now and I can put this all together. Set the shell variable <code>SOURCED</code> to <code>false</code>, check whether the script is being sourced or not, and if it is, update the <code>SOURCED</code> shell variable to <code>true</code> (Since the <code>||</code> operator says to only execute the subsequent command if the previous did not return true).</p>
+<p>Inside this block we have some commands that, as described above, will only run if the script is being run from its own subshell. The first command, <code>set -eEu</code> uses the <a href="https://www.gnu.org/software/bash/manual/html_node/The-Set-Builtin.html">set builtin</a> to change the value of some shell options. <code>-e</code> forces the script to exit if almost any command in the script fails (the link provided above for <code>set</code> includes more details). <code>-E</code> let’s errors that occur within functions be trapped by the shells they inherit from. That’s confusing because it’s how I’d normally expect error handling to work, not a special case. <a href="https://medium.com/@dirk.avery/the-bash-trap-trap-ce6083f36700">This post</a> explains what’s going on. Finally, <code>-u</code> treats unset variables and parameters as an error. Again, this is what I’d expect a sane language to do by default. I think the normal behavior is to just return an empty string in bash though. Gross.</p>
+<p>Next up is <code>shopt -s extdebug</code>. <a href="https://www.gnu.org/software/bash/manual/html_node/The-Shopt-Builtin.html">The shopt builtin</a> lets us set additional shell options. The details of <code>extdebug</code> are in the previous link, but basically it allows better error tracing within function calls.</p>
+<p>The next line is a bit of error handling as well. <code>trap</code> catches certain signals and runs a command in response. The basic syntax is <code>trap &lt;command to run when caught&gt; &lt;signals to catch&gt;</code>. Looking at <code>trap 's=$?; echo "$0: Error on line "$LINENO": $BASH_COMMAND" exit $s' ERR</code> that means if/when an <code>ERR</code> signal occurs in the script we’ll set the shell variable <code>s</code> to the exit status of the last task (that’s what <code>$?</code> is), print the filename of the shell script (<code>$0</code>), the line number of the error and it’s command, along with its exit status. Because of the options set above there’s no need to explicitly tell the <code>trap</code> to exit.</p>
+<p>The final line in the block changes the <a href="https://bash.cyberciti.biz/guide/$IFS">internal field separator</a> from the default of &lt;space&gt;&lt;tab&gt;&lt;newline&gt; to &lt;newline&gt;&lt;tab&gt;. The link above explains in general what that’s for. We’ll have to get a bit farther along in the script to see why it’s being used here.</p>
+</section>
+<section id="text-formatting" class="level2">
+<h2 class="anchored" data-anchor-id="text-formatting">Text formatting</h2>
+<p>That part was dense. The next few lines are easier:</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Text modifiers</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="va">Bold</span><span class="op">=</span><span class="st">"\033[1m"</span></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a><span class="va">Reset</span><span class="op">=</span><span class="st">"\033[0m"</span></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a><span class="co"># Colors</span></span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a><span class="va">Red</span><span class="op">=</span><span class="st">"\033[31m"</span></span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a><span class="va">Green</span><span class="op">=</span><span class="st">"\033[32m"</span></span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a><span class="va">Yellow</span><span class="op">=</span><span class="st">"\033[33m"</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Text enclosed within <code>$Bold</code> and <code>$Reset</code> will be bolded. Similarly, enclosing within one of the colours and <code>$Reset</code> will set the text to that colour.</p>
+</section>
+<section id="setup-paths" class="level2">
+<h2 class="anchored" data-anchor-id="setup-paths">Setup paths</h2>
+<p>The next section sets up a log file:</p>
+<div class="sourceCode" id="cb11"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="va">WORKING_DIR</span><span class="op">=</span><span class="va">$(</span><span class="bu">pwd</span><span class="va">)</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="va">LOG</span><span class="op">=</span><span class="st">"</span><span class="va">${WORKING_DIR}</span><span class="st">/arch-install.log"</span></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a><span class="kw">[[</span> <span class="ot">-f</span> <span class="va">${LOG}</span> <span class="kw">]]</span> <span class="kw">&amp;&amp;</span> <span class="fu">rm</span> <span class="at">-f</span> <span class="st">"</span><span class="va">${LOG}</span><span class="st">"</span></span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a><span class="bu">echo</span> <span class="st">"Start log..."</span> <span class="op">&gt;&gt;</span><span class="st">"</span><span class="va">${LOG}</span><span class="st">"</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p><code>pwd</code> stands for “print working directory”. When you enclose a command in <code>$()</code> it means to take the result of the command. To quickly illustrate, <code>EXAMPLE=pwd</code> would set <code>EXAMPLE</code> to “pwd”, whereas <code>EXAMPLE=$(pwd)</code> would set <code>EXAMPLE</code> to something like <code>/root</code>. The first two lines therefor set the <code>LOG</code> variable to point to a file in the current directory named <code>arch-install.log</code>.</p>
+<p>The next line checks if the logfile exists, and deletes it if it does.</p>
+<p>The final line writes “Start log…” into the logfile. <code>&gt;&gt;</code> redirects the output of the previous command to the end of the file on the right hand side. Since we know this is a brand new file (because of the line above) this will be the first line of the logfile.</p>
+</section>
+<section id="flags-and-variables" class="level2">
+<h2 class="anchored" data-anchor-id="flags-and-variables">Flags and variables</h2>
+<p>The next section sets up some system based flags</p>
+<div class="sourceCode" id="cb12"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="va">SYS_ARCH</span><span class="op">=</span><span class="va">$(</span><span class="fu">uname</span> <span class="at">-m</span><span class="va">)</span> <span class="co"># Architecture (x86_64)</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="va">UEFI</span><span class="op">=</span>0</span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="va">KEYMAP</span><span class="op">=</span><span class="st">"us"</span></span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a><span class="va">WIFI</span><span class="op">=</span>0</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p><code>uname</code> returns system information, and the <code>-m</code> flag specifies to return the machine hardware. As the comment above describes this will likely return <code>x86_64</code>. Later in the script we’ll check if the system is <a href="https://en.wikipedia.org/wiki/Unified_Extensible_Firmware_Interface">UEFI</a> or BIOS.</p>
+</section>
+<section id="user-provided-variables" class="level2">
+<h2 class="anchored" data-anchor-id="user-provided-variables">User provided variables</h2>
+<p>Here we just provide some defaults to variables that the user will set later in the script.</p>
+<div class="sourceCode" id="cb13"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="co"># User provided variables</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a><span class="va">HOST_NAME</span><span class="op">=</span><span class="st">"computer"</span></span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a><span class="va">KERNEL_VERSION</span><span class="op">=</span><span class="st">"default"</span></span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a><span class="va">MAIN_DISK</span><span class="op">=</span><span class="st">"/dev/sda"</span></span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a><span class="va">ROOT_PWD</span><span class="op">=</span><span class="st">""</span></span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a><span class="va">ANSIBLE_PWD</span><span class="op">=</span><span class="st">""</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</section>
+<section id="common-helper-functions" class="level2">
+<h2 class="anchored" data-anchor-id="common-helper-functions">Common helper functions</h2>
+<p>The next section has a series of small functions that will be used throughout the larger script. Let’s see what they do. The first one is:</p>
+<div class="sourceCode" id="cb14"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print_line()</span> <span class="kw">{</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>  <span class="bu">printf</span> <span class="st">"%</span><span class="va">$(</span><span class="fu">tput</span> cols<span class="va">)</span><span class="st">s\n"</span> <span class="kw">|</span> <span class="fu">tr</span> <span class="st">' '</span> <span class="st">'-'</span> <span class="kw">|&amp;</span> <span class="fu">tee</span> <span class="at">-a</span> <span class="st">"</span><span class="va">${LOG}</span><span class="st">"</span></span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a><span class="kw">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>The function name gives a pretty solid hint what it does. <code>printf</code> Allows you to print a combination of strings and variables along with specified formatting for the variables. There’s some good docs <a href="https://www.linuxjournal.com/content/bashs-built-printf-function">here</a>. <code>tput</code> <a href="http://linuxcommand.org/lc3_adv_tput.php">provides information about the current terminal</a>, in this case <code>cols</code> says the number of columns that make up a row in the terminal. In my VM <code>tput cols</code> returns <code>100</code> so the <code>printf</code> would resolve to <code>printf "%100s\n"</code> which means we’ll print spaces across the width of the terminal. <code>|&amp;</code> means to take the output (both from standard error and standard output, as opposed to just <code>|</code> which only return standard output) of the previous command and pass it as an input to the following command. <code>tr</code> in turn replaces the first string with the second, so we turn spaces into dashes, creating a line of dashes across the screen. Finally, that line of dashes is piped to <code>tee -a</code> which sends its input both to standard output and a file. The <code>-a</code> flag means to append the output to the file rather than overwriting it. All of that to say this function prints a line of dashes across your screen and into the logfile we defined above.</p>
+<p>Next up we have <code>blank_line</code>, which based on the explanation above is pretty self explanatory.</p>
+<div class="sourceCode" id="cb15"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="fu">blank_line()</span> <span class="kw">{</span></span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>  <span class="bu">echo</span> <span class="at">-e</span> <span class="st">"\n"</span> <span class="kw">|&amp;</span> <span class="fu">tee</span> <span class="at">-a</span> <span class="st">"</span><span class="va">${LOG}</span><span class="st">"</span></span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a><span class="kw">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Next up is <code>print_title</code></p>
+<div class="sourceCode" id="cb16"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print_title()</span> <span class="kw">{</span></span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">clear</span></span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>  <span class="ex">print_line</span></span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a>  <span class="bu">echo</span> <span class="at">-e</span> <span class="st">"# </span><span class="va">${Bold}$1${Reset}</span><span class="st">"</span> <span class="kw">|&amp;</span> <span class="fu">tee</span> <span class="at">-a</span> <span class="st">"</span><span class="va">${LOG}</span><span class="st">"</span></span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a>  <span class="ex">print_line</span></span>
+<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a>  <span class="bu">echo</span> <span class="st">""</span> <span class="kw">|&amp;</span> <span class="fu">tee</span> <span class="at">-a</span> <span class="st">"</span><span class="va">${LOG}</span><span class="st">"</span></span>
+<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a><span class="kw">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p><code>clear</code> clears the screen. Everything else has been explained except <code>$1</code> which is just the first argument passed to the function. This means calling <code>print_title "This is the title"</code> would clear the screen, print a line of dashes to the screen and log file, print <code>This is the title</code> to the screen and log file, another line, and then start at the beginning of a new line for whatever text follows.</p>
+<p>After that is <code>print_title_info</code></p>
+<div class="sourceCode" id="cb17"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="fu">print_title_info()</span> <span class="kw">{</span></span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>  <span class="va">T_COLS</span><span class="op">=</span><span class="va">$(</span><span class="fu">tput</span> cols<span class="va">)</span></span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>  <span class="bu">echo</span> <span class="at">-e</span> <span class="st">"</span><span class="va">${Bold}$1${Reset}</span><span class="st">\n"</span> <span class="kw">|</span> <span class="fu">fold</span> <span class="at">-sw</span> <span class="va">$((T_COLS</span> <span class="op">-</span> <span class="dv">18</span><span class="va">))</span> <span class="kw">|</span> <span class="fu">sed</span> <span class="st">'s/^/\t/'</span> <span class="kw">|&amp;</span> <span class="fu">tee</span> <span class="at">-a</span> <span class="st">"</span><span class="va">${LOG}</span><span class="st">"</span></span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a><span class="kw">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p><code>echo</code> just prints some text, the <code>-e</code> flag tells it to interpret escaped characters, so <code>\t</code> will show a tab rather than the literal <code>\t</code>. That gets piped to <a href="https://ss64.com/bash/fold.html">fold</a>, which wraps the text at 18 characters less than the width of the terminal. <code>-s</code> tells it to wrap at the last whitespace before the column limit (so don’t wrap in the middle of a word) and <code>w</code> is how you specify the column width to wrap on. After that we pipe the output to <a href="https://www.digitalocean.com/community/tutorials/the-basics-of-using-the-sed-stream-editor-to-manipulate-text-in-linux">sed</a> which I frankly find intimidating. This one’s not so bad though. <code>'s/&lt;pattern&gt;/&lt;other pattern&gt;/'</code> just performs a find replace of <code>&lt;pattern&gt;</code> for <code>&lt;other pattern&gt;</code> in each line of text that’s passed in. The patterns can be regular expressions, which I also find intimidating to work with, but this one is just saying to replace the beginning of the line (that’s what <code>^</code>) means with a tab. Not so terrible.</p>
+<p>The next several functions repeat the general concepts above, just with different formatting (red font for errors for example) so I won’t reproduce them here.</p>
+<p>Next up is <code>pause_function</code></p>
+<div class="sourceCode" id="cb18"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="fu">pause_function()</span> <span class="kw">{</span></span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>  <span class="ex">print_line</span></span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>  <span class="bu">read</span> <span class="at">-re</span> <span class="at">-sn</span> 1 <span class="at">-p</span> <span class="st">"Press enter to continue..."</span></span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a><span class="kw">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>In the original code the <code>read</code> line was in an <code>if</code> block that was based on a variable that wasn’t set anywhere in the script. I assume that was planned to build fully unattended builds eventually, but I took it out for now at least. <code>read</code> receives input from the user. <code>-re</code> specifies not to allow backslashes to escape characters and to use <code>Readline</code> to obtain the line in an interactive shell. <code>-s</code> tells read not to echo input to the terminal, <code>n 1</code> tells it how many characters of input to wait for. <code>-p</code> tells it what text to prompt with.</p>
+<p>Next up is <code>arch-chroot</code></p>
+<div class="sourceCode" id="cb19"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="fu">arch_chroot()</span> <span class="kw">{</span></span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>  <span class="ex">arch-chroot</span> /mnt /bin/bash <span class="at">-c</span> <span class="st">"</span><span class="va">${1}</span><span class="st">"</span> <span class="kw">|&amp;</span> <span class="fu">tee</span> <span class="at">-a</span> <span class="st">"</span><span class="va">${LOG}</span><span class="st">"</span></span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a><span class="kw">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>This is cool, when I’ve tried to build my own version of this in the past I broke things up into a pre and post <a href="https://wiki.archlinux.org/index.php/Chroot">chroot</a> because I couldn’t figure out how to get my script to change contexts. This one does it by just sending the commands one at a time into the chrooted environment. Neat!</p>
+<p>The final helper is <code>is_package_installed</code></p>
+<div class="sourceCode" id="cb20"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="fu">is_package_installed()</span> <span class="kw">{</span></span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>  <span class="co">#check if a package is already installed</span></span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a>  <span class="cf">for</span> PKG <span class="kw">in</span> <span class="va">$1</span><span class="kw">;</span> <span class="cf">do</span></span>
+<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a>    <span class="ex">pacman</span> <span class="at">-Q</span> <span class="st">"</span><span class="va">$PKG</span><span class="st">"</span> <span class="op">&amp;&gt;</span>/dev/null <span class="kw">&amp;&amp;</span> <span class="cf">return</span> <span class="dv">0</span></span>
+<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a>  <span class="cf">done</span></span>
+<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a>  <span class="cf">return</span> <span class="dv">1</span></span>
+<span id="cb20-7"><a href="#cb20-7" aria-hidden="true" tabindex="-1"></a><span class="kw">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p><code>pacman -Q</code> searches for a package matching the subsequent argument. If it finds it it will return its full name and version. If it can’t it will return an error. So this function will return 0 if any packages are found, and 1 if none of them are.</p>
+</section>
+<section id="verification-functions" class="level2">
+<h2 class="anchored" data-anchor-id="verification-functions">Verification functions</h2>
+<p>These are also helper functions, but they’re specifically designed to make sure the script is being run from the correct environment.</p>
+<p>First up is <code>check_root</code></p>
+<div class="sourceCode" id="cb21"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="fu">check_root()</span> <span class="kw">{</span></span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a>  <span class="ex">print_info</span> <span class="st">"Checking root permissions..."</span></span>
+<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> <span class="kw">[[</span> <span class="st">"</span><span class="va">$(</span><span class="fu">id</span> <span class="at">-u</span><span class="va">)</span><span class="st">"</span> <span class="ot">!=</span> <span class="st">"0"</span> <span class="kw">]];</span> <span class="cf">then</span></span>
+<span id="cb21-5"><a href="#cb21-5" aria-hidden="true" tabindex="-1"></a>    <span class="ex">error_msg</span> <span class="st">"ERROR! You must execute the script as the 'root' user."</span></span>
+<span id="cb21-6"><a href="#cb21-6" aria-hidden="true" tabindex="-1"></a>  <span class="cf">fi</span></span>
+<span id="cb21-7"><a href="#cb21-7" aria-hidden="true" tabindex="-1"></a><span class="kw">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p><code>id -u</code> returns the user id. Since Root is always user 0 on a system we know this isn’t being run as root and the script will fail.</p>
+<p>Next up is <code>check_archlinux</code></p>
+<div class="sourceCode" id="cb22"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="fu">check_archlinux()</span> <span class="kw">{</span></span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> <span class="kw">[[</span> <span class="ot">!</span> <span class="ot">-e</span> /etc/arch-release <span class="kw">]];</span> <span class="cf">then</span></span>
+<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a>    <span class="ex">error_msg</span> <span class="st">"ERROR! You must execute the script on Arch Linux."</span></span>
+<span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a>  <span class="cf">fi</span></span>
+<span id="cb22-5"><a href="#cb22-5" aria-hidden="true" tabindex="-1"></a><span class="kw">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p><code>-e &lt;file&gt;</code> checks if a file exists, so if <code>/etc/arch-release</code> does not exist (it’s an empty file on the USB boot system) then we’re not on Arch and had better exit.</p>
+<p>Next up is <code>check_boot_system</code></p>
+<div class="sourceCode" id="cb23"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="fu">check_boot_system()</span> <span class="kw">{</span></span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> <span class="kw">[[</span> <span class="st">"</span><span class="va">$(</span><span class="fu">cat</span> /sys/class/dmi/id/sys_vendor<span class="va">)</span><span class="st">"</span> <span class="ot">==</span> <span class="st">'Apple Inc.'</span> <span class="kw">]]</span> <span class="kw">||</span> <span class="kw">[[</span> <span class="st">"</span><span class="va">$(</span><span class="fu">cat</span> /sys/class/dmi/id/sys_vendor<span class="va">)</span><span class="st">"</span> <span class="ot">==</span> <span class="st">'Apple Computer, Inc.'</span> <span class="kw">]];</span> <span class="cf">then</span></span>
+<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a>    <span class="ex">modprobe</span> <span class="at">-r</span> <span class="at">-q</span> efivars <span class="kw">||</span> <span class="fu">true</span> <span class="co"># if MAC</span></span>
+<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a>  <span class="cf">else</span></span>
+<span id="cb23-5"><a href="#cb23-5" aria-hidden="true" tabindex="-1"></a>    <span class="ex">modprobe</span> <span class="at">-q</span> efivarfs <span class="co"># all others</span></span>
+<span id="cb23-6"><a href="#cb23-6" aria-hidden="true" tabindex="-1"></a>  <span class="cf">fi</span></span>
+<span id="cb23-7"><a href="#cb23-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb23-8"><a href="#cb23-8" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> <span class="kw">[[</span> <span class="ot">-d</span> <span class="st">"/sys/firmware/efi/"</span> <span class="kw">]];</span> <span class="cf">then</span></span>
+<span id="cb23-9"><a href="#cb23-9" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Mount efivarfs if it is not already mounted</span></span>
+<span id="cb23-10"><a href="#cb23-10" aria-hidden="true" tabindex="-1"></a>    <span class="co"># shellcheck disable=SC2143</span></span>
+<span id="cb23-11"><a href="#cb23-11" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> <span class="kw">[[</span> <span class="ot">-z</span> <span class="va">$(</span><span class="fu">mount</span> <span class="kw">|</span> <span class="fu">grep</span> /sys/firmware/efi/efivars<span class="va">)</span> <span class="kw">]];</span> <span class="cf">then</span></span>
+<span id="cb23-12"><a href="#cb23-12" aria-hidden="true" tabindex="-1"></a>      <span class="fu">mount</span> <span class="at">-t</span> efivarfs efivarfs /sys/firmware/efi/efivars</span>
+<span id="cb23-13"><a href="#cb23-13" aria-hidden="true" tabindex="-1"></a>    <span class="cf">fi</span></span>
+<span id="cb23-14"><a href="#cb23-14" aria-hidden="true" tabindex="-1"></a>    <span class="va">UEFI</span><span class="op">=</span>1</span>
+<span id="cb23-15"><a href="#cb23-15" aria-hidden="true" tabindex="-1"></a>  <span class="cf">else</span></span>
+<span id="cb23-16"><a href="#cb23-16" aria-hidden="true" tabindex="-1"></a>    <span class="va">UEFI</span><span class="op">=</span>0</span>
+<span id="cb23-17"><a href="#cb23-17" aria-hidden="true" tabindex="-1"></a>  <span class="cf">fi</span></span>
+<span id="cb23-18"><a href="#cb23-18" aria-hidden="true" tabindex="-1"></a><span class="kw">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>The purpose of this section is to <a href="https://wiki.archlinux.org/index.php/installation_guide#Verify_the_boot_mode">verify the boot mode</a>. Pretty much any system I can imagine installing on these days will be UEFI, but it doesn’t hurt to check. I’m not totally sure what the first little bit is doing, and I don’t have a mac to test. The <code>-r</code> flag is to remove a module from the kernel, rather than add it like the normal command. <code>modprobe -q efivarfs</code> will add the <code>efivarfs</code> module to the kernel, and fail quietly if it can’t find that module (that’s the <code>-q</code> flag). As described in the install guide, if you have a <code>/sys/firmware/efi/</code> directory, which is what the first block of the second if statement is checking, then your system is EFI. The next part describes what it’s going to do (mount efivarfs if it’s not already mounted), but let’s dig into how it does that. <code>-z</code> returns true if the length of an evaluated string is zero. <code>mount</code> without any arguments returns all mountpoints in the system. We pipe that into <code>grep</code> which will return <code>/sys/firmwar/efi/efivars</code> if it’s mounted and an empty string if not, which accomplishes the goal. The last part of the script sets the variable UEFI to identify if the system is EFI or BIOS.</p>
+<p>Next up is <code>check_wifi</code></p>
+<div class="sourceCode" id="cb24"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="fu">check_wifi()</span> <span class="kw">{</span></span>
+<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a>  <span class="va">has_wifi</span><span class="op">=</span><span class="va">($(</span><span class="fu">ls</span> /sys/class/net <span class="kw">|</span> <span class="fu">grep</span> wlan<span class="va">))</span></span>
+<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> <span class="bu">[</span> <span class="ot">-n</span> <span class="st">"</span><span class="va">$has_wifi</span><span class="st">"</span> <span class="bu">]</span><span class="kw">;</span> <span class="cf">then</span></span>
+<span id="cb24-4"><a href="#cb24-4" aria-hidden="true" tabindex="-1"></a>    <span class="va">WIFI</span><span class="op">=</span>1</span>
+<span id="cb24-5"><a href="#cb24-5" aria-hidden="true" tabindex="-1"></a>  <span class="cf">fi</span></span>
+<span id="cb24-6"><a href="#cb24-6" aria-hidden="true" tabindex="-1"></a><span class="kw">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>As per the <a href="https://wiki.archlinux.org/index.php/Network_configuration#Listing_network_interfaces">Arch Wikie</a> <code>/sys/class/net</code> lists all network devices. So if I list that directory and match on <code>wlan</code> then I know there’s a wireless device. I’ll use this to determine whether or not to install wireless tools when loading software.</p>
+</section>
+<section id="prompts-user-interaction" class="level2">
+<h2 class="anchored" data-anchor-id="prompts-user-interaction">Prompts / User interaction</h2>
+<p>The first prompt asks for a hostname for the system. It had some code for auto naming that I trimmed out. The rest of it is pretty self explanatory:</p>
+<div class="sourceCode" id="cb25"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ask_for_hostname()</span> <span class="kw">{</span></span>
+<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a>  <span class="ex">print_title</span> <span class="st">"Hostname"</span></span>
+<span id="cb25-3"><a href="#cb25-3" aria-hidden="true" tabindex="-1"></a>  <span class="ex">print_title_info</span> <span class="st">"Pick a hostname for this machine.  Press enter to have a random hostname selected."</span></span>
+<span id="cb25-4"><a href="#cb25-4" aria-hidden="true" tabindex="-1"></a>  <span class="bu">read</span> <span class="at">-rp</span> <span class="st">"Hostname [ex: archlinux]: "</span> <span class="va">HOST_NAME</span></span>
+<span id="cb25-5"><a href="#cb25-5" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> <span class="kw">[[</span> <span class="va">$HOST_NAME</span> <span class="ot">==</span> <span class="st">""</span> <span class="kw">]];</span> <span class="cf">then</span></span>
+<span id="cb25-6"><a href="#cb25-6" aria-hidden="true" tabindex="-1"></a>    <span class="va">HOST_NAME</span><span class="op">=</span><span class="st">"arch-</span><span class="va">$((</span><span class="dv">1</span> <span class="op">+</span> <span class="va">RANDOM</span> <span class="op">%</span> <span class="dv">1000</span><span class="va">))</span><span class="st">.tts.lan"</span></span>
+<span id="cb25-7"><a href="#cb25-7" aria-hidden="true" tabindex="-1"></a>  <span class="cf">fi</span></span>
+<span id="cb25-8"><a href="#cb25-8" aria-hidden="true" tabindex="-1"></a><span class="kw">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>The <code>read</code> command takes inputs, the <code>-r</code> flag prevents special characters from being included, and <code>-p</code> displays the text that follows as a prompt without a newline before taking the input.</p>
+<p>The last block says if the input is empty to give a hostname like <code>arch-[random number 1-1000].tts.lan</code>.</p>
+<p>Next up we’re determine which hard disk to install on. Note that this isn’t handling partitioning or anything yet.</p>
+<div class="sourceCode" id="cb26"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="fu">ask_for_main_disk()</span> <span class="kw">{</span></span>
+<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a>  <span class="ex">print_info</span> <span class="st">"Determining main disk..."</span></span>
+<span id="cb26-3"><a href="#cb26-3" aria-hidden="true" tabindex="-1"></a>  <span class="va">devices_list</span><span class="op">=</span><span class="va">($(</span><span class="ex">lsblk</span> <span class="at">--nodeps</span> <span class="at">--noheading</span> <span class="at">--list</span> <span class="at">--exclude</span> 1,11,7 <span class="kw">|</span> <span class="fu">awk</span> <span class="st">'{print "/dev/" $1}'</span><span class="va">))</span></span>
+<span id="cb26-4"><a href="#cb26-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb26-5"><a href="#cb26-5" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> <span class="kw">[[</span> <span class="va">${</span><span class="op">#</span><span class="va">devices_list</span><span class="op">[@]</span><span class="va">}</span> <span class="ot">==</span> 1 <span class="kw">]];</span> <span class="cf">then</span></span>
+<span id="cb26-6"><a href="#cb26-6" aria-hidden="true" tabindex="-1"></a>    <span class="va">device</span><span class="op">=</span><span class="va">${devices_list</span><span class="op">[</span><span class="dv">0</span><span class="op">]</span><span class="va">}</span></span>
+<span id="cb26-7"><a href="#cb26-7" aria-hidden="true" tabindex="-1"></a>  <span class="cf">else</span></span>
+<span id="cb26-8"><a href="#cb26-8" aria-hidden="true" tabindex="-1"></a>    <span class="ex">print_title</span> <span class="st">"Main Disk Selection"</span></span>
+<span id="cb26-9"><a href="#cb26-9" aria-hidden="true" tabindex="-1"></a>    <span class="ex">print_title_info</span> <span class="st">"Select which disk to use for the main installation (where root and boot will go)."</span></span>
+<span id="cb26-10"><a href="#cb26-10" aria-hidden="true" tabindex="-1"></a>    <span class="ex">lsblk</span> <span class="at">--nodeps</span> <span class="at">--list</span> <span class="at">--exclude</span> 1,11,7 <span class="at">--output</span> <span class="st">"name,size,type"</span></span>
+<span id="cb26-11"><a href="#cb26-11" aria-hidden="true" tabindex="-1"></a>    <span class="ex">blank_line</span></span>
+<span id="cb26-12"><a href="#cb26-12" aria-hidden="true" tabindex="-1"></a>    <span class="va">PS3</span><span class="op">=</span><span class="st">"Enter your option: "</span></span>
+<span id="cb26-13"><a href="#cb26-13" aria-hidden="true" tabindex="-1"></a>    <span class="bu">echo</span> <span class="at">-e</span> <span class="st">"Select main drive:\n"</span></span>
+<span id="cb26-14"><a href="#cb26-14" aria-hidden="true" tabindex="-1"></a>    <span class="cf">select</span> device <span class="kw">in</span> <span class="st">"</span><span class="va">${devices_list</span><span class="op">[@]</span><span class="va">}</span><span class="st">"</span><span class="kw">;</span> <span class="cf">do</span></span>
+<span id="cb26-15"><a href="#cb26-15" aria-hidden="true" tabindex="-1"></a>      <span class="cf">if</span> <span class="ex">contains_element</span> <span class="st">"</span><span class="va">${device}</span><span class="st">"</span> <span class="st">"</span><span class="va">${devices_list</span><span class="op">[@]</span><span class="va">}</span><span class="st">"</span><span class="kw">;</span> <span class="cf">then</span></span>
+<span id="cb26-16"><a href="#cb26-16" aria-hidden="true" tabindex="-1"></a>        <span class="cf">break</span></span>
+<span id="cb26-17"><a href="#cb26-17" aria-hidden="true" tabindex="-1"></a>      <span class="cf">else</span></span>
+<span id="cb26-18"><a href="#cb26-18" aria-hidden="true" tabindex="-1"></a>        <span class="ex">invalid_option</span></span>
+<span id="cb26-19"><a href="#cb26-19" aria-hidden="true" tabindex="-1"></a>      <span class="cf">fi</span></span>
+<span id="cb26-20"><a href="#cb26-20" aria-hidden="true" tabindex="-1"></a>    <span class="cf">done</span></span>
+<span id="cb26-21"><a href="#cb26-21" aria-hidden="true" tabindex="-1"></a>  <span class="cf">fi</span></span>
+<span id="cb26-22"><a href="#cb26-22" aria-hidden="true" tabindex="-1"></a>  <span class="va">MAIN_DISK</span><span class="op">=</span><span class="va">$device</span></span>
+<span id="cb26-23"><a href="#cb26-23" aria-hidden="true" tabindex="-1"></a><span class="kw">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>The first line calls <a href="https://man7.org/linux/man-pages/man8/lsblk.8.html">lsblk</a> to list all available block devices. <code>--nodeps</code> tells it not to show holder devices, so for example if I have an <code>sda</code> device with two partitions - <code>sda1</code> and <code>sda2</code> it will only show <code>sda</code>, which is what we want since we’re just picking the disk itself at this stage. <code>--noheading</code> drops column headers, which we want since we’re just going to parse this list. <code>--list</code> produces the output as a list, which we want in order to make a list of potential disks to select. <code>--exclude 1,11,17</code> tells it not to list RAM or optical drive devices. The output of that list is piped into <code>awk</code> so that <code>/dev/</code> can be prepended to it.</p>
+<p>The next line says that if the array has only one entry (there’s only one disk available) then we just use that device. If we have more than one device the script prints out a list of them using the same command used to build the list of available disks but showing column headers and including some details to help select the correct disk.</p>
+<p><code>PS3</code> sets the prompt used by the select command. The select statement has you pick a device and loops if you haven’t selected one of the options in the list until you do. Finally we set <code>MAIN_DISK</code> to the device we want to install on.</p>
+<p>The original script has some similar functions to pick a second disk, but I’m not going to be using that option so I’m omitting it.</p>
+<p>There are a few other selection scripts (to set a root password and kernel version for example), but there’s nothing new in terms of BASH in them so I’ll omit them from this post.</p>
+</section>
+<section id="installationconfiguration-options" class="level2">
+<h2 class="anchored" data-anchor-id="installationconfiguration-options">Installation/configuration options</h2>
+<p>Now we get to functions that actually help with the installation and configuration of the system.</p>
+<p>First is <code>configure_mirrorlist</code></p>
+<div class="sourceCode" id="cb27"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a><span class="fu">configure_mirrorlist()</span> <span class="kw">{</span></span>
+<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a>  <span class="ex">print_info</span> <span class="st">"Configuring repository mirrorlist"</span></span>
+<span id="cb27-3"><a href="#cb27-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb27-4"><a href="#cb27-4" aria-hidden="true" tabindex="-1"></a>  <span class="ex">pacman</span> <span class="at">-Syy</span> <span class="kw">|&amp;</span> <span class="fu">tee</span> <span class="at">-a</span> <span class="st">"</span><span class="va">${LOG}</span><span class="st">"</span></span>
+<span id="cb27-5"><a href="#cb27-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb27-6"><a href="#cb27-6" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Install reflector</span></span>
+<span id="cb27-7"><a href="#cb27-7" aria-hidden="true" tabindex="-1"></a>  <span class="ex">pacman</span> <span class="at">-S</span> <span class="at">--noconfirm</span> reflector <span class="kw">|&amp;</span> <span class="fu">tee</span> <span class="at">-a</span> <span class="st">"</span><span class="va">${LOG}</span><span class="st">"</span></span>
+<span id="cb27-8"><a href="#cb27-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb27-9"><a href="#cb27-9" aria-hidden="true" tabindex="-1"></a>  <span class="ex">print_status</span> <span class="st">"    Backing up the original mirrorlist..."</span></span>
+<span id="cb27-10"><a href="#cb27-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">rm</span> <span class="at">-f</span> <span class="st">"/etc/pacman.d/mirrorlist.orig"</span> <span class="kw">|&amp;</span> <span class="fu">tee</span> <span class="at">-a</span> <span class="st">"</span><span class="va">${LOG}</span><span class="st">"</span></span>
+<span id="cb27-11"><a href="#cb27-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mv</span> <span class="at">-i</span> <span class="st">"/etc/pacman.d/mirrorlist"</span> <span class="st">"/etc/pacman.d/mirrorlist.orig"</span> <span class="kw">|&amp;</span> <span class="fu">tee</span> <span class="at">-a</span> <span class="st">"</span><span class="va">${LOG}</span><span class="st">"</span></span>
+<span id="cb27-12"><a href="#cb27-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb27-13"><a href="#cb27-13" aria-hidden="true" tabindex="-1"></a>  <span class="ex">print_status</span> <span class="st">"    Rotating the new list into place..."</span></span>
+<span id="cb27-14"><a href="#cb27-14" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Run reflector</span></span>
+<span id="cb27-15"><a href="#cb27-15" aria-hidden="true" tabindex="-1"></a>  <span class="ex">/usr/bin/reflector</span> <span class="at">--score</span> 100 <span class="at">--fastest</span> 20 <span class="at">--age</span> 12 <span class="at">--sort</span> rate <span class="at">--protocol</span> https <span class="at">--save</span> /etc/pacman.d/mirrorlist <span class="kw">|&amp;</span> <span class="fu">tee</span> <span class="at">-a</span> <span class="st">"</span><span class="va">${LOG}</span><span class="st">"</span></span>
+<span id="cb27-16"><a href="#cb27-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb27-17"><a href="#cb27-17" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Allow global read access (required for non-root yaourt execution)</span></span>
+<span id="cb27-18"><a href="#cb27-18" aria-hidden="true" tabindex="-1"></a>  <span class="fu">chmod</span> +r /etc/pacman.d/mirrorlist <span class="kw">|&amp;</span> <span class="fu">tee</span> <span class="at">-a</span> <span class="st">"</span><span class="va">${LOG}</span><span class="st">"</span></span>
+<span id="cb27-19"><a href="#cb27-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb27-20"><a href="#cb27-20" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Update one more time</span></span>
+<span id="cb27-21"><a href="#cb27-21" aria-hidden="true" tabindex="-1"></a>  <span class="ex">pacman</span> <span class="at">-Syy</span> <span class="kw">|&amp;</span> <span class="fu">tee</span> <span class="at">-a</span> <span class="st">"</span><span class="va">${LOG}</span><span class="st">"</span></span>
+<span id="cb27-22"><a href="#cb27-22" aria-hidden="true" tabindex="-1"></a><span class="kw">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p><code>pacman -Syy</code> says to sync all available packages from the master repository. The <code>-S</code> flag is for sync, and <code>yy</code> forces a refresh even if the list appears to be up to date.</p>
+<p>Next the script installs <a href="https://wiki.archlinux.org/index.php/Reflector">reflector</a> in order to update and optimize the list of mirrors that will be used for downloading packages.</p>
+<p>The rest of the script is pretty well commented and straightforward.</p>
+<section id="partitioning" class="level3">
+<h3 class="anchored" data-anchor-id="partitioning">Partitioning</h3>
+<p>The script I’m templating off of is designed to wipe an entire disk. I generally dual boot Windows so I definitely don’t want that option. In light of that I had to tweak this section a fair bit. Rather than wiping the whole disk and creating new partitions like the template script, I want to identify an existing boot and linux partition and install to them. See the TLDR section for setting up a fresh disk. If you’ve already installed Arch on the disk you’re targeting you should also clear out the partition with the LVMs on it and start with a blank slate. That’s not done by the script, check the TLDR section for how to manage that.</p>
+<div class="sourceCode" id="cb28"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a><span class="fu">find_install_partition()</span> <span class="kw">{</span></span>
+<span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a>  <span class="ex">print_title</span> <span class="st">"Installation partition selection"</span></span>
+<span id="cb28-3"><a href="#cb28-3" aria-hidden="true" tabindex="-1"></a>  <span class="ex">print_title_info</span> <span class="st">"Select the partition to install Arch. This should be an already existing boot partition. If you don't see what you expect here STOP and run cfdisk or something to figure it out."</span></span>
+<span id="cb28-4"><a href="#cb28-4" aria-hidden="true" tabindex="-1"></a>  <span class="va">partition_list</span><span class="op">=</span><span class="va">($(</span><span class="ex">lsblk</span> <span class="va">$MAIN_DISK</span> <span class="at">--noheading</span> <span class="at">--list</span> <span class="at">--output</span> NAME <span class="kw">|</span> <span class="fu">awk</span> <span class="st">'{print "/dev/" $1}'</span> <span class="kw">|</span> <span class="fu">grep</span> <span class="st">"[0-9]$"</span><span class="va">))</span></span>
+<span id="cb28-5"><a href="#cb28-5" aria-hidden="true" tabindex="-1"></a>  <span class="ex">blank_line</span></span>
+<span id="cb28-6"><a href="#cb28-6" aria-hidden="true" tabindex="-1"></a>  <span class="va">PS3</span><span class="op">=</span><span class="st">"Enter your option"</span>:</span>
+<span id="cb28-7"><a href="#cb28-7" aria-hidden="true" tabindex="-1"></a>  <span class="ex">lsblk</span> <span class="va">$MAIN_DISK</span> <span class="at">--output</span> NAME,FSTYPE,LABEL,SIZE</span>
+<span id="cb28-8"><a href="#cb28-8" aria-hidden="true" tabindex="-1"></a>  <span class="bu">echo</span> <span class="at">-e</span> <span class="st">"select a partition"</span></span>
+<span id="cb28-9"><a href="#cb28-9" aria-hidden="true" tabindex="-1"></a>  <span class="cf">select</span> partition <span class="kw">in</span> <span class="st">"</span><span class="va">${partition_list</span><span class="op">[@]</span><span class="va">}</span><span class="st">"</span><span class="kw">;</span> <span class="cf">do</span></span>
+<span id="cb28-10"><a href="#cb28-10" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> <span class="ex">contains_element</span> <span class="st">"</span><span class="va">$partition</span><span class="st">"</span> <span class="st">"</span><span class="va">${partition_list</span><span class="op">[@]</span><span class="va">}</span><span class="st">"</span><span class="kw">;</span> <span class="cf">then</span></span>
+<span id="cb28-11"><a href="#cb28-11" aria-hidden="true" tabindex="-1"></a>      <span class="cf">break</span></span>
+<span id="cb28-12"><a href="#cb28-12" aria-hidden="true" tabindex="-1"></a>    <span class="cf">else</span></span>
+<span id="cb28-13"><a href="#cb28-13" aria-hidden="true" tabindex="-1"></a>      <span class="ex">invalid_option</span></span>
+<span id="cb28-14"><a href="#cb28-14" aria-hidden="true" tabindex="-1"></a>    <span class="cf">fi</span></span>
+<span id="cb28-15"><a href="#cb28-15" aria-hidden="true" tabindex="-1"></a>  <span class="cf">done</span></span>
+<span id="cb28-16"><a href="#cb28-16" aria-hidden="true" tabindex="-1"></a>  <span class="va">INSTALL_PARTITION</span><span class="op">=</span><span class="va">$partition</span></span>
+<span id="cb28-17"><a href="#cb28-17" aria-hidden="true" tabindex="-1"></a><span class="kw">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>This works similarly to the main disk selection, except I formatted the output slightly differently. The one completely new command I added was the last <code>| grep "[0-9]$"</code>. That filters the output to only show entries that end with a number (<code>$</code> means end of line). I couldn’t figure out a way to have lsblk not list the block device (the opposite of what we wanted in the main disk selection) so I filter it out. As an example if I have a disk <code>/dev/sda</code> with partitions <code>sda1, sda2, sda3</code> before the grep I’d get:</p>
+<div class="sourceCode" id="cb29"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a><span class="ex">/dev/sda</span></span>
+<span id="cb29-2"><a href="#cb29-2" aria-hidden="true" tabindex="-1"></a><span class="ex">/dev/sda1</span></span>
+<span id="cb29-3"><a href="#cb29-3" aria-hidden="true" tabindex="-1"></a><span class="ex">/dev/sda2</span></span>
+<span id="cb29-4"><a href="#cb29-4" aria-hidden="true" tabindex="-1"></a><span class="ex">/dev/sda3</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>I really don’t want to accidentally try and make a partition on the whole device, so I filter that out so the list is just:</p>
+<div class="sourceCode" id="cb30"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a><span class="ex">/dev/sda1</span></span>
+<span id="cb30-2"><a href="#cb30-2" aria-hidden="true" tabindex="-1"></a><span class="ex">/dev/sda2</span></span>
+<span id="cb30-3"><a href="#cb30-3" aria-hidden="true" tabindex="-1"></a><span class="ex">/dev/sda3</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>There’s a practically identical function called <code>find_boot_partition</code> that does the same thing but identifies the boot partition for installation.</p>
+<p>The next step is to create a physical and logical volume for the operating system using <a href="https://wiki.archlinux.org/index.php/LVM">LVM</a></p>
+<div class="sourceCode" id="cb31"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a><span class="fu">setup_lvm()</span> <span class="kw">{</span></span>
+<span id="cb31-2"><a href="#cb31-2" aria-hidden="true" tabindex="-1"></a>  <span class="ex">print_info</span> <span class="st">"Setting up LVM"</span></span>
+<span id="cb31-3"><a href="#cb31-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb31-4"><a href="#cb31-4" aria-hidden="true" tabindex="-1"></a>  <span class="ex">pvcreate</span> <span class="va">$INSTALL_PARTITION</span></span>
+<span id="cb31-5"><a href="#cb31-5" aria-hidden="true" tabindex="-1"></a>  <span class="ex">vgcreate</span> <span class="st">"vg_main"</span> <span class="va">$INSTALL_PARTITION</span></span>
+<span id="cb31-6"><a href="#cb31-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb31-7"><a href="#cb31-7" aria-hidden="true" tabindex="-1"></a>  <span class="ex">lvcreate</span> <span class="at">-l</span> 5%VG <span class="st">"vg_main"</span> <span class="at">-n</span> lv_var</span>
+<span id="cb31-8"><a href="#cb31-8" aria-hidden="true" tabindex="-1"></a>  <span class="ex">lvcreate</span> <span class="at">-l</span> 45%VG <span class="st">"vg_main"</span> <span class="at">-n</span> lv_root</span>
+<span id="cb31-9"><a href="#cb31-9" aria-hidden="true" tabindex="-1"></a>  <span class="ex">lvcreate</span> <span class="at">-l</span> 40%VG <span class="st">"vg_main"</span> <span class="at">-n</span> lv_home</span>
+<span id="cb31-10"><a href="#cb31-10" aria-hidden="true" tabindex="-1"></a><span class="kw">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>This one’s actually pretty readable. We create a physical volume on the install partition identified in the previous section, create a virtual group on it, and then create logical volumes within that.</p>
+<p>Next we format and mount the partitions:</p>
+<div class="sourceCode" id="cb32"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a><span class="fu">format_partitions()</span> <span class="kw">{</span></span>
+<span id="cb32-2"><a href="#cb32-2" aria-hidden="true" tabindex="-1"></a>  <span class="ex">print_info</span> <span class="st">"Formatting partitions"</span></span>
+<span id="cb32-3"><a href="#cb32-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb32-4"><a href="#cb32-4" aria-hidden="true" tabindex="-1"></a>  <span class="ex">mkfs.ext4</span> <span class="st">"/dev/mapper/vg_main-lv_var"</span></span>
+<span id="cb32-5"><a href="#cb32-5" aria-hidden="true" tabindex="-1"></a>  <span class="ex">mkfs.ext4</span> <span class="st">"/dev/mapper/vg_main-lv_root"</span></span>
+<span id="cb32-6"><a href="#cb32-6" aria-hidden="true" tabindex="-1"></a>  <span class="ex">mkfs.ext4</span> <span class="st">"/dev/mapper/vg_main-lv_home"</span></span>
+<span id="cb32-7"><a href="#cb32-7" aria-hidden="true" tabindex="-1"></a><span class="kw">}</span></span>
+<span id="cb32-8"><a href="#cb32-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb32-9"><a href="#cb32-9" aria-hidden="true" tabindex="-1"></a><span class="fu">mount_partitions()</span> <span class="kw">{</span></span>
+<span id="cb32-10"><a href="#cb32-10" aria-hidden="true" tabindex="-1"></a>  <span class="ex">print_info</span> <span class="st">"Mounting partitions"</span></span>
+<span id="cb32-11"><a href="#cb32-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb32-12"><a href="#cb32-12" aria-hidden="true" tabindex="-1"></a>  <span class="co"># First load the root</span></span>
+<span id="cb32-13"><a href="#cb32-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mount</span> <span class="at">-t</span> ext4 <span class="at">-o</span> defaults,rw,relatime,errors=remount-ro /dev/mapper/vg_main-lv_root /mnt</span>
+<span id="cb32-14"><a href="#cb32-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb32-15"><a href="#cb32-15" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Create the paths for the other mounts</span></span>
+<span id="cb32-16"><a href="#cb32-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mkdir</span> <span class="at">-p</span> <span class="st">"/mnt/boot/efi"</span></span>
+<span id="cb32-17"><a href="#cb32-17" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mkdir</span> <span class="at">-p</span> <span class="st">"/mnt/var"</span></span>
+<span id="cb32-18"><a href="#cb32-18" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mkdir</span> <span class="at">-p</span> <span class="st">"/mnt/home"</span></span>
+<span id="cb32-19"><a href="#cb32-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb32-20"><a href="#cb32-20" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> <span class="kw">[[</span> <span class="va">$UEFI</span> <span class="ot">==</span> 1 <span class="kw">]];</span> <span class="cf">then</span></span>
+<span id="cb32-21"><a href="#cb32-21" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mount</span> <span class="at">-t</span> vfat <span class="at">-o</span> defaults,rw,noatime,utf8,errors=remount-ro <span class="st">"</span><span class="va">${MAIN_DISK}</span><span class="st">1"</span> <span class="st">"/mnt/boot/efi"</span></span>
+<span id="cb32-22"><a href="#cb32-22" aria-hidden="true" tabindex="-1"></a>  <span class="cf">fi</span></span>
+<span id="cb32-23"><a href="#cb32-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb32-24"><a href="#cb32-24" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Mount others</span></span>
+<span id="cb32-25"><a href="#cb32-25" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mount</span> <span class="at">-t</span> ext4 <span class="at">-o</span> defaults,rw,noatime /dev/mapper/vg_main-lv_var /mnt/var</span>
+<span id="cb32-26"><a href="#cb32-26" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mount</span> <span class="at">-t</span> ext4 <span class="at">-o</span> defaults,rw,noatime /dev/mapper/vg_main-lv_home /mnt/home</span>
+<span id="cb32-27"><a href="#cb32-27" aria-hidden="true" tabindex="-1"></a><span class="kw">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Again, most of this is pretty readable. The one that I didn’t know about was the <code>noatime</code> option. In the original script it was set to <code>relatime</code>, but after reading <a href="https://blog.confirm.ch/mount-options-atime-vs-relatime/">this post</a> it seems like I want <code>noatime</code> to improve the life of my SSD.</p>
+</section>
+</section>
+<section id="installation" class="level2">
+<h2 class="anchored" data-anchor-id="installation">Installation</h2>
+<p>The <code>install_base_system</code> function doesn’t really introduce any new bash stuff, which was my main goal in writing out how this all worked line by line. I’ll present it below without further comment.</p>
+<div class="sourceCode" id="cb33"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a><span class="fu">install_base_system()</span> <span class="kw">{</span></span>
+<span id="cb33-2"><a href="#cb33-2" aria-hidden="true" tabindex="-1"></a>  <span class="ex">print_info</span> <span class="st">"Installing base system"</span></span>
+<span id="cb33-3"><a href="#cb33-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb33-4"><a href="#cb33-4" aria-hidden="true" tabindex="-1"></a>  <span class="ex">pacman</span> <span class="at">-S</span> <span class="at">--noconfirm</span> archlinux-keyring <span class="kw">|&amp;</span> <span class="fu">tee</span> <span class="at">-a</span> <span class="st">"</span><span class="va">${LOG}</span><span class="st">"</span></span>
+<span id="cb33-5"><a href="#cb33-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb33-6"><a href="#cb33-6" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Install kernel</span></span>
+<span id="cb33-7"><a href="#cb33-7" aria-hidden="true" tabindex="-1"></a>  <span class="cf">case</span> <span class="st">"</span><span class="va">$KERNEL_VERSION</span><span class="st">"</span> <span class="kw">in</span></span>
+<span id="cb33-8"><a href="#cb33-8" aria-hidden="true" tabindex="-1"></a>  <span class="st">"lts"</span><span class="kw">)</span></span>
+<span id="cb33-9"><a href="#cb33-9" aria-hidden="true" tabindex="-1"></a>    <span class="ex">pacstrap</span> /mnt base base-devel linux-lts linux-lts-headers linux-firmware <span class="kw">|&amp;</span> <span class="fu">tee</span> <span class="at">-a</span> <span class="st">"</span><span class="va">${LOG}</span><span class="st">"</span></span>
+<span id="cb33-10"><a href="#cb33-10" aria-hidden="true" tabindex="-1"></a>    <span class="kw">[[</span> <span class="va">$?</span> <span class="ot">-ne</span> 0 <span class="kw">]]</span> <span class="kw">&amp;&amp;</span> <span class="ex">error_msg</span> <span class="st">"Installing base system to /mnt failed. Check error messages above."</span></span>
+<span id="cb33-11"><a href="#cb33-11" aria-hidden="true" tabindex="-1"></a>    <span class="cf">;;</span></span>
+<span id="cb33-12"><a href="#cb33-12" aria-hidden="true" tabindex="-1"></a>  <span class="st">"hard"</span><span class="kw">)</span></span>
+<span id="cb33-13"><a href="#cb33-13" aria-hidden="true" tabindex="-1"></a>    <span class="ex">pacstrap</span> /mnt base base-devel linux-hardened linux-hardened-headers linux-firmware <span class="kw">|&amp;</span> <span class="fu">tee</span> <span class="at">-a</span> <span class="st">"</span><span class="va">${LOG}</span><span class="st">"</span></span>
+<span id="cb33-14"><a href="#cb33-14" aria-hidden="true" tabindex="-1"></a>    <span class="kw">[[</span> <span class="va">$?</span> <span class="ot">-ne</span> 0 <span class="kw">]]</span> <span class="kw">&amp;&amp;</span> <span class="ex">error_msg</span> <span class="st">"Installing base system to /mnt failed. Check error messages above."</span></span>
+<span id="cb33-15"><a href="#cb33-15" aria-hidden="true" tabindex="-1"></a>    <span class="cf">;;</span></span>
+<span id="cb33-16"><a href="#cb33-16" aria-hidden="true" tabindex="-1"></a>  <span class="pp">*</span><span class="kw">)</span></span>
+<span id="cb33-17"><a href="#cb33-17" aria-hidden="true" tabindex="-1"></a>    <span class="ex">pacstrap</span> /mnt base base-devel linux linux-headers linux-firmware <span class="kw">|&amp;</span> <span class="fu">tee</span> <span class="at">-a</span> <span class="st">"</span><span class="va">${LOG}</span><span class="st">"</span></span>
+<span id="cb33-18"><a href="#cb33-18" aria-hidden="true" tabindex="-1"></a>    <span class="kw">[[</span> <span class="va">$?</span> <span class="ot">-ne</span> 0 <span class="kw">]]</span> <span class="kw">&amp;&amp;</span> <span class="ex">error_msg</span> <span class="st">"Installing base system to /mnt failed. Check error messages above."</span></span>
+<span id="cb33-19"><a href="#cb33-19" aria-hidden="true" tabindex="-1"></a>    <span class="cf">;;</span></span>
+<span id="cb33-20"><a href="#cb33-20" aria-hidden="true" tabindex="-1"></a>  <span class="cf">esac</span></span>
+<span id="cb33-21"><a href="#cb33-21" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb33-22"><a href="#cb33-22" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Install file system tools</span></span>
+<span id="cb33-23"><a href="#cb33-23" aria-hidden="true" tabindex="-1"></a>  <span class="ex">pacstrap</span> /mnt lvm2 dosfstools mtools gptfdisk <span class="kw">|&amp;</span> <span class="fu">tee</span> <span class="at">-a</span> <span class="st">"</span><span class="va">${LOG}</span><span class="st">"</span></span>
+<span id="cb33-24"><a href="#cb33-24" aria-hidden="true" tabindex="-1"></a>  <span class="kw">[[</span> <span class="va">$?</span> <span class="ot">-ne</span> 0 <span class="kw">]]</span> <span class="kw">&amp;&amp;</span> <span class="ex">error_msg</span> <span class="st">"Installing base system to /mnt failed. Check error messages above. Part 4."</span></span>
+<span id="cb33-25"><a href="#cb33-25" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb33-26"><a href="#cb33-26" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Install networking tools</span></span>
+<span id="cb33-27"><a href="#cb33-27" aria-hidden="true" tabindex="-1"></a>  <span class="ex">pacstrap</span> /mnt dialog networkmanager networkmanager-openvpn <span class="kw">|&amp;</span> <span class="fu">tee</span> <span class="at">-a</span> <span class="st">"</span><span class="va">${LOG}</span><span class="st">"</span></span>
+<span id="cb33-28"><a href="#cb33-28" aria-hidden="true" tabindex="-1"></a>  <span class="kw">[[</span> <span class="va">$?</span> <span class="ot">-ne</span> 0 <span class="kw">]]</span> <span class="kw">&amp;&amp;</span> <span class="ex">error_msg</span> <span class="st">"Installing base system to /mnt failed. Check error messages above. Part 5."</span></span>
+<span id="cb33-29"><a href="#cb33-29" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb33-30"><a href="#cb33-30" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span> <span class="kw">[[</span> <span class="va">$WIFI</span> <span class="ot">==</span> 1 <span class="kw">]];</span> <span class="cf">then</span></span>
+<span id="cb33-31"><a href="#cb33-31" aria-hidden="true" tabindex="-1"></a>    <span class="ex">pacstrap</span> /mnt iwd <span class="kw">|&amp;</span> <span class="fu">tee</span> <span class="at">-a</span> <span class="st">"</span><span class="va">${LOG}</span><span class="st">"</span></span>
+<span id="cb33-32"><a href="#cb33-32" aria-hidden="true" tabindex="-1"></a>    <span class="kw">[[</span> <span class="va">$?</span> <span class="ot">-ne</span> 0 <span class="kw">]]</span> <span class="kw">&amp;&amp;</span> <span class="ex">error_msg</span> <span class="st">"Installing base system to /mnt failed. Check error messages above. Wifi"</span></span>
+<span id="cb33-33"><a href="#cb33-33" aria-hidden="true" tabindex="-1"></a>  <span class="cf">fi</span></span>
+<span id="cb33-34"><a href="#cb33-34" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb33-35"><a href="#cb33-35" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Remaining misc tools</span></span>
+<span id="cb33-36"><a href="#cb33-36" aria-hidden="true" tabindex="-1"></a>  <span class="ex">pacstrap</span> /mnt reflector git gvim openssh ansible terminus-font systemd-swap <span class="kw">|&amp;</span> <span class="fu">tee</span> <span class="at">-a</span> <span class="st">"</span><span class="va">${LOG}</span><span class="st">"</span></span>
+<span id="cb33-37"><a href="#cb33-37" aria-hidden="true" tabindex="-1"></a>  <span class="kw">[[</span> <span class="va">$?</span> <span class="ot">-ne</span> 0 <span class="kw">]]</span> <span class="kw">&amp;&amp;</span> <span class="ex">error_msg</span> <span class="st">"Installing base system to /mnt failed. Check error messages above. Part 6."</span></span>
+<span id="cb33-38"><a href="#cb33-38" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb33-39"><a href="#cb33-39" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Add the ssh group</span></span>
+<span id="cb33-40"><a href="#cb33-40" aria-hidden="true" tabindex="-1"></a>  <span class="ex">arch_chroot</span> <span class="st">"groupadd ssh"</span></span>
+<span id="cb33-41"><a href="#cb33-41" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb33-42"><a href="#cb33-42" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Set the NetworkManager &amp; ssh services to be enabled</span></span>
+<span id="cb33-43"><a href="#cb33-43" aria-hidden="true" tabindex="-1"></a>  <span class="ex">arch_chroot</span> <span class="st">"systemctl enable NetworkManager.service"</span></span>
+<span id="cb33-44"><a href="#cb33-44" aria-hidden="true" tabindex="-1"></a>  <span class="ex">arch_chroot</span> <span class="st">"systemctl enable wpa_supplicant.service"</span></span>
+<span id="cb33-45"><a href="#cb33-45" aria-hidden="true" tabindex="-1"></a>  <span class="ex">arch_chroot</span> <span class="st">"systemctl enable sshd.service"</span></span>
+<span id="cb33-46"><a href="#cb33-46" aria-hidden="true" tabindex="-1"></a><span class="kw">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Next up we have some user account setup and configuration for ansible, which will be used for the rest of the configuration of the machine. The original script added some public keys to the ansible user’s authorized keys file. I’d like to add some automation to handle <a href="http://blog.ianpreston.ca/2020/05/03/ssh.html">my key management approach</a> but the VM I’m working in makes USB passthrough a hassle. (I switched to Hyper-V part way through making this guide as Virtualbox and WSL2 were fighting on my machine).</p>
+<p>There’s a script for updating the root user account, but it has a subset of what’s in the ansible account, so let’s just look at that one:</p>
+<div class="sourceCode" id="cb34"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a><span class="fu">setup_ansible_account()</span> <span class="kw">{</span></span>
+<span id="cb34-2"><a href="#cb34-2" aria-hidden="true" tabindex="-1"></a>  <span class="ex">print_info</span> <span class="st">"Setting up Ansible account"</span></span>
+<span id="cb34-3"><a href="#cb34-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb34-4"><a href="#cb34-4" aria-hidden="true" tabindex="-1"></a>  <span class="ex">arch_chroot</span> <span class="st">"useradd -m -G wheel -s /bin/bash ansible"</span></span>
+<span id="cb34-5"><a href="#cb34-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb34-6"><a href="#cb34-6" aria-hidden="true" tabindex="-1"></a>  <span class="ex">arch_chroot</span> <span class="st">"echo -n 'ansible:</span><span class="va">$ANSIBLE_PWD</span><span class="st">' | chpasswd -c SHA512"</span></span>
+<span id="cb34-7"><a href="#cb34-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb34-8"><a href="#cb34-8" aria-hidden="true" tabindex="-1"></a>  <span class="ex">arch_chroot</span> <span class="st">"chfn ansible -f Ansible"</span></span>
+<span id="cb34-9"><a href="#cb34-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb34-10"><a href="#cb34-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mkdir</span> <span class="at">-p</span> /mnt/home/ansible/.ssh</span>
+<span id="cb34-11"><a href="#cb34-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">chmod</span> 0700 /mnt/home/ansible/.ssh</span>
+<span id="cb34-12"><a href="#cb34-12" aria-hidden="true" tabindex="-1"></a>  <span class="ex">arch_chroot</span> <span class="st">"chown -R ansible:ansible /home/ansible/.ssh"</span></span>
+<span id="cb34-13"><a href="#cb34-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb34-14"><a href="#cb34-14" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Add user to the ssh</span></span>
+<span id="cb34-15"><a href="#cb34-15" aria-hidden="true" tabindex="-1"></a>  <span class="ex">arch_chroot</span> <span class="st">"usermod -a -G ssh ansible"</span></span>
+<span id="cb34-16"><a href="#cb34-16" aria-hidden="true" tabindex="-1"></a><span class="kw">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p><code>useradd</code> does about what you’d expect. <code>-m</code> creates a home directory for that user if it doesn’t exist. <code>-G</code> is followed by a list of groups you want the user to be a part of. In this case we want ansible to be part of <a href="https://en.wikipedia.org/wiki/Wheel_(computing)">wheel</a> so it can perform actions with elevated privileges. <code>chpasswd</code> is a pretty cool way to set a user password from a script without user interaction, <a href="https://linux.die.net/man/8/chpasswd">man pages here</a>. <code>chfn</code> is used to change user info, in this case to give the ansible user the first name Ansible.</p>
+</section>
+</section>
+<section id="conclusion-and-next-steps" class="level1">
+<h1>Conclusion and next steps</h1>
+<p>After running this script you have a bare bones Arch install. The next step is to create users and install all the software and configurations you need to get a functioning system. This post is already getting really long so I’m going to break that part up into a future post.</p>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    target: function(trigger) {
+      return trigger.previousElementSibling;
+    }
+  });
+  clipboard.on('success', function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  });
+  function tippyHover(el, contentFn) {
+    const config = {
+      allowHTML: true,
+      content: contentFn,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start'
+    };
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      return note.innerHTML;
+    });
+  }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+</body></html>

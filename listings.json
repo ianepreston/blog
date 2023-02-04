@@ -1,0 +1,31 @@
+[
+  {
+    "listing": "/index.html",
+    "items": [
+      "/posts/2023-01-21-proxmox3.html",
+      "/posts/2022-12-31-proxmox2.html",
+      "/posts/2022-12-30-rootless-docker.html",
+      "/posts/2022-12-30-devcontainers.html",
+      "/posts/2022-11-21-proxmox.html",
+      "/posts/2022-08-01-dunning.html",
+      "/posts/2022-03-17-mortgage.html",
+      "/posts/2021-12-30-wheretolive.html",
+      "/posts/2021-04-10-portfolio.html",
+      "/posts/2021-02-26-ferede.html",
+      "/posts/2021-01-09-traefik-lan.html",
+      "/posts/2020-11-26-arch-tldr.html",
+      "/posts/2020-11-25-dotfiles.html",
+      "/posts/2020-11-21-ansible.html",
+      "/posts/2020-10-14-arch-bootstrap.html",
+      "/posts/2020-10-06-docker-compose.html",
+      "/posts/2020-07-20-pi-bluetooth.html",
+      "/posts/2020-07-09-pypack.html",
+      "/posts/2020-05-17-conda.html",
+      "/posts/2020-05-13-conda_envs.html",
+      "/posts/2020-05-09-samba.html",
+      "/posts/2020-05-06-pfsense.html",
+      "/posts/2020-05-03-ssh.html",
+      "/posts/2020-02-15-windows-ds-software.html"
+    ]
+  }
+]

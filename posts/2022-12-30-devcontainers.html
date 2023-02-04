@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.2.335">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="dcterms.date" content="2022-12-30">
+<meta name="description" content="Sure I could just use the Microsoft built ones, but where’s the fun in that?">
+
+<title>Ian’s blog - Building my own devcontainers</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1.6em;
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../">
+<script src="../site_libs/quarto-html/quarto.js"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../site_libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 20,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit"
+  }
+}</script>
+
+
+<link rel="stylesheet" href="../styles.css">
+</head>
+
+<body class="nav-fixed">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg navbar-dark ">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container">
+    <a class="navbar-brand" href="../index.html">
+    <span class="navbar-title">Ian’s blog</span>
+    </a>
+  </div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll ms-auto">
+  <li class="nav-item">
+    <a class="nav-link" href="../about.html">
+ <span class="menu-text">about</span></a>
+  </li>  
+  <li class="nav-item compact">
+    <a class="nav-link" href="https://github.com/ianepreston"><i class="bi bi-github" role="img">
+</i> 
+ <span class="menu-text"></span></a>
+  </li>  
+</ul>
+              <div id="quarto-search" class="" title="Search"></div>
+          </div> <!-- /navcollapse -->
+      </div> <!-- /container-fluid -->
+    </nav>
+</header>
+<!-- content -->
+<header id="title-block-header" class="quarto-title-block default page-columns page-full">
+  <div class="quarto-title-banner page-columns page-full">
+    <div class="quarto-title column-body">
+      <h1 class="title">Building my own devcontainers</h1>
+                  <div>
+        <div class="description">
+          Sure I could just use the Microsoft built ones, but where’s the fun in that?
+        </div>
+      </div>
+                          <div class="quarto-categories">
+                <div class="quarto-category">configuration</div>
+                <div class="quarto-category">linux</div>
+              </div>
+                  </div>
+  </div>
+    
+  
+  <div class="quarto-title-meta">
+
+      
+      <div>
+      <div class="quarto-title-meta-heading">Published</div>
+      <div class="quarto-title-meta-contents">
+        <p class="date">December 30, 2022</p>
+      </div>
+    </div>
+    
+      
+    </div>
+    
+  
+  </header><div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#introduction" id="toc-introduction" class="nav-link active" data-scroll-target="#introduction">Introduction</a></li>
+  <li><a href="#figuring-out-the-code" id="toc-figuring-out-the-code" class="nav-link" data-scroll-target="#figuring-out-the-code">Figuring out the code</a></li>
+  <li><a href="#building-my-own-devcontainers" id="toc-building-my-own-devcontainers" class="nav-link" data-scroll-target="#building-my-own-devcontainers">Building my own devcontainers</a></li>
+  <li><a href="#conclusion" id="toc-conclusion" class="nav-link" data-scroll-target="#conclusion">Conclusion</a></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content quarto-banner-title-block" id="quarto-document-content">
+
+
+
+
+<section id="introduction" class="level1">
+<h1>Introduction</h1>
+<p>Microsoft has created the <a href="https://code.visualstudio.com/docs/devcontainers/containers">devcontainer</a> standard for packaging up your development environment into a docker image and I love it.</p>
+<p>Even though I have a fairly automated environment setup at home, it’s still a hassle whenever I want to start a new project or pick up an old one to make sure I have all the dependencies in place. It’s even trickier if I’m trying to help another person contribute to a project of mine. Devcontainers solve both these issues. Microsoft publishes a number of out of the box images and templates in their GitHub <a href="https://github.com/devcontainers">devcontainers project</a>.</p>
+<p>These work quite well, but I’m picky and want things set up in a certain way. For instance, I want <a href="https://github.com/thoughtbot/rcm">rcm</a> installed for dotfile management, and <a href="https://starship.rs/">starship prompt</a> in any environment I work in. On top of that, for python development I like the <a href="https://cjolowicz.github.io/posts/hypermodern-python-01-setup/">hypermodern</a> suite of tools to be installed. It would be relatively easy to make a dockerfile that has these features installed and put it in every project, but I want to overengineer things. This isn’t entirely just me liking to hack on things. The build time for my python environment is actually quite long thanks to compiling several different versions of python, so while a Dockerfile would work, it would be annoying to maintain and take quite a while to build.</p>
+<p>In light of this, I decided to make my own copy of the <a href="https://github.com/devcontainers/images">images repository</a> that Microsoft uses to build their devcontainers and make my own. This post chronicles some of the challenges I had doing that.</p>
+</section>
+<section id="figuring-out-the-code" class="level1">
+<h1>Figuring out the code</h1>
+<p>To start I just copied the entire <a href="https://github.com/devcontainers/images">images</a> repository and poked around. It’s a beast of a repo (at least compared to the personal or small organization projects I’m used to working on) so it took quite a while just to get a sense of what was there. At a high level there’s a <code>.github</code> folder which contains the CI/CD workflows, a <code>build</code> folder that contains node scripts that build the images, and a <code>src</code> folder that contains the devcontainer specs. I started by deleting all but the <code>base-ubuntu</code> image from <code>src</code> so I could focus on getting one container built without extensive build times. After that I tried to get the build script working locally. Fortunately there are pretty good README files included in each section of the codebase, so I could get a general sense of what was going on.</p>
+<p>The next two difficult parts that went together were figuring out how to navigate and understand the node codebase, since I’ve never written node or any javascript before, and figuring out what I’d need to modify to get things working in my repository. Some things were relatively straightforward, like the GitHub actions were calling for secrets like <code>REPOSITORY_NAME</code> and <code>REPOSITORY_SECRET</code> that I’d have to swap out for my image registry name and credentials. Once I got past that surface level understanding though, it got trickier. One fairly easy example was that the original GitHub action wanted to be run on some custom Microsoft <code>devcontainer-image-builder-ubuntu</code> VM that I didn’t have access to. It seemed to work fine if I changed that to <code>ubuntu-latest</code>, I just had to notice the issue and change it. Other things were more embedded. Microsoft is publishing their images to <a href="https://azure.microsoft.com/en-us/products/container-registry/">Azure container registry</a> whereas I want to use <a href="https://hub.docker.com/">Docker hub</a>. Again, some of this was as simple as switching out <code>az login</code> with <code>docker login</code> in the scripts, but some of it was a little more complicated. Part of the node code queries the registry to see what images are there and what tags they have to make sure published image tags aren’t overwritten accidentally. This is a great feature, but it relied heavily on calling the <code>acr</code> command prompt to retrieve that info. I had to find those sections in the code, figure out what sort of data they’d be returning, figure out what request to send to the docker hub API to get similar data, and then modify the node code to parse it the same way. Since I’d never worked with the docker hub API, or node, or seen the actual output of the <code>acr</code> commands I was trying to reproduce, this took some trial and error.</p>
+<p>An additional challenge was separating out the nice features of the Microsoft code base from the stuff that I didn’t want and that just made things more complicated. The two main things in the latter category were the secondary registry logic and the stubs repository logic. In both cases, Microsoft is publishing lots of extra stuff besides the built devcontainer image, either because they have two repositories to publish to (I think this relates to them moving the devcontainer spec outside of VS Code into its own project) or they want to publish stub files that other developers can extend for their own purposes. Neither applies to me, but since that logic is embedded in the GitHub actions and the node code that publishes regular images I had to find and strip out all that logic before I could publish my own images.</p>
+</section>
+<section id="building-my-own-devcontainers" class="level1">
+<h1>Building my own devcontainers</h1>
+<p>Prior to going to all the trouble of setting up this build infrastructure, I’d already spent quite a bit of time building devcontainer images, primarily for python. In light of that, once I got the build infrastructure going it wasn’t a huge leap to get my own devcontainers building. There were some growing pains though. The Microsoft image builder builds multiple variants of images, namely basing them off different Ubuntu releases or architectures (x86/64 vs arm). I definitely ran into situations where things seemed to be building fine but then I realized some combo of release and architecture was failing and stopping the whole pipeline from completing. There are ways to test those things locally in the repository, but I didn’t have any comprehensive workflow set up so it was easy to miss things. Some stuff I just didn’t bother fixing and removed the troublesome build. For instance, there were a fair number of issues building images based on Ubuntu 18.04LTS (one of the default variants from Microsoft) and I just decided there was no point spending time fixing issues with a release that was about to be EOL from Ubuntu and just dropped it. Similarly, my Infrastructure as Code image didn’t want to install Terraform on the arm build. I’m not currently planning to run that on an arm system so I just dropped it, maybe I’ll put it back later if I want to run it off a raspberry pi but for now it’s not worth the effort.</p>
+</section>
+<section id="conclusion" class="level1">
+<h1>Conclusion</h1>
+<p>This was quite likely more effort than it was objectively worth compared to just building an image and pushing it manually with some tags using the <a href="https://containers.dev/supporting#devcontainer-cli">devcontainer cli</a> at least for my personal projects. I did learn a fair bit going through the exercise though, and since I also intend to adopt devcontainers at work (for myself and other people writing at least python code) knowing how to build images in a more automated and versioned manner will be useful.</p>
+<p>My repository is <a href="https://github.com/ianepreston/devcontainers">here</a>, the original Microsoft one is <a href="https://github.com/devcontainers/images">here</a>. My repo is definitely a bit of a mess with ugly commits just testing out CI/CD outcomes and a lot of failed releases since I’d never used GitHub directly to release software before, but that’s all part of the learning experience.</p>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    target: function(trigger) {
+      return trigger.previousElementSibling;
+    }
+  });
+  clipboard.on('success', function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  });
+  function tippyHover(el, contentFn) {
+    const config = {
+      allowHTML: true,
+      content: contentFn,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start'
+    };
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      return note.innerHTML;
+    });
+  }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+</body></html>

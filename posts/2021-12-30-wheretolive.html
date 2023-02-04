@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.2.335">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="dcterms.date" content="2021-12-30">
+<meta name="description" content="An excuse to teach myself some cool tools and figure out the best place to live">
+
+<title>Ian’s blog - Building a where to live app</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1.6em;
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../">
+<script src="../site_libs/quarto-html/quarto.js"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../site_libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 20,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit"
+  }
+}</script>
+
+
+<link rel="stylesheet" href="../styles.css">
+</head>
+
+<body class="nav-fixed">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg navbar-dark ">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container">
+    <a class="navbar-brand" href="../index.html">
+    <span class="navbar-title">Ian’s blog</span>
+    </a>
+  </div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll ms-auto">
+  <li class="nav-item">
+    <a class="nav-link" href="../about.html">
+ <span class="menu-text">about</span></a>
+  </li>  
+  <li class="nav-item compact">
+    <a class="nav-link" href="https://github.com/ianepreston"><i class="bi bi-github" role="img">
+</i> 
+ <span class="menu-text"></span></a>
+  </li>  
+</ul>
+              <div id="quarto-search" class="" title="Search"></div>
+          </div> <!-- /navcollapse -->
+      </div> <!-- /container-fluid -->
+    </nav>
+</header>
+<!-- content -->
+<header id="title-block-header" class="quarto-title-block default page-columns page-full">
+  <div class="quarto-title-banner page-columns page-full">
+    <div class="quarto-title column-body">
+      <h1 class="title">Building a where to live app</h1>
+                  <div>
+        <div class="description">
+          An excuse to teach myself some cool tools and figure out the best place to live
+        </div>
+      </div>
+                          <div class="quarto-categories">
+                <div class="quarto-category">data</div>
+                <div class="quarto-category">python</div>
+                <div class="quarto-category">yyc</div>
+              </div>
+                  </div>
+  </div>
+    
+  
+  <div class="quarto-title-meta">
+
+      
+      <div>
+      <div class="quarto-title-meta-heading">Published</div>
+      <div class="quarto-title-meta-contents">
+        <p class="date">December 30, 2021</p>
+      </div>
+    </div>
+    
+      
+    </div>
+    
+  
+  </header><div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#introduction" id="toc-introduction" class="nav-link active" data-scroll-target="#introduction">Introduction</a></li>
+  <li><a href="#things-i-did-wrong" id="toc-things-i-did-wrong" class="nav-link" data-scroll-target="#things-i-did-wrong">Things I did wrong</a>
+  <ul class="collapse">
+  <li><a href="#too-much-upfront-validation" id="toc-too-much-upfront-validation" class="nav-link" data-scroll-target="#too-much-upfront-validation">Too much upfront validation</a></li>
+  <li><a href="#trying-to-learn-this-and-cloud-at-once" id="toc-trying-to-learn-this-and-cloud-at-once" class="nav-link" data-scroll-target="#trying-to-learn-this-and-cloud-at-once">Trying to learn this and cloud at once</a></li>
+  </ul></li>
+  <li><a href="#what-i-did" id="toc-what-i-did" class="nav-link" data-scroll-target="#what-i-did">What I did</a>
+  <ul class="collapse">
+  <li><a href="#setting-up-my-environment" id="toc-setting-up-my-environment" class="nav-link" data-scroll-target="#setting-up-my-environment">Setting up my environment</a></li>
+  <li><a href="#scraping-the-listings" id="toc-scraping-the-listings" class="nav-link" data-scroll-target="#scraping-the-listings">Scraping the listings</a></li>
+  <li><a href="#parsing-the-listings" id="toc-parsing-the-listings" class="nav-link" data-scroll-target="#parsing-the-listings">Parsing the listings</a></li>
+  <li><a href="#storing-all-the-data" id="toc-storing-all-the-data" class="nav-link" data-scroll-target="#storing-all-the-data">Storing all the data</a></li>
+  <li><a href="#ingesting-listings-data-in-postgis" id="toc-ingesting-listings-data-in-postgis" class="nav-link" data-scroll-target="#ingesting-listings-data-in-postgis">Ingesting listings data in PostGIS</a></li>
+  <li><a href="#adding-in-commute-data" id="toc-adding-in-commute-data" class="nav-link" data-scroll-target="#adding-in-commute-data">Adding in commute data</a></li>
+  <li><a href="#adding-in-grocery-store-data" id="toc-adding-in-grocery-store-data" class="nav-link" data-scroll-target="#adding-in-grocery-store-data">Adding in grocery store data</a></li>
+  <li><a href="#adding-flood-zone-data" id="toc-adding-flood-zone-data" class="nav-link" data-scroll-target="#adding-flood-zone-data">Adding flood zone data</a></li>
+  <li><a href="#combining-the-results" id="toc-combining-the-results" class="nav-link" data-scroll-target="#combining-the-results">Combining the results</a></li>
+  <li><a href="#creating-candidate-lists" id="toc-creating-candidate-lists" class="nav-link" data-scroll-target="#creating-candidate-lists">Creating candidate lists</a></li>
+  <li><a href="#sharing-the-candidates" id="toc-sharing-the-candidates" class="nav-link" data-scroll-target="#sharing-the-candidates">Sharing the candidates</a></li>
+  <li><a href="#scheduling-things" id="toc-scheduling-things" class="nav-link" data-scroll-target="#scheduling-things">Scheduling things</a></li>
+  </ul></li>
+  <li><a href="#conclusion" id="toc-conclusion" class="nav-link" data-scroll-target="#conclusion">Conclusion</a></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content quarto-banner-title-block" id="quarto-document-content">
+
+
+
+
+<section id="introduction" class="level1">
+<h1>Introduction</h1>
+<p>To start, <a href="https://github.com/ianepreston/wheretolive">here’s the code</a>. I’ll include more specific links to specific parts of the process in detail below.</p>
+<p>I have two goals with this project:</p>
+<ul>
+<li>Figure out a good place to live when I move next</li>
+<li>Learn some data engineering and system administration type skills</li>
+</ul>
+<p>For the first goal, I want to scrape real estate sites in my area and assemble a database of listings. I want to supplement that with open data from the city and other sources. I want all of this data to be collected and updated in an automated and efficient process. Finally, I want to be able to analyze this data in order to find the best place to live based on my personal preferences and requirements.</p>
+<p>The second goal should come about as a consequence of the first. I’ve done web scraping before, but mostly for one off tasks where I can babysit if my results look weird. To store the data that I scrape I’ll use a database. I’ve done lots of querying of databases, but I haven’t had much opportunity to design one, so this will be a learning experience in the regard. I’ll also need to have an <a href="https://en.wikipedia.org/wiki/Extract,_transform,_load">ETL</a> pipeline to manage the scheduling, ingestion, and other tasks between the scraper and the database. Finally, I’ll need some way to serve the recommendations.</p>
+</section>
+<section id="things-i-did-wrong" class="level1">
+<h1>Things I did wrong</h1>
+<p>Since the purpose of writing this up is largely to document what I learned, let’s start with what I did wrong.</p>
+<section id="too-much-upfront-validation" class="level2">
+<h2 class="anchored" data-anchor-id="too-much-upfront-validation">Too much upfront validation</h2>
+<p>My first instinct when ingesting data from a source I didn’t control (the API endpoints for rentfaster.ca and realtor.ca) was that I should do a bunch of cleaning and validation as early as possible, which would allow all of my downstream data processing steps to remain clean. On the plus side I got to learn a bit about how to use <a href="https://fastapi.tiangolo.com/">fastapi</a> and <a href="https://pydantic-docs.helpmanual.io/">pydantic</a>. On the much larger down side, this approach meant that if I wanted to modify any of the filtering I was applying, or if there were unanticipated parsing errors (people put the weirdest stuff in the square footage field) there was no possible recovery. In the final implementation I downloaded results in the most raw format I could manage. While the uncompressed data was a little larger than I wanted to be dealing with daily, it compressed down to very manageable sizes. Separating extraction from any sort of filtering or processing was definitely the right call.</p>
+</section>
+<section id="trying-to-learn-this-and-cloud-at-once" class="level2">
+<h2 class="anchored" data-anchor-id="trying-to-learn-this-and-cloud-at-once">Trying to learn this and cloud at once</h2>
+<p>Since one of the goals of this project was learning, I fairly early on got the idea in my head that I should try doing this whole process “<a href="https://en.wikipedia.org/wiki/Cloud_native_computing">cloud native</a>” on the “<a href="https://towardsdatascience.com/the-beginners-guide-to-the-modern-data-stack-d1c54bd1793e">modern data stack</a>”. I’d read a fair bit about these technologies, but hadn’t had the opportunity to implement much in them. In theory, the cool thing about the cloud is that everything is pay as you go, so for a relatively small data project like I had in mind, the costs should have been manageable and the learning curve shouldn’t have been insurmountable. In practice this turned out to be incorrect. First, trying to learn how to solve a specific problem at the same time as learning to use a general technology really compounds the difficulty of both. I did manage to learn a lot about creating and deploying <a href="https://azure.microsoft.com/en-us/services/functions/#overview">Azure Functions</a> but due to some issue that I still don’t fully understand I also managed to rack up a sizable cloud bill. It had something to do with a queue function getting stuck and reprocessing a message repeatedly rather than failing. I learned a very hard lesson about setting up cost alerts thanks to this. In a future project I’d like to reimplement this or a similar project in the cloud, as it is still a skillset I’d like to develop, but I will definitely do as much locally as I can before migrating to the cloud, rather than trying to prototype something there directly, at least until I get more experience.</p>
+</section>
+</section>
+<section id="what-i-did" class="level1">
+<h1>What I did</h1>
+<section id="setting-up-my-environment" class="level2">
+<h2 class="anchored" data-anchor-id="setting-up-my-environment">Setting up my environment</h2>
+<p>One of the most important, but also annoying, aspects of any project is configuring and managing your environment. Most of my custom built logic was in python, so I built a <a href="https://python-poetry.org/">poetry</a> project. On top of python there was a lot of adjacent infrastructure to manage. For one thing, even though I wasn’t using the cloud, I still had information I wanted to leverage but keep private (namely addresses and API keys), as well as other services that I needed to have up and running. To coordinate all of this I used <a href="https://www.ansible.com/">ansible</a>. Specifically I kept my secrets using <a href="https://docs.ansible.com/ansible/latest/user_guide/vault.html">ansible-vault</a>. From the vault I could either use a <code>.env</code> file to load data in with <a href="https://pypi.org/project/python-dotenv/">python-dotenv</a> or use them directly in a playbook (for example, to set my database password). You can see the playbook I used <a href="https://github.com/ianepreston/wheretolive/blob/main/setup.yml">here</a> and there’s some related errata at the root of that repository.</p>
+</section>
+<section id="scraping-the-listings" class="level2">
+<h2 class="anchored" data-anchor-id="scraping-the-listings">Scraping the listings</h2>
+<p>There are two listings sources I’m interested in. <a href="http://realtor.ca">realtor.ca</a> for sales listings and <a href="http://rentfaster.ca">rentfaster.ca</a> for rental listings. That’s not going to be 100% comprehensive but in my experience it will cover the vast majority of listings.</p>
+<p>The pattern for the initial scrape of both was very similar. Both sites have an endpoint that you can query to get a result back in JSON. There were a few examples online on GitHub that I was able to base mine on. In each case the endpoint has a limit on the number of results that it will return at one time, so I needed to find a way to iterate through. In the case of rentfaster it was easy, since it returned search results with a page number associated. For a given query I could start at page 1 and increment my page number until I had an empty result set. After each query I dumped the JSON to a raw date stamped folder. For realtor.ca it was a little trickier, as there was no automatic chunking. It did allow a price range though, so I picked a very high price ceiling, and then incremented my price floor to be the highest price seen in the previous result until I got an empty result back.</p>
+<p>The end result of each of these scrapes was a date stamped folder for each containing zipped JSON files of the raw results from the endpoint. You can find the scraping code for realtor.ca <a href="https://github.com/ianepreston/wheretolive/blob/main/src/wheretolive/mls/scrape.py">here</a> and for rentfaster <a href="https://github.com/ianepreston/wheretolive/blob/main/src/wheretolive/rfaster/scrape.py">here</a>.</p>
+</section>
+<section id="parsing-the-listings" class="level2">
+<h2 class="anchored" data-anchor-id="parsing-the-listings">Parsing the listings</h2>
+<p>After downloading the raw listings data, the next step was to process and format it into something I’d want to consume. This was pretty tedious, but it’s a critical part of any data project. Lots of validating and transforming of various fields. I won’t go into the details here, but the code for parsing realtor.ca is <a href="https://github.com/ianepreston/wheretolive/blob/main/src/wheretolive/mls/parse.py">here</a> and for rentfaster <a href="https://github.com/ianepreston/wheretolive/blob/main/src/wheretolive/rfaster/parse.py">here</a>. As the final stage of parsing any given day I would write a <a href="https://pandas.pydata.org/">pandas</a> DataFrame out to <a href="https://parquet.apache.org/documentation/latest/">parquet</a> in a folder along with the compressed raw files. This setup made it easy to read in cleaned up data, while still giving me the flexibility to go back and modify my data cleaning process as necessary on historical results.</p>
+</section>
+<section id="storing-all-the-data" class="level2">
+<h2 class="anchored" data-anchor-id="storing-all-the-data">Storing all the data</h2>
+<p>I probably could have done basically everything I needed to do for this project in pandas, or at least <a href="https://geopandas.org/en/stable/">geopandas</a>, but it didn’t seem like the most elegant solution, and I wanted to learn some stuff. With those two criteria in mind I went with a <a href="https://www.postgresql.org/">PostgreSQL</a> using <a href="https://postgis.net/">PostGIS</a> to handle the geospatial aspects of the data (location being very important in selecting where to live after all). I deployed the database itself in a <a href="https://www.docker.com/">docker</a> container using ansible to manage the deployment. I also wrote a small wrapper script to make it easier to connect to the database from python using <a href="https://www.sqlalchemy.org/">sqlalchemy</a>. The wrapper code is <a href="https://github.com/ianepreston/wheretolive/blob/main/src/wheretolive/postgis.py">here</a>.</p>
+</section>
+<section id="ingesting-listings-data-in-postgis" class="level2">
+<h2 class="anchored" data-anchor-id="ingesting-listings-data-in-postgis">Ingesting listings data in PostGIS</h2>
+<p>The last thing that needed to happen with the listings themselves was getting them into the database. First I created a table for each of rentfaster and realtor.ca in the final format I wanted. <a href="https://github.com/ianepreston/wheretolive/blob/main/scripts/postgis/create_mls.sql">Here’s</a> the sql used to create the realtor.ca one for example. With that created I used pandas and sqlalchemy to push the cleaned data into a staging table (no need to predefine this since it’s getting wiped each time and pandas can handle table creation). Once the data was up in staging I would do a few additional calculations, like turning the latitude and longitude records into PostGIS Points before moving the data into the final table. I also would update a materialized view of listing data joined to some other data sets at this point, but I haven’t talked about the other data yet so I’ll cover that later. <a href="https://github.com/ianepreston/wheretolive/blob/main/src/wheretolive/rfaster/ingest.py">Here’s</a> an example of the ingestion script.</p>
+</section>
+<section id="adding-in-commute-data" class="level2">
+<h2 class="anchored" data-anchor-id="adding-in-commute-data">Adding in commute data</h2>
+<p>One of the most critical things in terms of choosing where to live is how easy it is to get places from it. This was one of the key pain points that made me think to develop this project in the first place. Plugging a candidate location into google maps and then interating through commute times to various important locations (downtown, work, family) is quite tedious. To make this easier I wanted to compute <a href="https://en.wikipedia.org/wiki/Isochrone_map">isochrones</a> for various transit modes and locations. I initially looked at <a href="https://azure.microsoft.com/en-ca/services/azure-maps/">Azure maps</a> for this. They have a built in method for isochrones, which I got working. Unfortunately it wasn’t very granular in terms of the isochrones it produced, and it didn’t support public transit data at all.</p>
+<p>Fortunately, I learned about an amazing project called <a href="https://docs.opentripplanner.org/en/v1.5.0/">Open Trip Planner</a> that was exactly what I needed. It was definitely more work to set up, but the results were way better than I could get through Azure. Open Trip Planner doesn’t include any maps or transit information out of the box, so I had to set that up. I used <a href="https://github.com/ianepreston/wheretolive/blob/main/scripts/download_osm_data.py">this</a> script to grab a map of my region from <a href="https://github.com/ianepreston/wheretolive/blob/main/scripts/download_osm_data.py">OpenStreetMap</a>, supplemented it with detailed transit commute information for my city with <a href="https://github.com/ianepreston/wheretolive/blob/main/scripts/download_transit_data.py">this script</a> and finally even added in some elevation data so that walking and cycling commute times would be more accurate from <a href="https://maps.canada.ca/czs/index-en.html">This government of Canada page</a>. I couldn’t automate that last part at all as I had to queue up for my data request and then retrieve it from a personalized email link. Oh well.</p>
+<p>Once I had OpenTripPlanner up and running (again, in a docker container) I was able to use the API it provided to compute isochrones of various time ranges, transit modes, and locations using <a href="https://github.com/ianepreston/wheretolive/blob/main/scripts/make_isochrone.py">this script</a> (it still has the Azure maps code in it even though I didn’t end up using that if you’re curious).</p>
+<p>The output of that API was saved to JSON files, and then ingested into PostGIS using <a href="https://github.com/ianepreston/wheretolive/blob/main/src/wheretolive/isochrone.py">this script</a>.</p>
+<p>Finally, I needed some way to associate this isochrone data with all the listings I was saving. I wanted columns that would easily let me filter on things like “Is this more than a 30 minute walk/transit trip from downtown?”. Between the different transit modes (walk, cycle, transit, drive, plus combinations), time ranges (I did 5 minute intervals between 10 and 60 minutes) and finally locations of interest I had a <em>lot</em> of possible ways to slice the data. While I could have hand written a giant SQL statement that would create them all, that would have been very boring to do, error prone, and also required significant rework if I changed any of my criteria. Instead I did some hacky string manipulation in python to construct the various components of my query and then stuck it together to create a view in PostGIS that associated each listing with all the transportation related attributes I might be interested in. <a href="https://github.com/ianepreston/wheretolive/blob/main/scripts/postgis/mls_commute_syntax.py">Here’s</a> what that looks like for realtor.ca.</p>
+</section>
+<section id="adding-in-grocery-store-data" class="level2">
+<h2 class="anchored" data-anchor-id="adding-in-grocery-store-data">Adding in grocery store data</h2>
+<p>While commute time to various places is certainly important for location, another factor is nearby amenities. Specifically I was asked if I could include the nearest grocery store. For this I used the <a href="https://foursquare.com/">FourSquare</a> API. Similar to the initial scraping above, I had some issues with chunking here. The FourSquare API only returns a maximum of 50 results, and there are (a few) more than 50 grocery stores in all of Calgary. One thing the API lets you specify is a NE and SW corner to define a rectangle to search within. I took advantage of that and <a href="https://numpy.org/doc/stable/reference/generated/numpy.linspace.html">numpy’s linspace method</a> to chunk the city into many boxes, query for grocery stores in each of them, and combine the result. The scraping code is <a href="https://github.com/ianepreston/wheretolive/blob/main/src/wheretolive/foursquare.py">here</a>. The results are a little messy. There are several locations that FourSquare considers a grocery store that I would disagree with. It hasn’t been enough of an issue to bother with, but between when I save the raw FourSquare results and when I upload the data into PostGIS (<a href="https://github.com/ianepreston/wheretolive/blob/main/scripts/postgis/upload_foursquare.py">here</a>) I could easily (but tediously) add in a step that drops the locations that I don’t want to consider as grocery stores.</p>
+<p>Once the grocery store data is in the database I create a table that has a row for each listing, its nearest grocery store, and the distance in meters to that grocery store. This is just straight line distance and doesn’t consider commute time, but it’s fast to compute, gives a good idea, and doesn’t make me run every listing and every grocery store through OpenTripPlanner daily. That seemed like a reasonable tradeoff to me.</p>
+</section>
+<section id="adding-flood-zone-data" class="level2">
+<h2 class="anchored" data-anchor-id="adding-flood-zone-data">Adding flood zone data</h2>
+<p>Another thing I want to consider when choosing where to live is climate resiliency. Calgary experienced a very significant <a href="https://www.calgary.ca/uep/water/flood-info/flooding-history-calgary.html">flood</a> less than a decade ago, and I would like to avoid living somewhere likely to be impacted by a similar event in the future. To manage this, I grabbed some flood risk data from the City of Calgary Open Data Portal and ingested it into PostGIS (<a href="https://github.com/ianepreston/wheretolive/blob/main/scripts/postgis/floodzone.py">here</a>). From that I could create a table that checked if any given listing was in the 1 in 20 or 1 in 100 year flood zones as defined by the city (<a href="https://github.com/ianepreston/wheretolive/blob/main/scripts/postgis/floodzonemap.sql">here</a>).</p>
+</section>
+<section id="combining-the-results" class="level2">
+<h2 class="anchored" data-anchor-id="combining-the-results">Combining the results</h2>
+<p>At this stage in the write up I have a table with listings and their details, as well as some views that have a foreign key identifying the listing, along with some other specific attributes (closest grocery store, flood zone status, commute details). Creating those views actually takes an appreciable amount of time (not massive, but the commute one for example is a solid 10 seconds). What I want to build off the combination of all these tables is a filtered list of just the listings that match my criteria. Both because I want to be able to iterate on my criteria quickly, and because I’m building similar criteria list for a few other people who are interested in finding a place to live, I don’t want to have to recompute all those queries every time I want to change something or need to find candidates for a new person. To manage this, I created a materialized view of all the data sets joined together (<a href="https://github.com/ianepreston/wheretolive/blob/main/scripts/postgis/mls_wide_table.py">here’s</a> the realtor.ca table for example). After I ingest a new day of listings I can refresh this materialized view, and then have quick access to all my updated criteria for current listings.</p>
+</section>
+<section id="creating-candidate-lists" class="level2">
+<h2 class="anchored" data-anchor-id="creating-candidate-lists">Creating candidate lists</h2>
+<p>The next piece is filtering down all of the possible listings to just the ones that I might actually want. I did this by making views on top of the wide table described above that applied whatever filter criteria I wanted, along with only returning a subset of the available columns that I’d want to see in advance before investigating a listing further. <a href="https://github.com/ianepreston/wheretolive/blob/main/scripts/postgis/candidate_views.sql">Here’s</a> the code for making candidate views for realtor.ca for example.</p>
+</section>
+<section id="sharing-the-candidates" class="level2">
+<h2 class="anchored" data-anchor-id="sharing-the-candidates">Sharing the candidates</h2>
+<p>Now to make the candidate listings accessible. To make it easier for me, and possible for others, I export the listings daily to <a href="https://www.dropbox.com/home">Dropbox</a>. This part of the process was actually delightfully easy. I made some minor modifications to the example code on the Dropbox page and then used pandas to_html method to push up a table of listings. From there I could use regular Dropbox functionality to share personalized folders with people interested in particular listings candidates. If I was trying to do this as an actual application I’d obviously need a more robust solution, but for myself and a couple other people this worked perfect. The basic dropbox export code is <a href="https://github.com/ianepreston/wheretolive/blob/main/src/wheretolive/dropbox_uploader.py">here</a> and the actual listings upload code is <a href="https://github.com/ianepreston/wheretolive/blob/main/src/wheretolive/mls/upload_candidates.py">here</a>.</p>
+</section>
+<section id="scheduling-things" class="level2">
+<h2 class="anchored" data-anchor-id="scheduling-things">Scheduling things</h2>
+<p>Now that I have all the components of the pipeline set up I need to automate it. I was tempted to go with something cool for this like <a href="https://airflow.apache.org/">airflow</a> or <a href="https://dagster.io/">dagster</a> but it didn’t seem worth the complexity. I ended up adding a task to my ansible playbook to schedule cron jobs for realtor.ca and rentfaster listings. The script cron runs looks like <a href="https://github.com/ianepreston/wheretolive/blob/main/scripts/daily_rfaster.py">this</a>.</p>
+</section>
+</section>
+<section id="conclusion" class="level1">
+<h1>Conclusion</h1>
+<p>Overall I’m quite happy with how this project went. I learned a lot (some things the hard way, like to always set up cost alerts in the cloud). I also ended up with a service that I’m finding legitimately useful in locating where I want to live next, that others are finding valuable too.</p>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    target: function(trigger) {
+      return trigger.previousElementSibling;
+    }
+  });
+  clipboard.on('success', function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  });
+  function tippyHover(el, contentFn) {
+    const config = {
+      allowHTML: true,
+      content: contentFn,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start'
+    };
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      return note.innerHTML;
+    });
+  }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+</body></html>

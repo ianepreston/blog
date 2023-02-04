@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.2.335">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="dcterms.date" content="2022-12-30">
+<meta name="description" content="How can multiple users share a host for docker without a security nightmare?">
+
+<title>Ian’s blog - Setting up rootless docker</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1.6em;
+  vertical-align: middle;
+}
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+    color: #aaaaaa;
+  }
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code span.at { color: #7d9029; } /* Attribute */
+code span.bn { color: #40a070; } /* BaseN */
+code span.bu { color: #008000; } /* BuiltIn */
+code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code span.ch { color: #4070a0; } /* Char */
+code span.cn { color: #880000; } /* Constant */
+code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code span.dt { color: #902000; } /* DataType */
+code span.dv { color: #40a070; } /* DecVal */
+code span.er { color: #ff0000; font-weight: bold; } /* Error */
+code span.ex { } /* Extension */
+code span.fl { color: #40a070; } /* Float */
+code span.fu { color: #06287e; } /* Function */
+code span.im { color: #008000; font-weight: bold; } /* Import */
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code span.op { color: #666666; } /* Operator */
+code span.ot { color: #007020; } /* Other */
+code span.pp { color: #bc7a00; } /* Preprocessor */
+code span.sc { color: #4070a0; } /* SpecialChar */
+code span.ss { color: #bb6688; } /* SpecialString */
+code span.st { color: #4070a0; } /* String */
+code span.va { color: #19177c; } /* Variable */
+code span.vs { color: #4070a0; } /* VerbatimString */
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+</style>
+
+
+<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../">
+<script src="../site_libs/quarto-html/quarto.js"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../site_libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 20,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit"
+  }
+}</script>
+
+
+<link rel="stylesheet" href="../styles.css">
+</head>
+
+<body class="nav-fixed">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg navbar-dark ">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container">
+    <a class="navbar-brand" href="../index.html">
+    <span class="navbar-title">Ian’s blog</span>
+    </a>
+  </div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll ms-auto">
+  <li class="nav-item">
+    <a class="nav-link" href="../about.html">
+ <span class="menu-text">about</span></a>
+  </li>  
+  <li class="nav-item compact">
+    <a class="nav-link" href="https://github.com/ianepreston"><i class="bi bi-github" role="img">
+</i> 
+ <span class="menu-text"></span></a>
+  </li>  
+</ul>
+              <div id="quarto-search" class="" title="Search"></div>
+          </div> <!-- /navcollapse -->
+      </div> <!-- /container-fluid -->
+    </nav>
+</header>
+<!-- content -->
+<header id="title-block-header" class="quarto-title-block default page-columns page-full">
+  <div class="quarto-title-banner page-columns page-full">
+    <div class="quarto-title column-body">
+      <h1 class="title">Setting up rootless docker</h1>
+                  <div>
+        <div class="description">
+          How can multiple users share a host for docker without a security nightmare?
+        </div>
+      </div>
+                          <div class="quarto-categories">
+                <div class="quarto-category">configuration</div>
+                <div class="quarto-category">linux</div>
+              </div>
+                  </div>
+  </div>
+    
+  
+  <div class="quarto-title-meta">
+
+      
+      <div>
+      <div class="quarto-title-meta-heading">Published</div>
+      <div class="quarto-title-meta-contents">
+        <p class="date">December 30, 2022</p>
+      </div>
+    </div>
+    
+      
+    </div>
+    
+  
+  </header><div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#introduction" id="toc-introduction" class="nav-link active" data-scroll-target="#introduction">Introduction</a></li>
+  <li><a href="#live-blogging-step-by-step-discovery" id="toc-live-blogging-step-by-step-discovery" class="nav-link" data-scroll-target="#live-blogging-step-by-step-discovery">Live blogging step by step discovery</a></li>
+  <li><a href="#cleaned-up-instructions" id="toc-cleaned-up-instructions" class="nav-link" data-scroll-target="#cleaned-up-instructions">Cleaned up instructions</a>
+  <ul class="collapse">
+  <li><a href="#host-configuration" id="toc-host-configuration" class="nav-link" data-scroll-target="#host-configuration">Host configuration</a></li>
+  <li><a href="#user-configuration" id="toc-user-configuration" class="nav-link" data-scroll-target="#user-configuration">User configuration</a>
+  <ul class="collapse">
+  <li><a href="#install-the-rootless-docker-daemon" id="toc-install-the-rootless-docker-daemon" class="nav-link" data-scroll-target="#install-the-rootless-docker-daemon">Install the rootless docker daemon</a></li>
+  <li><a href="#set-an-environment-variable-for-the-docker-socket" id="toc-set-an-environment-variable-for-the-docker-socket" class="nav-link" data-scroll-target="#set-an-environment-variable-for-the-docker-socket">Set an environment variable for the Docker socket</a></li>
+  <li><a href="#log-out-and-back-in-and-test" id="toc-log-out-and-back-in-and-test" class="nav-link" data-scroll-target="#log-out-and-back-in-and-test">Log out and back in and test</a></li>
+  <li><a href="#set-up-network-shares" id="toc-set-up-network-shares" class="nav-link" data-scroll-target="#set-up-network-shares">Set up network shares</a></li>
+  </ul></li>
+  </ul></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content quarto-banner-title-block" id="quarto-document-content">
+
+
+
+
+<section id="introduction" class="level1">
+<h1>Introduction</h1>
+<p>This post covers something that I did for work that I thought might be of more general interest. We have a number of developers that want to build and work in docker containers. Due to security constraints we can’t install WSL and docker desktop on our laptops, so some remote development solution is required. We don’t have kubernetes or anything fancy in our environment, so the initial solution was to just provision an Ubuntu VM and give everyone a login and access to the docker group. Unfortunately there are some major usability and security issues with this approach. Basically, since giving access to docker is essentially giving root access to the machine, developers can see and access each other’s containers and files. From a security perspective this is obviously no good. Even from a usability perspective it means there’s constant risk of inadvertently tripping over another developer’s work, and cleaning up your old images and containers has to be done with a lot more care. To address this issue I decided to look into <a href="https://docs.docker.com/engine/security/rootless/">rootless docker</a>.</p>
+<p>I’m going to try a different approach with this blog. The next section will be a lightly edited transcription of all the things I tried (including failures, dead ends, and dumb mistakes). The following section will be a TLDR summary of what you actually need to do to get this working.</p>
+</section>
+<section id="live-blogging-step-by-step-discovery" class="level1">
+<h1>Live blogging step by step discovery</h1>
+<p>This experiment started with a vanilla Ubuntu 22.04.1 VM. I had a user with sudo permission, <code>dockertestian</code> and then created two users without any special credentials, <code>dockertesta</code> and <code>dockertestb</code>.</p>
+<p>First I tried installing docker with <code>sudo apt install docker</code>, but that was lacking some of the additional features required for rootless docker. It’s possible that I could have found what I needed in the regular Ubuntu repository, but after being thwarted there, I switched to the <a href="https://docs.docker.com/engine/install/ubuntu/">docker docs</a> method and followed their instructions through.</p>
+<p>Following the rootless install docs, I disabled the system level docker daemon, and then as each of my regular users I logged in and ran the rootless install script (described in the docker docs). I had to log out and log back in but beyond that I was able to run <code>docker run hello-world</code> without issue. I noticed that when I ran this for the second user it had to download the <code>hello-world</code> image again, which was a good sign for actual isolation.</p>
+<p>After running the rootless install script I was given a notice that I might have to modify my <code>~/.bashrc</code>, but I left that alone for a pure test at first.</p>
+<p>The next step was to see if I could use VS Code and <a href="https://code.visualstudio.com/docs/devcontainers/containers">devcontainers</a>. Initially this didn’t work, as VS code didn’t automatically look for the user level docker daemon that I was running. Following the prompt in the previous paragraph I added <code>export DOCKER_HOST=unix:///run/user/$(id -u)/docker.sock</code> to my <code>~/.bashrc</code> file. The original prompt from the user install script had my explicit UID instead of <code>$(id -u)</code> in that line, but I modified it so it would always map to the ID of my user across machines, since I like to reuse my dotfiles. It also makes it easier to instruct other users on setting up their machines.</p>
+<p>After making this change I could load devcontainers, but ran into some file permission issues. VS code assumes that docker will be run as root, which means UID 0 in the container will correspond to UID 0 on the host machine. Based on that it uses <a href="https://docs.docker.com/engine/security/userns-remap/">namespace remapping</a> to map the <code>vscode</code> user inside the container to the host user outside the container. Running in rootless mode works differently. UID 0 in the container is whatever your user’s UID is outside the container. This results in the <code>root</code> user inside the container mapping to your user outside it. So if you create a file in your workspace outside the container it will be owned by root inside it. If you create a file inside the container it will be owned by some high unused UID outside the container.</p>
+<p>The devcontainer spec has a number of options for changing how user mapping works. Setting <code>remoteUser</code> or <code>containerUser</code> to root in the <code>devcontainer.json</code> would work in the sense that I would be root in the container and have proper user level access to files in my workspace. That wasn’t ideal since the way I’d built the devcontainer there was some customization done with the <code>vscode</code> user (pipx installations and other stuff) that I lost if I was root. <code>updateRemoteUserUID</code> either mapped my host user to root int the container (if set to <code>true</code>) or just didn’t do any ID remapping. Within the container as the <code>vscode</code> user I could <code>sudo chown -R vscode .</code> on the workspace directory so that permissions all looked good inside the devcontainer. Of course this meant that they would break if I was outside the devcontainer. That could lead to a lock out situation if I broke the devcontainer config and was kicked out, since I wouldn’t be able to edit the <code>devcontainer.json</code> file since my host user would no longer be the owner. At the time of this writing I don’t believe there’s a totally clean way to use the <code>vscode</code> user inside a devcontainer that’s running on rootless docker. My current solution is to not do user level customization, so that running the container as root isn’t a problem. Unlike with a regular docker daemon this doesn’t represent a security issue, since the root user in the container shares the permissions of my unprivileged user outside it.</p>
+<p>Next up was to figure out network share mounting. The normal way of creating a <code>CIFS</code> volume does not work on rootless docker as it requires root access on the host machine. I believe on the actual root daemon docker there are ways to allow mounting of shares from within the container runtime itself, but in some brief testing I couldn’t get them to work. In the past I had used <a href="https://en.wikipedia.org/wiki/GVfs">gvfs</a> to handle userspace mounting of file shares, but it brings in a ton of gnome dependencies and I found it very finicky to work with so I was hoping for a better option.</p>
+<p>To properly test network share mounting it was time to join the host to the domain and use a domain account for testing. While in theory I could hard code my username and password into a credential file, in practice that’s not how I’d want users to do it from an ease of use or security perspective. This also surfaced another challenge with UID remapping within the dev container. I’ll want the network share to be associated with my domain user and its associated user ID, which will be UID 0 in the container. Another reason to just run as root in devcontainers if you’re going to use rootless docker. After getting the host VM joined to the domain and logging in with my domain account (unprivileged on this host) I was ready to start testing network shares.</p>
+<p>The approach I took was to use <a href="https://help.ubuntu.com/community/Autofs">Autofs</a>. All the setup for this was done with the privileged account, then tested with the domain joined account. First step was to install <code>autofs</code> and <code>cifs-utils</code> and enable the autofs service. Next I created a folder under <code>/mnt/</code> for my domain user (<code>&lt;EID&gt;</code> in the rest of this) at <code>/mnt/&lt;EID&gt;</code> and locked down permissions for it <code>chmod 700 /mnt/&lt;EID&gt;</code>. I relied on <a href="https://askubuntu.com/questions/1040095/mounting-cifs-share-per-user-using-autofs">these</a> <a href="https://askubuntu.com/questions/1026316/cifs-mounts-and-kerberos-permissions-on-access-or-best-practice">two</a> posts for the most part to figure out my config. I added the following line to <code>/etc/auto.master</code>:</p>
+<p><code>/mnt/&lt;EID&gt; /etc/auto.sambashares-&lt;EID&gt; --timeout=30 --ghost</code> see <a href="https://learn.redhat.com/t5/Platform-Linux/Halloween-tip-of-the-day-Using-autofs-with-the-ghost-option/td-p/2326">here</a> for the deal with the <code>--ghost</code> flag.</p>
+<p>Next under <code>/etc/auto.sambashares-&lt;EID&gt;</code> I added a line for each fileshare I wanted to be able to access:</p>
+<p><code>&lt;share_short_name&gt; -fstype=cifs,rw,sec=krb5,uid=${UID},cruid=${UID} :&lt;share_full_path&gt;</code></p>
+<p>which will create a folder in <code>/mnt/&lt;EID&gt;/&lt;share_short_name&gt;</code> that maps to <code>&lt;share_full_path&gt;</code>.</p>
+<p>Here is where I went down a long and stupid rabbit hole. When I tried to access this share using my domain user account I got a permission issue. Eventually I figured out my user wasn’t being issued a kerberos ticket. This led to a ton of reading about how kerberos works, fiddling with a bunch of configs, installing and uninstalling a bunch of packages, all to no avail. Embarassingly, eventually I realized that the issue was that I was using an key to authenticate to this host, and you only get a kerberos ticket issued if you do password authentication for ssh. Feeling dumb I switched to password auth and was able to see the network share.</p>
+<p>Having a working domain user that is able to access network shares without privilege escalation (assuming some privileged config of autofs is done on their behalf in advance) I was ready to get back to docker testing.</p>
+<p>I realized I hadn’t actually installed rootless docker for my domain user, so I ran the install script and got an error that I was missing requirements and to modify <code>/etc/subuid</code> and <code>/etc/subgid</code>. Looking at those files I could see a pattern, they look something like this:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">user1:10000:65536</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="ex">user2:165536:65536</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="ex">user3:231072:65536</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Each user gets an entry giving it a start UID with a very high number, and a range of UID space that it can use within a container. The subsequent entry starts where the previous one ends. While this got created just fine for my local users, it did not exist for my domain user. Using my privileged account I added a record for my domain user to <code>/etc/subuid</code> and <code>/etc/subgid</code> (they look identical) and re-ran the installer. This time it worked fine. I added the <code>DOCKER_HOST</code> argument to my <code>~/.bashrc</code> and fired up VS code. It didn’t work. After some poking around I discovered that this was because VS code looks in <code>/etc/passwd</code> to find your default shell, and similar to <code>/etc/subuid</code>, domain users don’t automatically get an entry there. Because of this it defaulted to running its setup in <code>/bin/sh</code> instead of <code>/bin/bash</code> like in my other accounts, which means it didn’t read the <code>DOCKER_HOST</code> argument, which means it didn’t work. Computers are fun. I tried adding the line to <code>~/.profile</code> because apparently <code>/bin/sh</code> does read that, but it didn’t work either. Following this <a href="https://serverfault.com/questions/736471/how-do-i-change-my-default-shell-on-a-domain-account">stack overflow</a> I figured out how to add an <code>/etc/passwd/</code> entry for my domain account: <code>getent passwd &lt;EID&gt; | sudo tee -a /etc/passwd</code> which obviously also had to be done as my privileged user. Once that was complete the devcontainer fired up as expected.</p>
+<p>The last piece was to double check that I could correctly access the autofs mounted network shares from within a container. In my <code>devcontainer.json</code> setting I added an entry like this:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode json code-with-copy"><code class="sourceCode json"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a> <span class="er">"mounts":</span> <span class="ot">[</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>    <span class="fu">{</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>        <span class="dt">"source"</span><span class="fu">:</span> <span class="st">"/mnt/${localEnv:USER}/&lt;share_short_name&gt;"</span><span class="fu">,</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>        <span class="dt">"target"</span><span class="fu">:</span> <span class="st">"/&lt;share_short_name&gt;"</span><span class="fu">,</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>        <span class="dt">"type"</span><span class="fu">:</span> <span class="st">"bind"</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>    <span class="fu">}</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="ot">]</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>This worked! I also confirmed that other users on the system couldn’t see any of my volumes, images or containers. What an adventure. All in all this was about 4 days (calendar, not hours) of effort to figure out. What an adventure.</p>
+</section>
+<section id="cleaned-up-instructions" class="level1">
+<h1>Cleaned up instructions</h1>
+<section id="host-configuration" class="level2">
+<h2 class="anchored" data-anchor-id="host-configuration">Host configuration</h2>
+<p>Official documentation on rootless docker config can be found <a href="https://docs.docker.com/engine/security/rootless/">here</a></p>
+<p>For further discussion of the user namespace remapping (which explains why users should be root within the devcontainer and what <code>/etc/subuid</code> and <code>/etc/subgid</code> are doing) see the official docs <a href="https://docs.docker.com/engine/security/userns-remap/">here</a></p>
+<ul>
+<li><p>All testing was done on an Ubuntu VM (specifically 22.04.1 LTS). As most development activity occurs within docker, most of these instructions will hopefully survive a newer Ubuntu release, and could probably even be applied to an entirely different distro if for some reason we wanted to do that. CPU, RAM and disk requirements will largely depend on the size of the team and their activity, but note that docker images tend to take up a fair bit of space, and due to (intentional) isolation of docker runtimes between users there will be no sharing of image layers. Thus 5 users each using a 2GB docker image will take up a total of 10GB of space.</p></li>
+<li><p>Join the machine to the domain</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="co">#Setting up AD Authentication</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> apt install <span class="at">-y</span> realmd libnss-sss libpam-sss sssd sssd-tools adcli samba-common-bin oddjob oddjob-mkhomedir packagekit</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="co">#Discovery</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> realm discover <span class="op">&lt;</span>domain<span class="op">&gt;</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="co">#Adding to the domain (enter password when prompted)</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> realm join <span class="at">-U</span> <span class="op">&lt;</span>privileged domain user<span class="op">&gt;</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="co">#Adding domain user to allow ssh</span></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a><span class="ex">realm</span> permit <span class="at">-g</span> groupname@domainname</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div></li>
+<li><p>Install docker enginer as per <a href="https://docs.docker.com/engine/install/ubuntu/">the official docker docs</a>. Note, do not use the included docker package in the Ubuntu base repository.</p></li>
+<li><p>Make sure the system docker daemon is not running and disable it if it is: <code>sudo systemctl disable --now docker.service docker.socket</code></p></li>
+<li><p>Install <code>autofs</code> and <code>cifs-utils</code> to allow users to mount network shares with their credentials.</p></li>
+<li><p>For each user that will be running docker on this machine, create an entry in <code>/etc/subuid</code> and <code>/etc/subgid</code> (the entry in each file should look the same)</p>
+<ul>
+<li>each entry in each file has the format <code>&lt;username&gt;:&lt;baseuid&gt;:65536</code>. <code>&lt;baseuid&gt;</code> starts at 100000 for the first entry and increases by 65536 for each subsequent entry. For example, here’s what <code>/etc/subuid</code> looks like on the machine where this guide was tested:</li>
+</ul>
+<div class="sourceCode" id="cb4"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="ex">admin:100000:65536</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="ex">dockertest:165536:65536</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="ex">dockertesta:231072:65536</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="ex">dockertestb:296608:65536</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="op">&lt;</span>EID<span class="op">&gt;</span>:362144:65536</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<ul>
+<li>Local user accounts seem to get their entries auto-generated correctly, but at least in testing, domain joined user accounts had to be manually created.</li>
+</ul></li>
+<li><p>For each user that will be running docker in this machine, create an entry in <code>/etc/passwd</code> that specifies their default shell as <code>bash</code>. Otherwise VS code will not be able to figure out the user level docker socket it should attach to.</p>
+<ul>
+<li><code>getent passwd &lt;EID&gt; | sudo tee -a /etc/passwd</code></li>
+</ul></li>
+<li><p>Create a base user folder to mount network shares for each user in <code>/mnt/&lt;EID&gt;</code>, make that user the owner of that folder and lock down access to that user (<code>chown &lt;EID&gt;</code> and <code>chmod 700 /mnt/&lt;EID&gt;</code>).</p></li>
+<li><p>For each user that will be running docker from this machine, create a line in <code>/etc/auto.master</code> in the following format:</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="ex">/mnt/</span><span class="op">&lt;</span>EID<span class="op">&gt;</span> /etc/auto.sambashares-<span class="op">&lt;</span>EID<span class="op">&gt;</span> --timeout=30 –ghost</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div></li>
+<li><p>Populate <code>/etc/auto.sambashares-&lt;EID&gt;</code> with a line for each network share that user has to access as follows:</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="op">&lt;</span>localsharename<span class="op">&gt;</span> -fstype=cifs,rw,sec=krb5,uid=<span class="va">${UID}</span>,cruid=<span class="va">${UID}</span> <span class="bu">:</span><span class="op">&lt;</span>full share path<span class="op">&gt;</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Where <code>&lt;localsharename&gt;</code> is the name of the folder under <code>/mnt/&lt;EID&gt;</code> that the share will be mounted to, and <code>&lt;full share path&gt;</code> is the path to the SMB file share.</p></li>
+</ul>
+</section>
+<section id="user-configuration" class="level2">
+<h2 class="anchored" data-anchor-id="user-configuration">User configuration</h2>
+<p>Most configuration of the VM should have been completed by its system administrator, but there are a couple user level tasks you will have to run before you can work with docker.</p>
+<section id="install-the-rootless-docker-daemon" class="level3">
+<h3 class="anchored" data-anchor-id="install-the-rootless-docker-daemon">Install the rootless docker daemon</h3>
+<div class="sourceCode" id="cb7"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="ex">dockerd-rootless-setuptool.sh</span> install</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</section>
+<section id="set-an-environment-variable-for-the-docker-socket" class="level3">
+<h3 class="anchored" data-anchor-id="set-an-environment-variable-for-the-docker-socket">Set an environment variable for the Docker socket</h3>
+<p>Add the following line to <code>~/.bashrc</code>: <code>DOCKER_HOST=unix:///run/user/$(id -u)/docker.sock</code></p>
+</section>
+<section id="log-out-and-back-in-and-test" class="level3">
+<h3 class="anchored" data-anchor-id="log-out-and-back-in-and-test">Log out and back in and test</h3>
+<div class="sourceCode" id="cb8"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="ex">docker</span> run hello-world</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</section>
+<section id="set-up-network-shares" class="level3">
+<h3 class="anchored" data-anchor-id="set-up-network-shares">Set up network shares</h3>
+<p>Attaching network shares cannot be done directly by the user. System administrators provision network drives for each user under <code>/mnt/&lt;EID&gt;</code>. If the network share you want is not there, contact your system administrator with its information and they will add it.</p>
+
+
+</section>
+</section>
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    target: function(trigger) {
+      return trigger.previousElementSibling;
+    }
+  });
+  clipboard.on('success', function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  });
+  function tippyHover(el, contentFn) {
+    const config = {
+      allowHTML: true,
+      content: contentFn,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start'
+    };
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      return note.innerHTML;
+    });
+  }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+</body></html>

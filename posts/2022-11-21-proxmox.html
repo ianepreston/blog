@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.2.335">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="dcterms.date" content="2022-11-21">
+<meta name="description" content="Figuring out how to make my own little homelab cluster">
+
+<title>Ian’s blog - Home cluster part 1 - Intro and Proxmox install</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1.6em;
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../">
+<script src="../site_libs/quarto-html/quarto.js"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../site_libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 20,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit"
+  }
+}</script>
+
+
+<link rel="stylesheet" href="../styles.css">
+</head>
+
+<body class="nav-fixed">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg navbar-dark ">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container">
+    <a class="navbar-brand" href="../index.html">
+    <span class="navbar-title">Ian’s blog</span>
+    </a>
+  </div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll ms-auto">
+  <li class="nav-item">
+    <a class="nav-link" href="../about.html">
+ <span class="menu-text">about</span></a>
+  </li>  
+  <li class="nav-item compact">
+    <a class="nav-link" href="https://github.com/ianepreston"><i class="bi bi-github" role="img">
+</i> 
+ <span class="menu-text"></span></a>
+  </li>  
+</ul>
+              <div id="quarto-search" class="" title="Search"></div>
+          </div> <!-- /navcollapse -->
+      </div> <!-- /container-fluid -->
+    </nav>
+</header>
+<!-- content -->
+<header id="title-block-header" class="quarto-title-block default page-columns page-full">
+  <div class="quarto-title-banner page-columns page-full">
+    <div class="quarto-title column-body">
+      <h1 class="title">Home cluster part 1 - Intro and Proxmox install</h1>
+                  <div>
+        <div class="description">
+          Figuring out how to make my own little homelab cluster
+        </div>
+      </div>
+                          <div class="quarto-categories">
+                <div class="quarto-category">configuration</div>
+                <div class="quarto-category">linux</div>
+                <div class="quarto-category">proxmox</div>
+              </div>
+                  </div>
+  </div>
+    
+  
+  <div class="quarto-title-meta">
+
+      
+      <div>
+      <div class="quarto-title-meta-heading">Published</div>
+      <div class="quarto-title-meta-contents">
+        <p class="date">November 21, 2022</p>
+      </div>
+    </div>
+    
+      
+    </div>
+    
+  
+  </header><div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#introduction" id="toc-introduction" class="nav-link active" data-scroll-target="#introduction">Introduction</a></li>
+  <li><a href="#motivation" id="toc-motivation" class="nav-link" data-scroll-target="#motivation">Motivation</a></li>
+  <li><a href="#hardware-selection" id="toc-hardware-selection" class="nav-link" data-scroll-target="#hardware-selection">Hardware selection</a>
+  <ul class="collapse">
+  <li><a href="#what-i-actually-bought" id="toc-what-i-actually-bought" class="nav-link" data-scroll-target="#what-i-actually-bought">What I actually bought</a></li>
+  </ul></li>
+  <li><a href="#installing-proxmox" id="toc-installing-proxmox" class="nav-link" data-scroll-target="#installing-proxmox">Installing Proxmox</a></li>
+  <li><a href="#base-proxmox-config" id="toc-base-proxmox-config" class="nav-link" data-scroll-target="#base-proxmox-config">Base Proxmox config</a></li>
+  <li><a href="#conclusion" id="toc-conclusion" class="nav-link" data-scroll-target="#conclusion">Conclusion</a></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content quarto-banner-title-block" id="quarto-document-content">
+
+
+
+
+<section id="introduction" class="level1">
+<h1>Introduction</h1>
+<p>I’ve been running services on my home network for years. It started with running things bare metal on the same machine I used as my desktop for day to day work. That was a nice easy way to get started, but I was constantly running into conflicting updates, or accidentally breaking something when I tried to get some desktop service working. The next step was getting a dedicated machine solely for hosting services. This worked a lot better since my service requirements changed a lot less frequently than my desktop requirements, but I still ran into conflicting services, or breaking one service when I was testing something out on another. The next step was a dedicated machine, but running all my services in docker containers. That really helped with isolation and was also where I got serious about automating my environment with ansible, which generally meant that even a complete system wipeout only took me down for as long as it took to reinstall the base OS and re-run my ansible playbook.</p>
+<p>Now it’s time for the next step in making my home server environment fancier - <a href="https://www.proxmox.com/en/">Proxmox</a>.</p>
+</section>
+<section id="motivation" class="level1">
+<h1>Motivation</h1>
+<p>Why bother doing this? My current system works pretty well, but it still has a few issues I’d like to address with Proxmox. The first is that my base OS is a single point of failure. I can swap out individual container services with impunity, but swapping out or experimenting with different operating systems means taking my whole stack down. Of course this also means that if any of the physical components of my server fail all of my services are down until I can replace or repair those components / the whole system.</p>
+<p>Switching to Proxmox addresses both of these issues. First, even on a single physical host I can run multiple virtual machines to test different operating system configurations without downtime. Second, I can cluster together Proxmox nodes such that even if a single host fails I can fail over to another one.</p>
+<p>Realistically, this is way overkill for the importance of the services I’m running currently. My <a href="https://miniflux.app/">miniflux</a> app going down for a while is just not that big a deal. One service that I’m planning to introduce in this environment that I was nervous to set up on my old stack for reliability reasons is <a href="https://www.home-assistant.io/">home assistant</a> but even in this new world I’m not going to have anything that won’t have an analog failback. It’s not like if this server goes down my furnace won’t work.</p>
+<p>So honestly my motivation for this is mostly because I find it interesting to learn about clustering and want a freer hand to experiment with some new system administration and operation tools. Eventually I plan to figure out <a href="https://kubernetes.io/">kubernetes</a> on top of this stack, but that’s a whole other level of complexity so we’ll leave it alone for now.</p>
+</section>
+<section id="hardware-selection" class="level1">
+<h1>Hardware selection</h1>
+<p>I waffled for a ridiculously long time deciding what hardware I wanted to run this on. For reference, my existing server is a Dell Optiplex 7020. It’s got an i5-4590, 8GB of RAM and has been frankly doing just fine with the services I’ve put on it. I know I’m adding a little overhead by adding virtualization, and eventually k8s to the stack, and I plan to add some more services (particularly on the operations side like logging and alerting tools) but honestly my compute requirements are quite modest. In terms of power budget I’m lucky enough to be in a region with fairly affordable electricity, so after running some scenarios on different hardware I concluded that it wasn’t going to be a major financial factor unless I went with lots of really old inefficient enterprise gear. However, from an environmental perspective I still want to limit my consumption.</p>
+<p>I considered four general classes of hardware: single board computers (SBCs) like raspberry pi, off lease/refurbished enterprise desktops, used enterprise servers, and custom built PCs.</p>
+<p>SBCs are often promoted in terms of being both affordable and low power consumption. At the time of this writing considering them is something of a non-starter thanks to supply chain issues, but even if that weren’t the case I decided against them. While a base board is definitely quite affordable, once you add on all the additional required components (storage, case, power supply) the price point is pretty comparable to a refurbished enterprise desktop for considerably lower performance, essentially no upgradability (particularly RAM, which is key) and the challenges of ARM (most software has builds for ARM, but there are still some gaps). They’re definitely the lowest in absolute power consumption, but I think the gap narrows quite a bit when considering the electricity to compute power ratio, and besides, power consumption isn’t the most important thing to me in this build.</p>
+<p>I didn’t really consider used enterprise servers. The noise, power consumption and physical space requirements just didn’t seem to make sense. Maybe if I was based in the US where the used market seems thicker I could have picked something up for cheap enough to consider, but up in Canada the price performance just didn’t seem to be there. Some people recommend enterprise gear because it more closely approximates an enterprise environment and has some fancy management features that’s missing from the consumer market, not to mention extra reliability features like ECC RAM and redundant power supplies. None of those were compelling enough features for me to overcome the previously mentioned noise, power, and space considerations.</p>
+<p>A custom built PC was definitely a serious consideration. I specced out a pretty beefy machine using <a href="https://ca.pcpartpicker.com/">PC partpicker</a> that definitely would have handled whatever I threw at it for about $750 CAD. $2,250 would have gotten me a three node setup with plenty of power and the option to do things like throw in GPUs if I wanted to mess around with GPU accellerated machine learning or do lots of video transcoding. While that was technically within my budget it seemed a lot to commit to what was essentially an experiment.</p>
+<p>Finally, after going through all those options I decided to follow the path of <a href="https://www.servethehome.com/introducing-project-tinyminimicro-home-lab-revolution/">tiny mini micro</a> and score some ultra small form factor (USFF) used PCs from eBay. They don’t have quite the low space or power consumption of an SBC but they’re pretty dang small and use mostly laptop components so they’re fairly power efficient. On the other hand, there’s a much better upgrade path for them compared to SBCs and they’re x86 so there’s much greater compatibility. They’re definitely not as high power as a custom build, but as you’ll see below they’re way cheaper, and I can always extend the cluster or swap them out to use as media boxes or something with beefier hardware later.</p>
+<section id="what-i-actually-bought" class="level2">
+<h2 class="anchored" data-anchor-id="what-i-actually-bought">What I actually bought</h2>
+<ul>
+<li>HP ProDesk 400 G3
+<ul>
+<li>i5-7500T</li>
+<li>32GB RAM</li>
+<li>512 GB nvme SSD</li>
+<li>1TB WD Blue SATA SSD (purchased new and installed after)</li>
+<li>348.75 CAD total price - 252.75 CAD for the system 96 CAD for the SSD upgrade.</li>
+</ul></li>
+<li>HP EliteDesk 800 G3
+<ul>
+<li>i5-7500T</li>
+<li>32GB RAM (purchased new and installed after, shipped with 4GB)</li>
+<li>512 GB nvme SSD (purchased new, came with 240 GB that I repurposed for a portable drive)</li>
+<li>1TB WD Blue SATA SSD (purchased new and installed after)</li>
+<li>456.63 CAD total price - 141.34 for the system, 125.15 for the RAM, 96 for the SSD, 94.14 for the nvme SSD</li>
+</ul></li>
+<li>Dell 3060 Micro
+<ul>
+<li>i5-8500T</li>
+<li>32GB RAM (purchased new and installed after, shipped with 8GB)</li>
+<li>512 GB nvme SSD (purchased new, came with 240 GB that I repurposed for a portable drive)</li>
+<li>1TB WD Blue SATA SSD (purchased new and installed after)</li>
+<li>503.53 CAD total price - 180 for the system, 133.39 for the RAM, 96 for the SSD, 94.14 for the nvme SSD</li>
+</ul></li>
+</ul>
+<p>As you can see the price varied between the nodes. I got lucky with the HP ProDesk because it was in Canada and came equipped with the RAM and nvme I wanted. Making those upgrades after on the other systems and ordering from the US increased the price. With further patience and luck maybe I could have saved a couple hundred bucks, but honestly I’d already been waiting a long time to get this project kicked off and I kind of think that ProDesk was a bit of a unicorn.</p>
+</section>
+</section>
+<section id="installing-proxmox" class="level1">
+<h1>Installing Proxmox</h1>
+<p>The base proxmox install (should be) dead simple. Grab the <a href="https://www.proxmox.com/en/downloads/category/iso-images-pve">ISO</a>, rip it to a USB drive, boot it in your system and follow a couple prompts. My first issue with booting was that I couldn’t get into the boot menu or BIOS menu. It turned out that there was some weird incompatibility between my monitor and the host when using DisplayPort. Fortunately I had a DisplayPort to HDMI cable kicking around and using that let me get into the menu and select the right boot option. I had to go into the BIOS and turn off secure boot (Advanced -&gt; Secure boot config -&gt; legacy disable and secure boot disable in the HPs). That sounds sketchy, but it’s basically a requirement to boot anything other than Windows. While I was there I made sure that virtualization was enabled. In the HPs that was under Advanced -&gt; System options -&gt; and make sure “Virtualization Technology (VTx)” and “Virtualization Technologyy for directed I/O (VTd)” are checked. For the Dell the config is similar. <code>F2</code> gets you into the BIOS. Under “Security” turn off “TPM 2.0” and under “Secure boot” turn off “secure boot”. There’s also a tab for “virtualization support”. Both configs were alread checked on mine, but that’s where it lives. The next weird thing I had happen was actually booting the Proxmox image. I tried multiple USB drives and image burners (<a href="https://www.balena.io/etcher/">balena</a> and <a href="https://rufus.ie/en/">rufus</a>) but just couldn’t get it working. Ubuntu server and debian both booted fine but Proxmox wouldn’t play ball. After a bunch of searching I saw a recommendation to try <a href="https://www.ventoy.net/en/index.html">ventoy</a>. I’d heard of ventoy before but dismissed it as just another thing that could go wrong when trying to get an installer booting. Ironically it worked right away and now I’m a total convert, since I can just dump ISO images into a folder on the boot drive and pick from any of them when I plug it into a system. As a PS I also switched over from using a regular USB 3.0 flash drive to a USB SSD drive and oh man, if you have one of those available I recommend it, so much faster. Once I got past those initial hiccups it was mostly straightforward. I just gave the node a hostname, set its IP, my password, time zone info and maybe a couple other things. The main sneaky thing to change was on the first menu, where you select the drive to install to. I had to click “Options”, select “ZFS RAID 0” and have it only use my nvme drive. I don’t need most of the ZFS features, but if you want to migrate VMs across your cluster easily they need to be on that sort of storage. For the Kube nodes I won’t care about that, but some VMs I will, and I want to save the SSD for persistent volumes for kubernetes. After that it rebooted, I confirmed I could access the admin portal throught the web interface and stuck it down in my utility room to continue the setup remotely from my workstation.</p>
+</section>
+<section id="base-proxmox-config" class="level1">
+<h1>Base Proxmox config</h1>
+<p>I want most of the config for proxmox to be done using ansible, which I’ll cover in a follow up post. The only thing I did manually on the nodes was set them up as a cluster. That was actually ridiculously easy to do. The <a href="https://pve.proxmox.com/wiki/Cluster_Manager">docs</a> cover it well so I won’t go into it here.</p>
+</section>
+<section id="conclusion" class="level1">
+<h1>Conclusion</h1>
+<p>That’s it for this post, I just wanted to introduce the topic and get to the point where I had the nodes set up. Subsequent posts will deal with further node configuration, as well as actually deploying VMs to the nodes.</p>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    target: function(trigger) {
+      return trigger.previousElementSibling;
+    }
+  });
+  clipboard.on('success', function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  });
+  function tippyHover(el, contentFn) {
+    const config = {
+      allowHTML: true,
+      content: contentFn,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start'
+    };
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      return note.innerHTML;
+    });
+  }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+</body></html>
