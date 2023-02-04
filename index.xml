@@ -6,14 +6,34 @@
       version="2.0">
 <channel>
 <title>Ian&#39;s blog</title>
-<link>https://ianepreston.github.io/blog/index.html</link>
-<atom:link href="https://ianepreston.github.io/blog/index.xml" rel="self" type="application/rss+xml"/>
+<link>https://blog.ianpreston.ca/index.html</link>
+<atom:link href="https://blog.ianpreston.ca/index.xml" rel="self" type="application/rss+xml"/>
 <description></description>
 <generator>quarto-1.2.335</generator>
-<lastBuildDate>Sat, 21 Jan 2023 00:00:00 GMT</lastBuildDate>
+<lastBuildDate>Fri, 03 Feb 2023 00:00:00 GMT</lastBuildDate>
+<item>
+  <title>Migrating to quarto</title>
+  <link>https://blog.ianpreston.ca/posts/2023-02-03-migration.html</link>
+  <description><![CDATA[ 
+
+
+
+
+<section id="update" class="level1">
+<h1>Update</h1>
+<p>This blog is now rendered with <a href="https://quarto.org/">quarto</a> rather than <a href="https://github.com/fastai/fastpages">fastpages</a>. Honestly fastpages was working fine for me, but they’ve deprecated it and I like being on the new thing. There are some nice navigation and filtering features added in this new tool, and the live preview on my dev machine works quite nicely. Mostly I’m making this post to ensure that my github action was set up correctly.</p>
+
+
+</section>
+
+ ]]></description>
+  <category>configuration</category>
+  <guid>https://blog.ianpreston.ca/posts/2023-02-03-migration.html</guid>
+  <pubDate>Fri, 03 Feb 2023 00:00:00 GMT</pubDate>
+</item>
 <item>
   <title>Home cluster part 3 - Setup VM templates on proxmox</title>
-  <link>https://ianepreston.github.io/blog/posts/2023-01-21-proxmox3.html</link>
+  <link>https://blog.ianpreston.ca/posts/2023-01-21-proxmox3.html</link>
   <description><![CDATA[ 
 
 
@@ -109,7 +129,7 @@
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
 <figure class="figure">
-<img src="https://ianepreston.github.io/blog/posts/proxmox3/panic.png" title="Rocky Panic" class="img-fluid figure-img">
+<img src="https://blog.ianpreston.ca/posts/proxmox3/panic.png" title="Rocky Panic" class="img-fluid figure-img">
 </figure>
 <p></p><figcaption class="figure-caption">Nodes</figcaption><p></p>
 </figure>
@@ -151,13 +171,13 @@
   <category>configuration</category>
   <category>linux</category>
   <category>proxmox</category>
-  <guid>https://ianepreston.github.io/blog/posts/2023-01-21-proxmox3.html</guid>
+  <guid>https://blog.ianpreston.ca/posts/2023-01-21-proxmox3.html</guid>
   <pubDate>Sat, 21 Jan 2023 00:00:00 GMT</pubDate>
-  <media:content url="https://ianepreston.github.io/blog/posts/proxmox3/panic.png " medium="image"/>
+  <media:content url="https://blog.ianpreston.ca/posts/proxmox3/panic.png " medium="image"/>
 </item>
 <item>
   <title>Home cluster part 2 - Configuring Proxmox</title>
-  <link>https://ianepreston.github.io/blog/posts/2022-12-31-proxmox2.html</link>
+  <link>https://blog.ianpreston.ca/posts/2022-12-31-proxmox2.html</link>
   <description><![CDATA[ 
 
 
@@ -185,7 +205,7 @@
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
 <figure class="figure">
-<img src="https://ianepreston.github.io/blog/posts/proxmox2/nodes.jpg" title="Proxmox nodes" class="img-fluid figure-img">
+<img src="https://blog.ianpreston.ca/posts/proxmox2/nodes.jpg" title="Proxmox nodes" class="img-fluid figure-img">
 </figure>
 <p></p><figcaption class="figure-caption">Nodes</figcaption><p></p>
 </figure>
@@ -316,13 +336,52 @@
   <category>configuration</category>
   <category>linux</category>
   <category>proxmox</category>
-  <guid>https://ianepreston.github.io/blog/posts/2022-12-31-proxmox2.html</guid>
+  <guid>https://blog.ianpreston.ca/posts/2022-12-31-proxmox2.html</guid>
   <pubDate>Sat, 31 Dec 2022 00:00:00 GMT</pubDate>
-  <media:content url="https://ianepreston.github.io/blog/posts/proxmox2/nodes.jpg " medium="image"/>
+  <media:content url="https://blog.ianpreston.ca/posts/proxmox2/nodes.jpg " medium="image"/>
+</item>
+<item>
+  <title>Building my own devcontainers</title>
+  <link>https://blog.ianpreston.ca/posts/2022-12-30-devcontainers.html</link>
+  <description><![CDATA[ 
+
+
+
+
+<section id="introduction" class="level1">
+<h1>Introduction</h1>
+<p>Microsoft has created the <a href="https://code.visualstudio.com/docs/devcontainers/containers">devcontainer</a> standard for packaging up your development environment into a docker image and I love it.</p>
+<p>Even though I have a fairly automated environment setup at home, it’s still a hassle whenever I want to start a new project or pick up an old one to make sure I have all the dependencies in place. It’s even trickier if I’m trying to help another person contribute to a project of mine. Devcontainers solve both these issues. Microsoft publishes a number of out of the box images and templates in their GitHub <a href="https://github.com/devcontainers">devcontainers project</a>.</p>
+<p>These work quite well, but I’m picky and want things set up in a certain way. For instance, I want <a href="https://github.com/thoughtbot/rcm">rcm</a> installed for dotfile management, and <a href="https://starship.rs/">starship prompt</a> in any environment I work in. On top of that, for python development I like the <a href="https://cjolowicz.github.io/posts/hypermodern-python-01-setup/">hypermodern</a> suite of tools to be installed. It would be relatively easy to make a dockerfile that has these features installed and put it in every project, but I want to overengineer things. This isn’t entirely just me liking to hack on things. The build time for my python environment is actually quite long thanks to compiling several different versions of python, so while a Dockerfile would work, it would be annoying to maintain and take quite a while to build.</p>
+<p>In light of this, I decided to make my own copy of the <a href="https://github.com/devcontainers/images">images repository</a> that Microsoft uses to build their devcontainers and make my own. This post chronicles some of the challenges I had doing that.</p>
+</section>
+<section id="figuring-out-the-code" class="level1">
+<h1>Figuring out the code</h1>
+<p>To start I just copied the entire <a href="https://github.com/devcontainers/images">images</a> repository and poked around. It’s a beast of a repo (at least compared to the personal or small organization projects I’m used to working on) so it took quite a while just to get a sense of what was there. At a high level there’s a <code>.github</code> folder which contains the CI/CD workflows, a <code>build</code> folder that contains node scripts that build the images, and a <code>src</code> folder that contains the devcontainer specs. I started by deleting all but the <code>base-ubuntu</code> image from <code>src</code> so I could focus on getting one container built without extensive build times. After that I tried to get the build script working locally. Fortunately there are pretty good README files included in each section of the codebase, so I could get a general sense of what was going on.</p>
+<p>The next two difficult parts that went together were figuring out how to navigate and understand the node codebase, since I’ve never written node or any javascript before, and figuring out what I’d need to modify to get things working in my repository. Some things were relatively straightforward, like the GitHub actions were calling for secrets like <code>REPOSITORY_NAME</code> and <code>REPOSITORY_SECRET</code> that I’d have to swap out for my image registry name and credentials. Once I got past that surface level understanding though, it got trickier. One fairly easy example was that the original GitHub action wanted to be run on some custom Microsoft <code>devcontainer-image-builder-ubuntu</code> VM that I didn’t have access to. It seemed to work fine if I changed that to <code>ubuntu-latest</code>, I just had to notice the issue and change it. Other things were more embedded. Microsoft is publishing their images to <a href="https://azure.microsoft.com/en-us/products/container-registry/">Azure container registry</a> whereas I want to use <a href="https://hub.docker.com/">Docker hub</a>. Again, some of this was as simple as switching out <code>az login</code> with <code>docker login</code> in the scripts, but some of it was a little more complicated. Part of the node code queries the registry to see what images are there and what tags they have to make sure published image tags aren’t overwritten accidentally. This is a great feature, but it relied heavily on calling the <code>acr</code> command prompt to retrieve that info. I had to find those sections in the code, figure out what sort of data they’d be returning, figure out what request to send to the docker hub API to get similar data, and then modify the node code to parse it the same way. Since I’d never worked with the docker hub API, or node, or seen the actual output of the <code>acr</code> commands I was trying to reproduce, this took some trial and error.</p>
+<p>An additional challenge was separating out the nice features of the Microsoft code base from the stuff that I didn’t want and that just made things more complicated. The two main things in the latter category were the secondary registry logic and the stubs repository logic. In both cases, Microsoft is publishing lots of extra stuff besides the built devcontainer image, either because they have two repositories to publish to (I think this relates to them moving the devcontainer spec outside of VS Code into its own project) or they want to publish stub files that other developers can extend for their own purposes. Neither applies to me, but since that logic is embedded in the GitHub actions and the node code that publishes regular images I had to find and strip out all that logic before I could publish my own images.</p>
+</section>
+<section id="building-my-own-devcontainers" class="level1">
+<h1>Building my own devcontainers</h1>
+<p>Prior to going to all the trouble of setting up this build infrastructure, I’d already spent quite a bit of time building devcontainer images, primarily for python. In light of that, once I got the build infrastructure going it wasn’t a huge leap to get my own devcontainers building. There were some growing pains though. The Microsoft image builder builds multiple variants of images, namely basing them off different Ubuntu releases or architectures (x86/64 vs arm). I definitely ran into situations where things seemed to be building fine but then I realized some combo of release and architecture was failing and stopping the whole pipeline from completing. There are ways to test those things locally in the repository, but I didn’t have any comprehensive workflow set up so it was easy to miss things. Some stuff I just didn’t bother fixing and removed the troublesome build. For instance, there were a fair number of issues building images based on Ubuntu 18.04LTS (one of the default variants from Microsoft) and I just decided there was no point spending time fixing issues with a release that was about to be EOL from Ubuntu and just dropped it. Similarly, my Infrastructure as Code image didn’t want to install Terraform on the arm build. I’m not currently planning to run that on an arm system so I just dropped it, maybe I’ll put it back later if I want to run it off a raspberry pi but for now it’s not worth the effort.</p>
+</section>
+<section id="conclusion" class="level1">
+<h1>Conclusion</h1>
+<p>This was quite likely more effort than it was objectively worth compared to just building an image and pushing it manually with some tags using the <a href="https://containers.dev/supporting#devcontainer-cli">devcontainer cli</a> at least for my personal projects. I did learn a fair bit going through the exercise though, and since I also intend to adopt devcontainers at work (for myself and other people writing at least python code) knowing how to build images in a more automated and versioned manner will be useful.</p>
+<p>My repository is <a href="https://github.com/ianepreston/devcontainers">here</a>, the original Microsoft one is <a href="https://github.com/devcontainers/images">here</a>. My repo is definitely a bit of a mess with ugly commits just testing out CI/CD outcomes and a lot of failed releases since I’d never used GitHub directly to release software before, but that’s all part of the learning experience.</p>
+
+
+</section>
+
+ ]]></description>
+  <category>configuration</category>
+  <category>linux</category>
+  <guid>https://blog.ianpreston.ca/posts/2022-12-30-devcontainers.html</guid>
+  <pubDate>Fri, 30 Dec 2022 00:00:00 GMT</pubDate>
 </item>
 <item>
   <title>Setting up rootless docker</title>
-  <link>https://ianepreston.github.io/blog/posts/2022-12-30-rootless-docker.html</link>
+  <link>https://blog.ianpreston.ca/posts/2022-12-30-rootless-docker.html</link>
   <description><![CDATA[ 
 
 
@@ -437,51 +496,12 @@
  ]]></description>
   <category>configuration</category>
   <category>linux</category>
-  <guid>https://ianepreston.github.io/blog/posts/2022-12-30-rootless-docker.html</guid>
-  <pubDate>Fri, 30 Dec 2022 00:00:00 GMT</pubDate>
-</item>
-<item>
-  <title>Building my own devcontainers</title>
-  <link>https://ianepreston.github.io/blog/posts/2022-12-30-devcontainers.html</link>
-  <description><![CDATA[ 
-
-
-
-
-<section id="introduction" class="level1">
-<h1>Introduction</h1>
-<p>Microsoft has created the <a href="https://code.visualstudio.com/docs/devcontainers/containers">devcontainer</a> standard for packaging up your development environment into a docker image and I love it.</p>
-<p>Even though I have a fairly automated environment setup at home, it’s still a hassle whenever I want to start a new project or pick up an old one to make sure I have all the dependencies in place. It’s even trickier if I’m trying to help another person contribute to a project of mine. Devcontainers solve both these issues. Microsoft publishes a number of out of the box images and templates in their GitHub <a href="https://github.com/devcontainers">devcontainers project</a>.</p>
-<p>These work quite well, but I’m picky and want things set up in a certain way. For instance, I want <a href="https://github.com/thoughtbot/rcm">rcm</a> installed for dotfile management, and <a href="https://starship.rs/">starship prompt</a> in any environment I work in. On top of that, for python development I like the <a href="https://cjolowicz.github.io/posts/hypermodern-python-01-setup/">hypermodern</a> suite of tools to be installed. It would be relatively easy to make a dockerfile that has these features installed and put it in every project, but I want to overengineer things. This isn’t entirely just me liking to hack on things. The build time for my python environment is actually quite long thanks to compiling several different versions of python, so while a Dockerfile would work, it would be annoying to maintain and take quite a while to build.</p>
-<p>In light of this, I decided to make my own copy of the <a href="https://github.com/devcontainers/images">images repository</a> that Microsoft uses to build their devcontainers and make my own. This post chronicles some of the challenges I had doing that.</p>
-</section>
-<section id="figuring-out-the-code" class="level1">
-<h1>Figuring out the code</h1>
-<p>To start I just copied the entire <a href="https://github.com/devcontainers/images">images</a> repository and poked around. It’s a beast of a repo (at least compared to the personal or small organization projects I’m used to working on) so it took quite a while just to get a sense of what was there. At a high level there’s a <code>.github</code> folder which contains the CI/CD workflows, a <code>build</code> folder that contains node scripts that build the images, and a <code>src</code> folder that contains the devcontainer specs. I started by deleting all but the <code>base-ubuntu</code> image from <code>src</code> so I could focus on getting one container built without extensive build times. After that I tried to get the build script working locally. Fortunately there are pretty good README files included in each section of the codebase, so I could get a general sense of what was going on.</p>
-<p>The next two difficult parts that went together were figuring out how to navigate and understand the node codebase, since I’ve never written node or any javascript before, and figuring out what I’d need to modify to get things working in my repository. Some things were relatively straightforward, like the GitHub actions were calling for secrets like <code>REPOSITORY_NAME</code> and <code>REPOSITORY_SECRET</code> that I’d have to swap out for my image registry name and credentials. Once I got past that surface level understanding though, it got trickier. One fairly easy example was that the original GitHub action wanted to be run on some custom Microsoft <code>devcontainer-image-builder-ubuntu</code> VM that I didn’t have access to. It seemed to work fine if I changed that to <code>ubuntu-latest</code>, I just had to notice the issue and change it. Other things were more embedded. Microsoft is publishing their images to <a href="https://azure.microsoft.com/en-us/products/container-registry/">Azure container registry</a> whereas I want to use <a href="https://hub.docker.com/">Docker hub</a>. Again, some of this was as simple as switching out <code>az login</code> with <code>docker login</code> in the scripts, but some of it was a little more complicated. Part of the node code queries the registry to see what images are there and what tags they have to make sure published image tags aren’t overwritten accidentally. This is a great feature, but it relied heavily on calling the <code>acr</code> command prompt to retrieve that info. I had to find those sections in the code, figure out what sort of data they’d be returning, figure out what request to send to the docker hub API to get similar data, and then modify the node code to parse it the same way. Since I’d never worked with the docker hub API, or node, or seen the actual output of the <code>acr</code> commands I was trying to reproduce, this took some trial and error.</p>
-<p>An additional challenge was separating out the nice features of the Microsoft code base from the stuff that I didn’t want and that just made things more complicated. The two main things in the latter category were the secondary registry logic and the stubs repository logic. In both cases, Microsoft is publishing lots of extra stuff besides the built devcontainer image, either because they have two repositories to publish to (I think this relates to them moving the devcontainer spec outside of VS Code into its own project) or they want to publish stub files that other developers can extend for their own purposes. Neither applies to me, but since that logic is embedded in the GitHub actions and the node code that publishes regular images I had to find and strip out all that logic before I could publish my own images.</p>
-</section>
-<section id="building-my-own-devcontainers" class="level1">
-<h1>Building my own devcontainers</h1>
-<p>Prior to going to all the trouble of setting up this build infrastructure, I’d already spent quite a bit of time building devcontainer images, primarily for python. In light of that, once I got the build infrastructure going it wasn’t a huge leap to get my own devcontainers building. There were some growing pains though. The Microsoft image builder builds multiple variants of images, namely basing them off different Ubuntu releases or architectures (x86/64 vs arm). I definitely ran into situations where things seemed to be building fine but then I realized some combo of release and architecture was failing and stopping the whole pipeline from completing. There are ways to test those things locally in the repository, but I didn’t have any comprehensive workflow set up so it was easy to miss things. Some stuff I just didn’t bother fixing and removed the troublesome build. For instance, there were a fair number of issues building images based on Ubuntu 18.04LTS (one of the default variants from Microsoft) and I just decided there was no point spending time fixing issues with a release that was about to be EOL from Ubuntu and just dropped it. Similarly, my Infrastructure as Code image didn’t want to install Terraform on the arm build. I’m not currently planning to run that on an arm system so I just dropped it, maybe I’ll put it back later if I want to run it off a raspberry pi but for now it’s not worth the effort.</p>
-</section>
-<section id="conclusion" class="level1">
-<h1>Conclusion</h1>
-<p>This was quite likely more effort than it was objectively worth compared to just building an image and pushing it manually with some tags using the <a href="https://containers.dev/supporting#devcontainer-cli">devcontainer cli</a> at least for my personal projects. I did learn a fair bit going through the exercise though, and since I also intend to adopt devcontainers at work (for myself and other people writing at least python code) knowing how to build images in a more automated and versioned manner will be useful.</p>
-<p>My repository is <a href="https://github.com/ianepreston/devcontainers">here</a>, the original Microsoft one is <a href="https://github.com/devcontainers/images">here</a>. My repo is definitely a bit of a mess with ugly commits just testing out CI/CD outcomes and a lot of failed releases since I’d never used GitHub directly to release software before, but that’s all part of the learning experience.</p>
-
-
-</section>
-
- ]]></description>
-  <category>configuration</category>
-  <category>linux</category>
-  <guid>https://ianepreston.github.io/blog/posts/2022-12-30-devcontainers.html</guid>
+  <guid>https://blog.ianpreston.ca/posts/2022-12-30-rootless-docker.html</guid>
   <pubDate>Fri, 30 Dec 2022 00:00:00 GMT</pubDate>
 </item>
 <item>
   <title>Home cluster part 1 - Intro and Proxmox install</title>
-  <link>https://ianepreston.github.io/blog/posts/2022-11-21-proxmox.html</link>
+  <link>https://blog.ianpreston.ca/posts/2022-11-21-proxmox.html</link>
   <description><![CDATA[ 
 
 
@@ -557,12 +577,12 @@
   <category>configuration</category>
   <category>linux</category>
   <category>proxmox</category>
-  <guid>https://ianepreston.github.io/blog/posts/2022-11-21-proxmox.html</guid>
+  <guid>https://blog.ianpreston.ca/posts/2022-11-21-proxmox.html</guid>
   <pubDate>Mon, 21 Nov 2022 00:00:00 GMT</pubDate>
 </item>
 <item>
   <title>Dunning-Kruger is autocorrelation</title>
-  <link>https://ianepreston.github.io/blog/posts/2022-08-01-dunning.html</link>
+  <link>https://blog.ianpreston.ca/posts/2022-08-01-dunning.html</link>
   <description><![CDATA[ 
 
 
@@ -631,14 +651,14 @@
 <div class="cell" data-execution_count="6">
 <div class="sourceCode cell-code" id="cb6" style="background: #f1f3f5;"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1">dk.x_vs_y_chart</span></code></pre></div>
 <div class="cell-output cell-output-display">
-<p><img src="https://ianepreston.github.io/blog/posts/2022-08-01-dunning_files/figure-html/cell-7-output-1.png" class="img-fluid"></p>
+<p><img src="https://blog.ianpreston.ca/posts/2022-08-01-dunning_files/figure-html/cell-7-output-1.png" class="img-fluid"></p>
 </div>
 </div>
 <p>The basic format of this <code>x_vs_y_chart</code> will be the same in all scenarios, so I’ll just explain how to interpret it in this first example. The x axis represents someone’s actual place in the percentile distribution, the y axis is their predicted place in that same distribution. Each point in the scatter plot represents a single observation of someone’s actual place in the distribution and their corresponding prediction of where they are in the distribution. The white dotted line moving up at a 45 degree angle represents perfect prediction, where all observations would be if everyone could exactly predict their place in the distribution. The blue-green line is a regression line of the relationship between someone’s actual place in the distribution and their prediction. The fact that it’s pretty much flat suggests no relationship, which is what we’d expect since that’s how the data was generated</p>
 <div class="cell" data-execution_count="7">
 <div class="sourceCode cell-code" id="cb7" style="background: #f1f3f5;"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1">dk.x_vs_error_chart<span class="op" style="color: #5E5E5E;">;</span></span></code></pre></div>
 <div class="cell-output cell-output-display">
-<p><img src="https://ianepreston.github.io/blog/posts/2022-08-01-dunning_files/figure-html/cell-8-output-1.png" class="img-fluid"></p>
+<p><img src="https://blog.ianpreston.ca/posts/2022-08-01-dunning_files/figure-html/cell-8-output-1.png" class="img-fluid"></p>
 </div>
 </div>
 <p>As with the previous chart, the basic format of this <code>x_vs_error_chart</code> will be the same in all scenarios, so I’ll just explain how to interpret it in this first example. The x axis again represents someone’s actual place in the percentile distribution, but now the y axis is the difference between their prediction and actual place. Each point in the scatter plot represents a single observation of someone’s actual place in the distribution and their corresponding prediction error. The horizontal white dotted line moving up at a zero again represents perfect prediction, where all observations would be if everyone could exactly predict their place in the distribution. The blue-green line is a regression line of the relationship between someone’s actual place in the distribution and their prediction error. Note that in this randomly generated scenario we’re seeing something that looks like Dunning Kruger, with people on the low endof the distribution tending to overestimate their place, and people on the high end tending to underestimate.</p>
@@ -657,13 +677,13 @@
 <div class="cell" data-execution_count="10">
 <div class="sourceCode cell-code" id="cb10" style="background: #f1f3f5;"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb10-1">dk.x_vs_y_chart<span class="op" style="color: #5E5E5E;">;</span></span></code></pre></div>
 <div class="cell-output cell-output-display">
-<p><img src="https://ianepreston.github.io/blog/posts/2022-08-01-dunning_files/figure-html/cell-11-output-1.png" class="img-fluid"></p>
+<p><img src="https://blog.ianpreston.ca/posts/2022-08-01-dunning_files/figure-html/cell-11-output-1.png" class="img-fluid"></p>
 </div>
 </div>
 <div class="cell" data-execution_count="11">
 <div class="sourceCode cell-code" id="cb11" style="background: #f1f3f5;"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb11-1">dk.x_vs_error_chart<span class="op" style="color: #5E5E5E;">;</span></span></code></pre></div>
 <div class="cell-output cell-output-display">
-<p><img src="https://ianepreston.github.io/blog/posts/2022-08-01-dunning_files/figure-html/cell-12-output-1.png" class="img-fluid"></p>
+<p><img src="https://blog.ianpreston.ca/posts/2022-08-01-dunning_files/figure-html/cell-12-output-1.png" class="img-fluid"></p>
 </div>
 </div>
 <p>Even here we can see a slight appearance of “overconfidence” for lower percentiles and “underconfidence” for higher percentiles simply because prediction errors are truncated at the top and bottom (If I’m actually in the lowest percentile the only errors I can possibly make are to overestimate my performance).</p>
@@ -687,13 +707,13 @@
 <div class="cell" data-execution_count="14">
 <div class="sourceCode cell-code" id="cb14" style="background: #f1f3f5;"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb14-1">dk.x_vs_y_chart<span class="op" style="color: #5E5E5E;">;</span></span></code></pre></div>
 <div class="cell-output cell-output-display">
-<p><img src="https://ianepreston.github.io/blog/posts/2022-08-01-dunning_files/figure-html/cell-15-output-1.png" class="img-fluid"></p>
+<p><img src="https://blog.ianpreston.ca/posts/2022-08-01-dunning_files/figure-html/cell-15-output-1.png" class="img-fluid"></p>
 </div>
 </div>
 <div class="cell" data-execution_count="15">
 <div class="sourceCode cell-code" id="cb15" style="background: #f1f3f5;"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb15-1">dk.x_vs_error_chart<span class="op" style="color: #5E5E5E;">;</span></span></code></pre></div>
 <div class="cell-output cell-output-display">
-<p><img src="https://ianepreston.github.io/blog/posts/2022-08-01-dunning_files/figure-html/cell-16-output-1.png" class="img-fluid"></p>
+<p><img src="https://blog.ianpreston.ca/posts/2022-08-01-dunning_files/figure-html/cell-16-output-1.png" class="img-fluid"></p>
 </div>
 </div>
 </section>
@@ -709,12 +729,12 @@
  ]]></description>
   <category>python</category>
   <category>statistics</category>
-  <guid>https://ianepreston.github.io/blog/posts/2022-08-01-dunning.html</guid>
+  <guid>https://blog.ianpreston.ca/posts/2022-08-01-dunning.html</guid>
   <pubDate>Mon, 01 Aug 2022 00:00:00 GMT</pubDate>
 </item>
 <item>
   <title>Modeling out fixed closed vs capped variable mortgages</title>
-  <link>https://ianepreston.github.io/blog/posts/2022-03-17-mortgage.html</link>
+  <link>https://blog.ianpreston.ca/posts/2022-03-17-mortgage.html</link>
   <description><![CDATA[ 
 
 
@@ -942,7 +962,7 @@
 <div class="cell" data-execution_count="9">
 <div class="sourceCode cell-code" id="cb9" style="background: #f1f3f5;"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb9-1">sns.lineplot(data<span class="op" style="color: #5E5E5E;">=</span>cdf, x<span class="op" style="color: #5E5E5E;">=</span><span class="st" style="color: #20794D;">"d"</span>, y<span class="op" style="color: #5E5E5E;">=</span><span class="st" style="color: #20794D;">"value"</span>, hue<span class="op" style="color: #5E5E5E;">=</span><span class="st" style="color: #20794D;">"variable"</span>)<span class="op" style="color: #5E5E5E;">;</span></span></code></pre></div>
 <div class="cell-output cell-output-display">
-<p><img src="https://ianepreston.github.io/blog/posts/2022-03-17-mortgage_files/figure-html/cell-10-output-1.png" class="img-fluid"></p>
+<p><img src="https://blog.ianpreston.ca/posts/2022-03-17-mortgage_files/figure-html/cell-10-output-1.png" class="img-fluid"></p>
 </div>
 </div>
 <p>Here’s what prime vs 5 year mortgage rates have looked like for the last 50ish years. The variable rate tends to be below the fixed at any given point in time, but of course the variable rate can go up over your mortgage term while a fixed rate will stay fixed. Let’s start the actual analysis.</p>
@@ -1136,7 +1156,7 @@
 <div class="cell" data-execution_count="13">
 <div class="sourceCode cell-code" id="cb13" style="background: #f1f3f5;"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb13-1">sns.lineplot(data<span class="op" style="color: #5E5E5E;">=</span>delta_cdf, x<span class="op" style="color: #5E5E5E;">=</span><span class="st" style="color: #20794D;">"period"</span>, y<span class="op" style="color: #5E5E5E;">=</span><span class="st" style="color: #20794D;">"variable_delta"</span>, hue<span class="op" style="color: #5E5E5E;">=</span><span class="st" style="color: #20794D;">"start date delta"</span>)<span class="op" style="color: #5E5E5E;">;</span></span></code></pre></div>
 <div class="cell-output cell-output-display">
-<p><img src="https://ianepreston.github.io/blog/posts/2022-03-17-mortgage_files/figure-html/cell-14-output-1.png" class="img-fluid"></p>
+<p><img src="https://blog.ianpreston.ca/posts/2022-03-17-mortgage_files/figure-html/cell-14-output-1.png" class="img-fluid"></p>
 </div>
 </div>
 <p>This chart shows the change in the delta between a fixed rate mortgage and the variable rate over a 5 year period. Each line represents a potential start month, with the delta between fixed and variable on the y axis and how many months into the 5 year term that mortgage is on the x axis. The colour corresponds to the number of days after Jan 1 1970 the scenario starts (I just needed a nice linear series to get the colour coding).</p>
@@ -1146,7 +1166,7 @@
 <div class="sourceCode cell-code" id="cb14" style="background: #f1f3f5;"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb14-1">subset_cdf <span class="op" style="color: #5E5E5E;">=</span> delta_cdf.loc[<span class="kw" style="color: #003B4F;">lambda</span> df: df[<span class="st" style="color: #20794D;">"start date delta"</span>] <span class="op" style="color: #5E5E5E;">&gt;=</span> <span class="dv" style="color: #AD0000;">25</span> <span class="op" style="color: #5E5E5E;">*</span> <span class="dv" style="color: #AD0000;">365</span>]</span>
 <span id="cb14-2">sns.lineplot(data<span class="op" style="color: #5E5E5E;">=</span>subset_cdf, x<span class="op" style="color: #5E5E5E;">=</span><span class="st" style="color: #20794D;">"period"</span>, y<span class="op" style="color: #5E5E5E;">=</span><span class="st" style="color: #20794D;">"variable_delta"</span>, hue<span class="op" style="color: #5E5E5E;">=</span><span class="st" style="color: #20794D;">"start date delta"</span>)<span class="op" style="color: #5E5E5E;">;</span></span></code></pre></div>
 <div class="cell-output cell-output-display">
-<p><img src="https://ianepreston.github.io/blog/posts/2022-03-17-mortgage_files/figure-html/cell-15-output-1.png" class="img-fluid"></p>
+<p><img src="https://blog.ianpreston.ca/posts/2022-03-17-mortgage_files/figure-html/cell-15-output-1.png" class="img-fluid"></p>
 </div>
 </div>
 <p>So since 2000 it looks like your variable rate has almost never gone above the five year fixed rate. Again, recall that the actual fixed or variable rate you’d get at any of these points is not perfectly correlated with the posted rates I’m using, but it’s still a good indicator. Personally since I’m risk averse and we are currently looking at higher inflation than there’s been for 30 years I’m inclined to use the longer term scenarios, but it was an interesting exercise to see what more recent history looks like.</p>
@@ -1166,7 +1186,7 @@
 <span id="cb16-6">)</span>
 <span id="cb16-7">sns.lineplot(data<span class="op" style="color: #5E5E5E;">=</span>fdist_cdf, x<span class="op" style="color: #5E5E5E;">=</span><span class="st" style="color: #20794D;">"period"</span>, y<span class="op" style="color: #5E5E5E;">=</span><span class="st" style="color: #20794D;">"value"</span>, hue<span class="op" style="color: #5E5E5E;">=</span><span class="st" style="color: #20794D;">"variable"</span>)<span class="op" style="color: #5E5E5E;">;</span></span></code></pre></div>
 <div class="cell-output cell-output-display">
-<p><img src="https://ianepreston.github.io/blog/posts/2022-03-17-mortgage_files/figure-html/cell-17-output-1.png" class="img-fluid"></p>
+<p><img src="https://blog.ianpreston.ca/posts/2022-03-17-mortgage_files/figure-html/cell-17-output-1.png" class="img-fluid"></p>
 </div>
 </div>
 <p>So over the whole observation period the mean gap between fixed and variable rate tends to trend downward, which makes sense given interest rates were declining over most of the observed period. At least 3/4 of the time they stayed below the fixed rate for the entire period, but when we look at the 90th percentile and above they were over the fixed rate throughout the period (this is not saying any one series was consistently that high above throughout the 5 year period, just that at least 10% of them were that much above it at that point.) Let’s try it again, just focusing on since 2000.</p>
@@ -1184,7 +1204,7 @@
 <span id="cb17-11">)</span>
 <span id="cb17-12">sns.lineplot(data<span class="op" style="color: #5E5E5E;">=</span>fdist_cdf, x<span class="op" style="color: #5E5E5E;">=</span><span class="st" style="color: #20794D;">"period"</span>, y<span class="op" style="color: #5E5E5E;">=</span><span class="st" style="color: #20794D;">"value"</span>, hue<span class="op" style="color: #5E5E5E;">=</span><span class="st" style="color: #20794D;">"variable"</span>)<span class="op" style="color: #5E5E5E;">;</span></span></code></pre></div>
 <div class="cell-output cell-output-display">
-<p><img src="https://ianepreston.github.io/blog/posts/2022-03-17-mortgage_files/figure-html/cell-18-output-1.png" class="img-fluid"></p>
+<p><img src="https://blog.ianpreston.ca/posts/2022-03-17-mortgage_files/figure-html/cell-18-output-1.png" class="img-fluid"></p>
 </div>
 </div>
 <p>So in the more recent period I checked out some of the wider end of the tails. At the 99th percentile we do see a couple spots where it goes above 0, but not by much. Variable rates over the last 20 years have been a pretty sweet deal.</p>
@@ -1494,14 +1514,14 @@
 <div class="cell" data-execution_count="28">
 <div class="sourceCode cell-code" id="cb34" style="background: #f1f3f5;"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb34-1">plot_hist(capped_scenarios, <span class="st" style="color: #20794D;">"end_balance"</span>)<span class="op" style="color: #5E5E5E;">;</span></span></code></pre></div>
 <div class="cell-output cell-output-display">
-<p><img src="https://ianepreston.github.io/blog/posts/2022-03-17-mortgage_files/figure-html/cell-29-output-1.png" class="img-fluid"></p>
+<p><img src="https://blog.ianpreston.ca/posts/2022-03-17-mortgage_files/figure-html/cell-29-output-1.png" class="img-fluid"></p>
 </div>
 </div>
 <p>Similarly, we can look at the distribution of maximum payments made over the whole 5 year term. As long as the cap at least covers your interest payments you never go over it, so unsurprisingly over 70% of the scenarios have a max payment equal to the fixed amount. Again though, there’s a long tail (presumably corresponding to the massive rate hikes we saw in the late 70s and early 80s where you would end up making at least one payment that’s more than double the fixed amount, ouch.</p>
 <div class="cell" data-execution_count="29">
 <div class="sourceCode cell-code" id="cb35" style="background: #f1f3f5;"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb35-1">plot_hist(capped_scenarios, <span class="st" style="color: #20794D;">"max_payment"</span>)<span class="op" style="color: #5E5E5E;">;</span></span></code></pre></div>
 <div class="cell-output cell-output-display">
-<p><img src="https://ianepreston.github.io/blog/posts/2022-03-17-mortgage_files/figure-html/cell-30-output-1.png" class="img-fluid"></p>
+<p><img src="https://blog.ianpreston.ca/posts/2022-03-17-mortgage_files/figure-html/cell-30-output-1.png" class="img-fluid"></p>
 </div>
 </div>
 <p>Finally, let’s look at the same scenarios, but just paying the variable rate the whole way through. The graphs represent the same things as above, just with the uncapped variable rate mortgage.</p>
@@ -1524,13 +1544,13 @@
 <div class="cell" data-execution_count="31">
 <div class="sourceCode cell-code" id="cb38" style="background: #f1f3f5;"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb38-1">plot_hist(uncapped_scenarios, <span class="st" style="color: #20794D;">"end_balance"</span>)<span class="op" style="color: #5E5E5E;">;</span></span></code></pre></div>
 <div class="cell-output cell-output-display">
-<p><img src="https://ianepreston.github.io/blog/posts/2022-03-17-mortgage_files/figure-html/cell-32-output-1.png" class="img-fluid"></p>
+<p><img src="https://blog.ianpreston.ca/posts/2022-03-17-mortgage_files/figure-html/cell-32-output-1.png" class="img-fluid"></p>
 </div>
 </div>
 <div class="cell" data-execution_count="32">
 <div class="sourceCode cell-code" id="cb39" style="background: #f1f3f5;"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb39-1">plot_hist(uncapped_scenarios, <span class="st" style="color: #20794D;">"max_payment"</span>)<span class="op" style="color: #5E5E5E;">;</span></span></code></pre></div>
 <div class="cell-output cell-output-display">
-<p><img src="https://ianepreston.github.io/blog/posts/2022-03-17-mortgage_files/figure-html/cell-33-output-1.png" class="img-fluid"></p>
+<p><img src="https://blog.ianpreston.ca/posts/2022-03-17-mortgage_files/figure-html/cell-33-output-1.png" class="img-fluid"></p>
 </div>
 </div>
 <p>The distribution of end balances looks reasonably similar, although the capped variable definitely has more weight on the lower end of the distribution, which is quite good. Unsurprisingly, the max payment is a much wider distribution than under the capped scenario, with a decent chunk of payments above what you’d do in the fixed rate scenario.</p>
@@ -1546,12 +1566,12 @@
   <category>housing</category>
   <category>jupyter</category>
   <category>python</category>
-  <guid>https://ianepreston.github.io/blog/posts/2022-03-17-mortgage.html</guid>
+  <guid>https://blog.ianpreston.ca/posts/2022-03-17-mortgage.html</guid>
   <pubDate>Thu, 17 Mar 2022 00:00:00 GMT</pubDate>
 </item>
 <item>
   <title>Building a where to live app</title>
-  <link>https://ianepreston.github.io/blog/posts/2021-12-30-wheretolive.html</link>
+  <link>https://blog.ianpreston.ca/posts/2021-12-30-wheretolive.html</link>
   <description><![CDATA[ 
 
 
@@ -1649,12 +1669,12 @@
   <category>data</category>
   <category>python</category>
   <category>yyc</category>
-  <guid>https://ianepreston.github.io/blog/posts/2021-12-30-wheretolive.html</guid>
+  <guid>https://blog.ianpreston.ca/posts/2021-12-30-wheretolive.html</guid>
   <pubDate>Thu, 30 Dec 2021 00:00:00 GMT</pubDate>
 </item>
 <item>
   <title>My Portfolio</title>
-  <link>https://ianepreston.github.io/blog/posts/2021-04-10-portfolio.html</link>
+  <link>https://blog.ianpreston.ca/posts/2021-04-10-portfolio.html</link>
   <description><![CDATA[ 
 
 
@@ -1713,12 +1733,12 @@
 </section>
 
  ]]></description>
-  <guid>https://ianepreston.github.io/blog/posts/2021-04-10-portfolio.html</guid>
+  <guid>https://blog.ianpreston.ca/posts/2021-04-10-portfolio.html</guid>
   <pubDate>Sat, 10 Apr 2021 00:00:00 GMT</pubDate>
 </item>
 <item>
   <title>Alberta’s Fiscal Responses To Fluctuations In Non-Renewable-Resource Revenue</title>
-  <link>https://ianepreston.github.io/blog/posts/2021-02-26-ferede.html</link>
+  <link>https://blog.ianpreston.ca/posts/2021-02-26-ferede.html</link>
   <description><![CDATA[ 
 
 
@@ -2395,7 +2415,7 @@
 <div class="cell" data-execution_count="6">
 <div class="sourceCode cell-code" id="cb6" style="background: #f1f3f5;"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1">Image(filename<span class="op" style="color: #5E5E5E;">=</span><span class="st" style="color: #20794D;">"img/ferede_fig_1.png"</span>)</span></code></pre></div>
 <div class="cell-output cell-output-display" data-execution_count="6">
-<p><img src="https://ianepreston.github.io/blog/posts/2021-02-26-ferede_files/figure-html/cell-7-output-1.png" class="img-fluid"></p>
+<p><img src="https://blog.ianpreston.ca/posts/2021-02-26-ferede_files/figure-html/cell-7-output-1.png" class="img-fluid"></p>
 </div>
 </div>
 <p>And here’s mine:</p>
@@ -2403,7 +2423,7 @@
 <div class="sourceCode cell-code" id="cb7" style="background: #f1f3f5;"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1">df <span class="op" style="color: #5E5E5E;">=</span> budget_real_per_capita()</span>
 <span id="cb7-2">fig1(df)</span></code></pre></div>
 <div class="cell-output cell-output-display" data-execution_count="7">
-<p><img src="https://ianepreston.github.io/blog/posts/2021-02-26-ferede_files/figure-html/cell-8-output-1.png" class="img-fluid"></p>
+<p><img src="https://blog.ianpreston.ca/posts/2021-02-26-ferede_files/figure-html/cell-8-output-1.png" class="img-fluid"></p>
 </div>
 </div>
 <p>This graph looks very similar to the chart in the paper, with a notable exception of the 1976/1977 budget year. My chart shows Non-renewable Resource Revenue as slightly negative, whereas the original chart has it largely in line with 1975/1976 and 1977/1978. NRR is negative in my chart because I have netted out contributions to the Alberta Heritage Savings Trust Fund (AHSTF). To the best of my understanding, the original paper does the same, and the consistent values between the two in all other years supports that. Quoting the original paper:</p>
@@ -2420,7 +2440,7 @@
 <span id="cb8-6">)</span>
 <span id="cb8-7">fig1(no_net_df)</span></code></pre></div>
 <div class="cell-output cell-output-display" data-execution_count="9">
-<p><img src="https://ianepreston.github.io/blog/posts/2021-02-26-ferede_files/figure-html/cell-9-output-1.png" class="img-fluid"></p>
+<p><img src="https://blog.ianpreston.ca/posts/2021-02-26-ferede_files/figure-html/cell-9-output-1.png" class="img-fluid"></p>
 </div>
 </div>
 <p>1976/1977 more closely matches the original chart in the paper, but the remaining years in the period of mid 70s to mid 80s when there were significant contributions clearly do not match. Let’s try one more where I just substitute that one year.</p>
@@ -2432,14 +2452,14 @@
 <span id="cb9-5">error_df.loc[<span class="st" style="color: #20794D;">"1976"</span>, <span class="st" style="color: #20794D;">"deficit"</span>] <span class="op" style="color: #5E5E5E;">-=</span> heritage_76</span>
 <span id="cb9-6">fig1(error_df)</span></code></pre></div>
 <div class="cell-output cell-output-display" data-execution_count="10">
-<p><img src="https://ianepreston.github.io/blog/posts/2021-02-26-ferede_files/figure-html/cell-10-output-1.png" class="img-fluid"></p>
+<p><img src="https://blog.ianpreston.ca/posts/2021-02-26-ferede_files/figure-html/cell-10-output-1.png" class="img-fluid"></p>
 </div>
 </div>
 <p>Here’s the original figure again for easier comparison</p>
 <div class="cell" data-execution_count="11">
 <div class="sourceCode cell-code" id="cb10" style="background: #f1f3f5;"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb10-1">Image(filename<span class="op" style="color: #5E5E5E;">=</span><span class="st" style="color: #20794D;">"img/ferede_fig_1.png"</span>)</span></code></pre></div>
 <div class="cell-output cell-output-display" data-execution_count="11">
-<p><img src="https://ianepreston.github.io/blog/posts/2021-02-26-ferede_files/figure-html/cell-11-output-1.png" class="img-fluid"></p>
+<p><img src="https://blog.ianpreston.ca/posts/2021-02-26-ferede_files/figure-html/cell-11-output-1.png" class="img-fluid"></p>
 </div>
 </div>
 <p>From eyeballing it that looks exactly like Figure 1 in the paper. It appears there’s a data error in the original paper. For the rest of this analysis I’ll compare both my base implementation of the data, as well as the one with the data error.</p>
@@ -2477,21 +2497,21 @@
 <div class="cell" data-execution_count="13">
 <div class="sourceCode cell-code" id="cb12" style="background: #f1f3f5;"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb12-1">Image(filename<span class="op" style="color: #5E5E5E;">=</span><span class="st" style="color: #20794D;">"img/ferede_fig_2.png"</span>)</span></code></pre></div>
 <div class="cell-output cell-output-display" data-execution_count="13">
-<p><img src="https://ianepreston.github.io/blog/posts/2021-02-26-ferede_files/figure-html/cell-13-output-1.png" class="img-fluid"></p>
+<p><img src="https://blog.ianpreston.ca/posts/2021-02-26-ferede_files/figure-html/cell-13-output-1.png" class="img-fluid"></p>
 </div>
 </div>
 <p>Here’s the figure using my original data:</p>
 <div class="cell" data-execution_count="14">
 <div class="sourceCode cell-code" id="cb13" style="background: #f1f3f5;"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb13-1">fig2(df)</span></code></pre></div>
 <div class="cell-output cell-output-display">
-<p><img src="https://ianepreston.github.io/blog/posts/2021-02-26-ferede_files/figure-html/cell-14-output-1.png" class="img-fluid"></p>
+<p><img src="https://blog.ianpreston.ca/posts/2021-02-26-ferede_files/figure-html/cell-14-output-1.png" class="img-fluid"></p>
 </div>
 </div>
 <p>And here’s the figure using the version with a data error:</p>
 <div class="cell" data-execution_count="15">
 <div class="sourceCode cell-code" id="cb14" style="background: #f1f3f5;"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb14-1">fig2(error_df)</span></code></pre></div>
 <div class="cell-output cell-output-display">
-<p><img src="https://ianepreston.github.io/blog/posts/2021-02-26-ferede_files/figure-html/cell-15-output-1.png" class="img-fluid"></p>
+<p><img src="https://blog.ianpreston.ca/posts/2021-02-26-ferede_files/figure-html/cell-15-output-1.png" class="img-fluid"></p>
 </div>
 </div>
 <p>Again, this chart is more consistent with the dataframe where I don’t net heritage fund contributions out of 1976 but do for all other years</p>
@@ -2589,7 +2609,7 @@
 <div class="cell" data-execution_count="19">
 <div class="sourceCode cell-code" id="cb18" style="background: #f1f3f5;"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb18-1">Image(filename<span class="op" style="color: #5E5E5E;">=</span><span class="st" style="color: #20794D;">"img/ferede_tbl_1.png"</span>)</span></code></pre></div>
 <div class="cell-output cell-output-display" data-execution_count="19">
-<p><img src="https://ianepreston.github.io/blog/posts/2021-02-26-ferede_files/figure-html/cell-19-output-1.png" class="img-fluid"></p>
+<p><img src="https://blog.ianpreston.ca/posts/2021-02-26-ferede_files/figure-html/cell-19-output-1.png" class="img-fluid"></p>
 </div>
 </div>
 <p>Here’s my summary of the top half</p>
@@ -2912,7 +2932,7 @@
 <div class="cell" data-execution_count="24">
 <div class="sourceCode cell-code" id="cb23" style="background: #f1f3f5;"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb23-1">Image(filename<span class="op" style="color: #5E5E5E;">=</span><span class="st" style="color: #20794D;">"img/ferede_tbl_1.png"</span>)</span></code></pre></div>
 <div class="cell-output cell-output-display" data-execution_count="24">
-<p><img src="https://ianepreston.github.io/blog/posts/2021-02-26-ferede_files/figure-html/cell-24-output-1.png" class="img-fluid"></p>
+<p><img src="https://blog.ianpreston.ca/posts/2021-02-26-ferede_files/figure-html/cell-24-output-1.png" class="img-fluid"></p>
 </div>
 </div>
 <p>Here’s mine:</p>
@@ -3260,7 +3280,7 @@
 <div class="cell" data-execution_count="28">
 <div class="sourceCode cell-code" id="cb27" style="background: #f1f3f5;"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb27-1">Image(filename<span class="op" style="color: #5E5E5E;">=</span><span class="st" style="color: #20794D;">"img/ferede_tbl_a1.png"</span>)</span></code></pre></div>
 <div class="cell-output cell-output-display" data-execution_count="28">
-<p><img src="https://ianepreston.github.io/blog/posts/2021-02-26-ferede_files/figure-html/cell-28-output-1.png" class="img-fluid"></p>
+<p><img src="https://blog.ianpreston.ca/posts/2021-02-26-ferede_files/figure-html/cell-28-output-1.png" class="img-fluid"></p>
 </div>
 </div>
 <p>Here is mine with my data set</p>
@@ -3700,7 +3720,7 @@
 <div class="cell" data-execution_count="37">
 <div class="sourceCode cell-code" id="cb36" style="background: #f1f3f5;"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb36-1">Image(filename<span class="op" style="color: #5E5E5E;">=</span><span class="st" style="color: #20794D;">"img/ferede_tbl_a2.png"</span>)</span></code></pre></div>
 <div class="cell-output cell-output-display" data-execution_count="37">
-<p><img src="https://ianepreston.github.io/blog/posts/2021-02-26-ferede_files/figure-html/cell-37-output-1.png" class="img-fluid"></p>
+<p><img src="https://blog.ianpreston.ca/posts/2021-02-26-ferede_files/figure-html/cell-37-output-1.png" class="img-fluid"></p>
 </div>
 </div>
 <div class="cell" data-execution_count="38">
@@ -4406,7 +4426,7 @@
 <div class="cell" data-execution_count="43">
 <div class="sourceCode cell-code" id="cb42" style="background: #f1f3f5;"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb42-1">Image(filename<span class="op" style="color: #5E5E5E;">=</span><span class="st" style="color: #20794D;">"img/ferede_tbl_3.png"</span>)</span></code></pre></div>
 <div class="cell-output cell-output-display" data-execution_count="43">
-<p><img src="https://ianepreston.github.io/blog/posts/2021-02-26-ferede_files/figure-html/cell-43-output-1.png" class="img-fluid"></p>
+<p><img src="https://blog.ianpreston.ca/posts/2021-02-26-ferede_files/figure-html/cell-43-output-1.png" class="img-fluid"></p>
 </div>
 </div>
 <div class="cell" data-execution_count="44">
@@ -4741,31 +4761,31 @@
 <div class="cell" data-execution_count="48">
 <div class="sourceCode cell-code" id="cb47" style="background: #f1f3f5;"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb47-1">Image(filename<span class="op" style="color: #5E5E5E;">=</span><span class="st" style="color: #20794D;">"img/ferede_fig_3.png"</span>)</span></code></pre></div>
 <div class="cell-output cell-output-display" data-execution_count="48">
-<p><img src="https://ianepreston.github.io/blog/posts/2021-02-26-ferede_files/figure-html/cell-48-output-1.png" class="img-fluid"></p>
+<p><img src="https://blog.ianpreston.ca/posts/2021-02-26-ferede_files/figure-html/cell-48-output-1.png" class="img-fluid"></p>
 </div>
 </div>
 <div class="cell" data-execution_count="49">
 <div class="sourceCode cell-code" id="cb48" style="background: #f1f3f5;"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb48-1">results.irf().plot(impulse<span class="op" style="color: #5E5E5E;">=</span><span class="st" style="color: #20794D;">'nrri'</span>, response<span class="op" style="color: #5E5E5E;">=</span><span class="st" style="color: #20794D;">'program_expenditure'</span>)<span class="op" style="color: #5E5E5E;">;</span></span></code></pre></div>
 <div class="cell-output cell-output-display">
-<p><img src="https://ianepreston.github.io/blog/posts/2021-02-26-ferede_files/figure-html/cell-49-output-1.png" class="img-fluid"></p>
+<p><img src="https://blog.ianpreston.ca/posts/2021-02-26-ferede_files/figure-html/cell-49-output-1.png" class="img-fluid"></p>
 </div>
 </div>
 <div class="cell" data-execution_count="50">
 <div class="sourceCode cell-code" id="cb49" style="background: #f1f3f5;"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb49-1">results.irf().plot(impulse<span class="op" style="color: #5E5E5E;">=</span><span class="st" style="color: #20794D;">'nrrd'</span>, response<span class="op" style="color: #5E5E5E;">=</span><span class="st" style="color: #20794D;">'program_expenditure'</span>)<span class="op" style="color: #5E5E5E;">;</span></span></code></pre></div>
 <div class="cell-output cell-output-display">
-<p><img src="https://ianepreston.github.io/blog/posts/2021-02-26-ferede_files/figure-html/cell-50-output-1.png" class="img-fluid"></p>
+<p><img src="https://blog.ianpreston.ca/posts/2021-02-26-ferede_files/figure-html/cell-50-output-1.png" class="img-fluid"></p>
 </div>
 </div>
 <div class="cell" data-execution_count="51">
 <div class="sourceCode cell-code" id="cb50" style="background: #f1f3f5;"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb50-1">results_err.irf().plot(impulse<span class="op" style="color: #5E5E5E;">=</span><span class="st" style="color: #20794D;">'nrri'</span>, response<span class="op" style="color: #5E5E5E;">=</span><span class="st" style="color: #20794D;">'program_expenditure'</span>)<span class="op" style="color: #5E5E5E;">;</span></span></code></pre></div>
 <div class="cell-output cell-output-display">
-<p><img src="https://ianepreston.github.io/blog/posts/2021-02-26-ferede_files/figure-html/cell-51-output-1.png" class="img-fluid"></p>
+<p><img src="https://blog.ianpreston.ca/posts/2021-02-26-ferede_files/figure-html/cell-51-output-1.png" class="img-fluid"></p>
 </div>
 </div>
 <div class="cell" data-execution_count="52">
 <div class="sourceCode cell-code" id="cb51" style="background: #f1f3f5;"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb51-1">results_err.irf().plot(impulse<span class="op" style="color: #5E5E5E;">=</span><span class="st" style="color: #20794D;">'nrrd'</span>, response<span class="op" style="color: #5E5E5E;">=</span><span class="st" style="color: #20794D;">'program_expenditure'</span>)<span class="op" style="color: #5E5E5E;">;</span></span></code></pre></div>
 <div class="cell-output cell-output-display">
-<p><img src="https://ianepreston.github.io/blog/posts/2021-02-26-ferede_files/figure-html/cell-52-output-1.png" class="img-fluid"></p>
+<p><img src="https://blog.ianpreston.ca/posts/2021-02-26-ferede_files/figure-html/cell-52-output-1.png" class="img-fluid"></p>
 </div>
 </div>
 <p>These are harder to eyeball because I’m showing the individual responses and the paper is showing the cumulative ones. But again, if I think about what adding up the points in my charts would look like, they end up closer to the data set with the error.</p>
@@ -8110,12 +8130,12 @@
   <category>jupyter</category>
   <category>python</category>
   <category>Alberta</category>
-  <guid>https://ianepreston.github.io/blog/posts/2021-02-26-ferede.html</guid>
+  <guid>https://blog.ianpreston.ca/posts/2021-02-26-ferede.html</guid>
   <pubDate>Fri, 26 Feb 2021 00:00:00 GMT</pubDate>
 </item>
 <item>
   <title>Using traefik for internal services</title>
-  <link>https://ianepreston.github.io/blog/posts/2021-01-09-traefik-lan.html</link>
+  <link>https://blog.ianpreston.ca/posts/2021-01-09-traefik-lan.html</link>
   <description><![CDATA[ 
 
 
@@ -8148,12 +8168,12 @@ local-data: "ian.ca A &lt;my server IP&gt;"</code></pre>
   <category>traefik</category>
   <category>networking</category>
   <category>tip</category>
-  <guid>https://ianepreston.github.io/blog/posts/2021-01-09-traefik-lan.html</guid>
+  <guid>https://blog.ianpreston.ca/posts/2021-01-09-traefik-lan.html</guid>
   <pubDate>Sat, 09 Jan 2021 00:00:00 GMT</pubDate>
 </item>
 <item>
   <title>Automating provisioning Arch continued - TLDR</title>
-  <link>https://ianepreston.github.io/blog/posts/2020-11-26-arch-tldr.html</link>
+  <link>https://blog.ianpreston.ca/posts/2020-11-26-arch-tldr.html</link>
   <description><![CDATA[ 
 
 
@@ -8240,12 +8260,12 @@ local-data: "ian.ca A &lt;my server IP&gt;"</code></pre>
   <category>configuration</category>
   <category>linux</category>
   <category>arch</category>
-  <guid>https://ianepreston.github.io/blog/posts/2020-11-26-arch-tldr.html</guid>
+  <guid>https://blog.ianpreston.ca/posts/2020-11-26-arch-tldr.html</guid>
   <pubDate>Thu, 26 Nov 2020 00:00:00 GMT</pubDate>
 </item>
 <item>
   <title>Automating provisioning Arch continued - dotfiles</title>
-  <link>https://ianepreston.github.io/blog/posts/2020-11-25-dotfiles.html</link>
+  <link>https://blog.ianpreston.ca/posts/2020-11-25-dotfiles.html</link>
   <description><![CDATA[ 
 
 
@@ -8422,12 +8442,12 @@ local-data: "ian.ca A &lt;my server IP&gt;"</code></pre>
   <category>linux</category>
   <category>arch</category>
   <category>python</category>
-  <guid>https://ianepreston.github.io/blog/posts/2020-11-25-dotfiles.html</guid>
+  <guid>https://blog.ianpreston.ca/posts/2020-11-25-dotfiles.html</guid>
   <pubDate>Wed, 25 Nov 2020 00:00:00 GMT</pubDate>
 </item>
 <item>
   <title>Automating provisioning Arch continued - Ansible</title>
-  <link>https://ianepreston.github.io/blog/posts/2020-11-21-ansible.html</link>
+  <link>https://blog.ianpreston.ca/posts/2020-11-21-ansible.html</link>
   <description><![CDATA[ 
 
 
@@ -8480,12 +8500,12 @@ local-data: "ian.ca A &lt;my server IP&gt;"</code></pre>
   <category>ansible</category>
   <category>linux</category>
   <category>arch</category>
-  <guid>https://ianepreston.github.io/blog/posts/2020-11-21-ansible.html</guid>
+  <guid>https://blog.ianpreston.ca/posts/2020-11-21-ansible.html</guid>
   <pubDate>Sat, 21 Nov 2020 00:00:00 GMT</pubDate>
 </item>
 <item>
   <title>Automating provisioning Arch - OS installation</title>
-  <link>https://ianepreston.github.io/blog/posts/2020-10-14-arch-bootstrap.html</link>
+  <link>https://blog.ianpreston.ca/posts/2020-10-14-arch-bootstrap.html</link>
   <description><![CDATA[ 
 
 
@@ -8574,27 +8594,27 @@ local-data: "ian.ca A &lt;my server IP&gt;"</code></pre>
 <p>Then I create a base image to work off of.</p>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
-<p><img src="https://ianepreston.github.io/blog/posts/arch/vm_01.PNG" class="img-fluid figure-img"></p>
+<p><img src="https://blog.ianpreston.ca/posts/arch/vm_01.PNG" class="img-fluid figure-img"></p>
 <p></p><figcaption class="figure-caption">base_vm</figcaption><p></p>
 </figure>
 </div>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
-<p><img src="https://ianepreston.github.io/blog/posts/arch/vm_02.PNG" class="img-fluid figure-img"></p>
+<p><img src="https://blog.ianpreston.ca/posts/arch/vm_02.PNG" class="img-fluid figure-img"></p>
 <p></p><figcaption class="figure-caption">vm_disk</figcaption><p></p>
 </figure>
 </div>
 <p>Fire up the new VM, and select the Arch ISO at the prompt:</p>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
-<p><img src="https://ianepreston.github.io/blog/posts/arch/vm_03.PNG" class="img-fluid figure-img"></p>
+<p><img src="https://blog.ianpreston.ca/posts/arch/vm_03.PNG" class="img-fluid figure-img"></p>
 <p></p><figcaption class="figure-caption">vm_iso</figcaption><p></p>
 </figure>
 </div>
 <p>After that we’re at the boot prompt. Now comes the fun task of developing a bootstrap script that will automate the install process.</p>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
-<p><img src="https://ianepreston.github.io/blog/posts/arch/vm_04.PNG" class="img-fluid figure-img"></p>
+<p><img src="https://blog.ianpreston.ca/posts/arch/vm_04.PNG" class="img-fluid figure-img"></p>
 <p></p><figcaption class="figure-caption">vm_prompt</figcaption><p></p>
 </figure>
 </div>
@@ -8605,7 +8625,7 @@ local-data: "ian.ca A &lt;my server IP&gt;"</code></pre>
 <p>The full URL to the raw script is at <a href="https://raw.githubusercontent.com/ianepreston/recipes/arch_bootstrap/arch_bootstrap/bootstrap.sh">this page</a>. That’s pointing to the branch I’m using while I develop the script. When I’ve got it working I’ll hopefully remember to come back here and point it to the master reference. From there I can go to my domain registrar and add a URL redirect record to point an easy to remember subdomain to that path:</p>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
-<p><img src="https://ianepreston.github.io/blog/posts/arch/DNS_01.PNG" class="img-fluid figure-img"></p>
+<p><img src="https://blog.ianpreston.ca/posts/arch/DNS_01.PNG" class="img-fluid figure-img"></p>
 <p></p><figcaption class="figure-caption">DNS</figcaption><p></p>
 </figure>
 </div>
@@ -8625,7 +8645,7 @@ local-data: "ian.ca A &lt;my server IP&gt;"</code></pre>
 <p>Back at the VM I test my overly elaborate bootstrapping setup and…</p>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
-<p><img src="https://ianepreston.github.io/blog/posts/arch/curl_01.PNG" class="img-fluid figure-img"></p>
+<p><img src="https://blog.ianpreston.ca/posts/arch/curl_01.PNG" class="img-fluid figure-img"></p>
 <p></p><figcaption class="figure-caption">curl</figcaption><p></p>
 </figure>
 </div>
@@ -9033,13 +9053,13 @@ local-data: "ian.ca A &lt;my server IP&gt;"</code></pre>
   <category>linux</category>
   <category>arch</category>
   <category>bash</category>
-  <guid>https://ianepreston.github.io/blog/posts/2020-10-14-arch-bootstrap.html</guid>
+  <guid>https://blog.ianpreston.ca/posts/2020-10-14-arch-bootstrap.html</guid>
   <pubDate>Wed, 14 Oct 2020 00:00:00 GMT</pubDate>
-  <media:content url="https://ianepreston.github.io/blog/posts/arch/vm_01.PNG" medium="image"/>
+  <media:content url="https://blog.ianpreston.ca/posts/arch/vm_01.PNG" medium="image"/>
 </item>
 <item>
   <title>Notes on docker-compose</title>
-  <link>https://ianepreston.github.io/blog/posts/2020-10-06-docker-compose.html</link>
+  <link>https://blog.ianpreston.ca/posts/2020-10-06-docker-compose.html</link>
   <description><![CDATA[ 
 
 
@@ -9067,12 +9087,12 @@ local-data: "ian.ca A &lt;my server IP&gt;"</code></pre>
  ]]></description>
   <category>docker</category>
   <category>tips</category>
-  <guid>https://ianepreston.github.io/blog/posts/2020-10-06-docker-compose.html</guid>
+  <guid>https://blog.ianpreston.ca/posts/2020-10-06-docker-compose.html</guid>
   <pubDate>Tue, 06 Oct 2020 00:00:00 GMT</pubDate>
 </item>
 <item>
   <title>Connecting a Harmony remote to a raspberry pi</title>
-  <link>https://ianepreston.github.io/blog/posts/2020-07-20-pi-bluetooth.html</link>
+  <link>https://blog.ianpreston.ca/posts/2020-07-20-pi-bluetooth.html</link>
   <description><![CDATA[ 
 
 
@@ -9109,12 +9129,12 @@ local-data: "ian.ca A &lt;my server IP&gt;"</code></pre>
   <category>linux</category>
   <category>bluetooth</category>
   <category>pi</category>
-  <guid>https://ianepreston.github.io/blog/posts/2020-07-20-pi-bluetooth.html</guid>
+  <guid>https://blog.ianpreston.ca/posts/2020-07-20-pi-bluetooth.html</guid>
   <pubDate>Mon, 20 Jul 2020 00:00:00 GMT</pubDate>
 </item>
 <item>
   <title>Python packaging</title>
-  <link>https://ianepreston.github.io/blog/posts/2020-07-09-pypack.html</link>
+  <link>https://blog.ianpreston.ca/posts/2020-07-09-pypack.html</link>
   <description><![CDATA[ 
 
 
@@ -9416,7 +9436,7 @@ local-data: "ian.ca A &lt;my server IP&gt;"</code></pre>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
 <figure class="figure">
-<img src="https://ianepreston.github.io/blog/posts/pypack/testpypi.PNG" title="package uploaded" class="img-fluid figure-img">
+<img src="https://blog.ianpreston.ca/posts/pypack/testpypi.PNG" title="package uploaded" class="img-fluid figure-img">
 </figure>
 <p></p><figcaption class="figure-caption">test pypi</figcaption><p></p>
 </figure>
@@ -9578,7 +9598,7 @@ versionsync:
 <p><code>conda_ext_pub</code> depends on the <code>conda</code> recipe so this will build the package first and then upload it to Anaconda.org. After running <code>make conda_ext_pub</code> I can see that the package was indeed published to Anaconda.org:</p>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
-<p><img src="https://ianepreston.github.io/blog/posts/pypack/anaconda.PNG" class="img-fluid figure-img"></p>
+<p><img src="https://blog.ianpreston.ca/posts/pypack/anaconda.PNG" class="img-fluid figure-img"></p>
 <p></p><figcaption class="figure-caption">Anaconda</figcaption><p></p>
 </figure>
 </div>
@@ -9672,13 +9692,13 @@ versionsync:
   <category>python</category>
   <category>poetry</category>
   <category>conda</category>
-  <guid>https://ianepreston.github.io/blog/posts/2020-07-09-pypack.html</guid>
+  <guid>https://blog.ianpreston.ca/posts/2020-07-09-pypack.html</guid>
   <pubDate>Thu, 09 Jul 2020 00:00:00 GMT</pubDate>
-  <media:content url="https://ianepreston.github.io/blog/posts/pypack/testpypi.PNG " medium="image"/>
+  <media:content url="https://blog.ianpreston.ca/posts/pypack/testpypi.PNG " medium="image"/>
 </item>
 <item>
   <title>Trouble with reproducible conda environments</title>
-  <link>https://ianepreston.github.io/blog/posts/2020-05-17-conda.html</link>
+  <link>https://blog.ianpreston.ca/posts/2020-05-17-conda.html</link>
   <description><![CDATA[ 
 
 
@@ -9729,247 +9749,8 @@ versionsync:
   <category>python</category>
   <category>conda</category>
   <category>bug</category>
-  <guid>https://ianepreston.github.io/blog/posts/2020-05-17-conda.html</guid>
+  <guid>https://blog.ianpreston.ca/posts/2020-05-17-conda.html</guid>
   <pubDate>Sun, 17 May 2020 00:00:00 GMT</pubDate>
-</item>
-<item>
-  <title>How to work with conda environments in shell scripts and Makefiles</title>
-  <link>https://ianepreston.github.io/blog/posts/2020-05-13-conda_envs.html</link>
-  <description><![CDATA[ 
-
-
-
-
-<p>I’ve struggled with automating working with the <code>conda</code> python environment manager for a while. It’s a relatively small part of my work flow so I haven’t made figuring it out a top priority, but it’s really bugging me. In this post I’m going to document the problem and all the troubleshooting steps I went through to resolve it. I’m writing this post in parallel with actually resolving the issue, so it’s going to be a bit stream of consciousness.</p>
-<section id="setting-up-the-problem" class="level1">
-<h1>Setting up the problem</h1>
-<p>I have conda installed. I’m using bash as my shell. I’ve run <code>conda init bash</code> and my version of conda is new enough that this works nicely in interactive mode.</p>
-<p>Before I go further describing the problem, I should note which version of conda I’m running, since I know a lot has changed with how it sets itself up, and more may change in the future. This guide is built using Miniconda on Windows 10, running <code>conda 4.8.3</code>.</p>
-<p>When I open a new bash terminal I can see from my prompt that I’m in the <code>base</code> environment and I can run <code>conda activate example_env</code> to activate to activate an environment called <code>eg_env</code>. I can get back to <code>base</code> with <code>conda deactivate</code>. Now let’s say I’ve written a python script that’s intended to be run in that environment. I might want to write a shell script to run that file, or use a Makefile to use that script as part of a larger pipeline. To demo and work through this I’m going to make a small conda environment, and a small python script that will only work if I’m in that python environment.</p>
-<p>Here’s my <code>env.yml</code>:</p>
-<div class="sourceCode" id="cb1" style="background: #f1f3f5;"><pre class="sourceCode yml code-with-copy"><code class="sourceCode yaml"><span id="cb1-1"><span class="fu" style="color: #4758AB;">name</span><span class="kw" style="color: #003B4F;">:</span><span class="at" style="color: #657422;"> eg_env</span></span>
-<span id="cb1-2"><span class="fu" style="color: #4758AB;">dependencies</span><span class="kw" style="color: #003B4F;">:</span></span>
-<span id="cb1-3"><span class="at" style="color: #657422;">        </span><span class="kw" style="color: #003B4F;">-</span><span class="at" style="color: #657422;"> numpy</span></span></code></pre></div>
-<p>Now I create a simple python script, which I should be able to run without issue from that environment, but not from base (I’m using Miniconda so my base env is quite sparse).</p>
-<p>Here’s the <code>eg.py</code> file:</p>
-<div class="sourceCode" id="cb2" style="background: #f1f3f5;"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><span class="im" style="color: #00769E;">import</span> numpy <span class="im" style="color: #00769E;">as</span> np</span>
-<span id="cb2-2"><span class="bu" style="color: null;">print</span>(np.__version__)</span></code></pre></div>
-<p>Just to be sure I’ll try running it from base. I get the following error:</p>
-<div class="sourceCode" id="cb3" style="background: #f1f3f5;"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb3-1"><span class="ex" style="color: null;">$</span> python eg.py</span>
-<span id="cb3-2"><span class="ex" style="color: null;">Traceback</span> <span class="er" style="color: #AD0000;">(</span><span class="ex" style="color: null;">most</span> recent call last<span class="kw" style="color: #003B4F;">)</span><span class="bu" style="color: null;">:</span></span>
-<span id="cb3-3">  <span class="ex" style="color: null;">File</span> <span class="st" style="color: #20794D;">"eg.py"</span>, line 1, in <span class="op" style="color: #5E5E5E;">&lt;</span>module<span class="op" style="color: #5E5E5E;">&gt;</span></span>
-<span id="cb3-4">    <span class="ex" style="color: null;">import</span> numpy as np</span>
-<span id="cb3-5"><span class="ex" style="color: null;">ModuleNotFoundError:</span> No module named <span class="st" style="color: #20794D;">'numpy'</span></span></code></pre></div>
-<p>Running it from my active environment is no problem:</p>
-<div class="sourceCode" id="cb4" style="background: #f1f3f5;"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb4-1"><span class="ex" style="color: null;">$</span> python eg.py</span>
-<span id="cb4-2"><span class="ex" style="color: null;">1.18.1</span></span></code></pre></div>
-<p>Excellent, environment management works! But what if I want to call this from another scripts? This is clearly contrived in this example but there are certainly situations where I might want to do this, and if nothing else it will demonstrate a bit more about how conda works.</p>
-<p>So first off, here’s a bash script that just runs the python program:</p>
-<div class="sourceCode" id="cb5" style="background: #f1f3f5;"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb5-1"><span class="co" style="color: #5E5E5E;">#!/bin/bash</span></span>
-<span id="cb5-2"></span>
-<span id="cb5-3"><span class="bu" style="color: null;">echo</span> <span class="st" style="color: #20794D;">"This is my test bash script"</span></span>
-<span id="cb5-4"><span class="ex" style="color: null;">python</span> eg.py</span></code></pre></div>
-<p>If I run this script from my base environment, it behaves basically the same as before:</p>
-<div class="sourceCode" id="cb6" style="background: #f1f3f5;"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb6-1"><span class="ex" style="color: null;">$</span> ./eg.sh</span>
-<span id="cb6-2"><span class="ex" style="color: null;">This</span> is my test bash script</span>
-<span id="cb6-3"><span class="ex" style="color: null;">Traceback</span> <span class="er" style="color: #AD0000;">(</span><span class="ex" style="color: null;">most</span> recent call last<span class="kw" style="color: #003B4F;">)</span><span class="bu" style="color: null;">:</span></span>
-<span id="cb6-4">  <span class="ex" style="color: null;">File</span> <span class="st" style="color: #20794D;">"eg.py"</span>, line 1, in <span class="op" style="color: #5E5E5E;">&lt;</span>module<span class="op" style="color: #5E5E5E;">&gt;</span></span>
-<span id="cb6-5">    <span class="ex" style="color: null;">import</span> numpy as np</span>
-<span id="cb6-6"><span class="ex" style="color: null;">ModuleNotFoundError:</span> No module named <span class="st" style="color: #20794D;">'numpy'</span></span></code></pre></div>
-<p>Similarly, if I run it from my example environment it runs just fine:</p>
-<div class="sourceCode" id="cb7" style="background: #f1f3f5;"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb7-1"><span class="ex" style="color: null;">$</span> ./eg.sh</span>
-<span id="cb7-2"><span class="ex" style="color: null;">This</span> is my test bash script</span>
-<span id="cb7-3"><span class="ex" style="color: null;">1.18.1</span></span></code></pre></div>
-<p>Cool. OK, but say I want my script to handle activating the environment for me? Let’s modify it and see what happens:</p>
-<div class="sourceCode" id="cb8" style="background: #f1f3f5;"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb8-1"><span class="co" style="color: #5E5E5E;">#!/bin/bash</span></span>
-<span id="cb8-2"></span>
-<span id="cb8-3"><span class="bu" style="color: null;">echo</span> <span class="st" style="color: #20794D;">"This is my test bash script"</span></span>
-<span id="cb8-4"><span class="bu" style="color: null;">echo</span> <span class="st" style="color: #20794D;">"Activating conda environment"</span></span>
-<span id="cb8-5"><span class="ex" style="color: null;">conda</span> activate eg_env</span>
-<span id="cb8-6"><span class="bu" style="color: null;">echo</span> <span class="st" style="color: #20794D;">"Running python script"</span></span>
-<span id="cb8-7"><span class="ex" style="color: null;">python</span> eg.py</span></code></pre></div>
-<p>Running this from my base environment I get:</p>
-<div class="sourceCode" id="cb9" style="background: #f1f3f5;"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb9-1"><span class="ex" style="color: null;">$</span> ./eg.sh</span>
-<span id="cb9-2"><span class="ex" style="color: null;">This</span> is my test bash script</span>
-<span id="cb9-3"><span class="ex" style="color: null;">Activating</span> conda environment</span>
-<span id="cb9-4"></span>
-<span id="cb9-5"><span class="ex" style="color: null;">CommandNotFoundError:</span> Your shell has not been properly configured to use <span class="st" style="color: #20794D;">'conda activate'</span>.</span>
-<span id="cb9-6"><span class="bu" style="color: null;">.</span></span>
-<span id="cb9-7"><span class="bu" style="color: null;">.</span></span>
-<span id="cb9-8"><span class="bu" style="color: null;">.</span></span>
-<span id="cb9-9"><span class="ex" style="color: null;">Running</span> python script</span>
-<span id="cb9-10"><span class="ex" style="color: null;">Traceback</span> <span class="er" style="color: #AD0000;">(</span><span class="ex" style="color: null;">most</span> recent call last<span class="kw" style="color: #003B4F;">)</span><span class="bu" style="color: null;">:</span></span>
-<span id="cb9-11">  <span class="ex" style="color: null;">File</span> <span class="st" style="color: #20794D;">"eg.py"</span>, line 1, in <span class="op" style="color: #5E5E5E;">&lt;</span>module<span class="op" style="color: #5E5E5E;">&gt;</span></span>
-<span id="cb9-12">    <span class="ex" style="color: null;">import</span> numpy as np</span>
-<span id="cb9-13"><span class="ex" style="color: null;">ModuleNotFoundError:</span> No module named <span class="st" style="color: #20794D;">'numpy'</span></span></code></pre></div>
-</section>
-<section id="whats-going-on" class="level1">
-<h1>What’s going on?</h1>
-<p>There’s actually some guidance in the full error message from the attempt above. The relevant section is this:</p>
-<div class="sourceCode" id="cb10" style="background: #f1f3f5;"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb10-1"><span class="ex" style="color: null;">CommandNotFoundError:</span> Your shell has not been properly configured to use <span class="st" style="color: #20794D;">'conda activate'</span>.</span>
-<span id="cb10-2"></span>
-<span id="cb10-3"><span class="ex" style="color: null;">To</span> initialize your shell, run</span>
-<span id="cb10-4"></span>
-<span id="cb10-5">    <span class="ex" style="color: null;">$</span> conda init <span class="op" style="color: #5E5E5E;">&lt;</span>SHELL_NAME<span class="op" style="color: #5E5E5E;">&gt;</span></span></code></pre></div>
-<p>I’ve already done that for my shell, but apparently it doesn’t apply to subshells launched from that shell. I can’t just put <code>conda init bash</code> in the script, because you need to restart your shell for it to be applied.</p>
-<p>As far as I know, all running <code>conda init bash</code> did for me was add a line to my <code>.bash_profile</code> file:</p>
-<div class="sourceCode" id="cb11" style="background: #f1f3f5;"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb11-1"><span class="co" style="color: #5E5E5E;"># &gt;&gt;&gt; conda initialize &gt;&gt;&gt;</span></span>
-<span id="cb11-2"><span class="co" style="color: #5E5E5E;"># !! Contents within this block are managed by 'conda init' !!</span></span>
-<span id="cb11-3"><span class="bu" style="color: null;">eval</span> <span class="st" style="color: #20794D;">"</span><span class="va" style="color: #111111;">$(</span><span class="st" style="color: #20794D;">'/C/ProgramData/Miniconda3/Scripts/conda.exe'</span> <span class="st" style="color: #20794D;">'shell.bash'</span> <span class="st" style="color: #20794D;">'hook'</span><span class="va" style="color: #111111;">)</span><span class="st" style="color: #20794D;">"</span></span>
-<span id="cb11-4"><span class="co" style="color: #5E5E5E;"># &lt;&lt;&lt; conda initialize &lt;&lt;&lt;</span></span></code></pre></div>
-</section>
-<section id="possible-solution" class="level1">
-<h1>Possible solution</h1>
-<p>What happens if I just put that at the top of the script?</p>
-<p>Bash script updated:</p>
-<div class="sourceCode" id="cb12" style="background: #f1f3f5;"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb12-1"><span class="co" style="color: #5E5E5E;">#!/bin/bash</span></span>
-<span id="cb12-2"></span>
-<span id="cb12-3"><span class="bu" style="color: null;">echo</span> <span class="st" style="color: #20794D;">"This is my test bash script"</span></span>
-<span id="cb12-4"><span class="bu" style="color: null;">echo</span> <span class="st" style="color: #20794D;">"Activating conda environment"</span></span>
-<span id="cb12-5"><span class="bu" style="color: null;">eval</span> <span class="st" style="color: #20794D;">"</span><span class="va" style="color: #111111;">$(</span><span class="st" style="color: #20794D;">'/C/ProgramData/Miniconda3/Scripts/conda.exe'</span> <span class="st" style="color: #20794D;">'shell.bash'</span> <span class="st" style="color: #20794D;">'hook'</span><span class="va" style="color: #111111;">)</span><span class="st" style="color: #20794D;">"</span></span>
-<span id="cb12-6"><span class="ex" style="color: null;">conda</span> activate eg_env</span>
-<span id="cb12-7"><span class="bu" style="color: null;">echo</span> <span class="st" style="color: #20794D;">"Running python script"</span></span>
-<span id="cb12-8"><span class="ex" style="color: null;">python</span> eg.py</span></code></pre></div>
-<p>Output:</p>
-<div class="sourceCode" id="cb13" style="background: #f1f3f5;"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb13-1"><span class="ex" style="color: null;">$</span> ./eg.sh</span>
-<span id="cb13-2"><span class="ex" style="color: null;">This</span> is my test bash script</span>
-<span id="cb13-3"><span class="ex" style="color: null;">Activating</span> conda environment</span>
-<span id="cb13-4"><span class="ex" style="color: null;">Running</span> python script</span>
-<span id="cb13-5"><span class="ex" style="color: null;">1.18.1</span></span></code></pre></div>
-<p>It worked! Notably, I’m still in my base environment when the script exits. The activation only happens in the subshell. I also tested running this script from a prompt that was already in that environment and it ran fine as well.</p>
-</section>
-<section id="possible-problem-and-solution" class="level1">
-<h1>Possible problem and solution</h1>
-<p>Ok, this works as long as I’m either the only person trying to use this script, or everyone else is also running Miniconda on Windows from a system level install. That seems pretty fragile. Can we improve this?</p>
-<p>The <code>which conda</code> command returns the path to your conda install, so I should be able to replace the absolute path with what that returns to get the same result:</p>
-<div class="sourceCode" id="cb14" style="background: #f1f3f5;"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb14-1"><span class="co" style="color: #5E5E5E;">#!/bin/bash</span></span>
-<span id="cb14-2"></span>
-<span id="cb14-3"><span class="bu" style="color: null;">echo</span> <span class="st" style="color: #20794D;">"This is my test bash script"</span></span>
-<span id="cb14-4"><span class="bu" style="color: null;">echo</span> <span class="st" style="color: #20794D;">"Activating conda environment"</span></span>
-<span id="cb14-5"><span class="bu" style="color: null;">eval</span> <span class="st" style="color: #20794D;">"</span><span class="va" style="color: #111111;">$($(</span><span class="fu" style="color: #4758AB;">which</span> conda<span class="va" style="color: #111111;">)</span> <span class="st" style="color: #20794D;">'shell.bash'</span> <span class="st" style="color: #20794D;">'hook'</span><span class="va" style="color: #111111;">)</span><span class="st" style="color: #20794D;">"</span></span>
-<span id="cb14-6"><span class="ex" style="color: null;">conda</span> activate eg_env</span>
-<span id="cb14-7"><span class="bu" style="color: null;">echo</span> <span class="st" style="color: #20794D;">"Running python script"</span></span>
-<span id="cb14-8"><span class="ex" style="color: null;">python</span> eg.py</span></code></pre></div>
-<p>This works too! Getting pretty close to a nice solution.</p>
-</section>
-<section id="ok-how-about-makefiles" class="level1">
-<h1>Ok, how about MakeFiles?</h1>
-<p>Because I am fancy, I like to have a MakeFile for my projects, which I can then use to run scripts or series of commands with nice convenient shortcuts. Most of what I do could definitely be accomplished with pure shell scripting, but it will be a little nicer if I can do it with Make, so let’s try.</p>
-<p>To make this a little more realistic I’m going to say there are two things I might want to do using <code>make</code> in this project. One might be to format the python file with <code>black</code> and the other might be to run the file. I’ll add <code>black</code> to my example environment, but not my base, which means I’ll have to have the environment activated to format or run the script. I’d like to be able to run the python script directly from the makefile, or run it through a shell script.</p>
-<p>In the same folder as my example python and shell scripts I’ll add a <code>Makefile</code>, based off the top answer on <a href="https://stackoverflow.com/questions/53382383/makefile-cant-use-conda-activate">This stackoverflow question</a>:</p>
-<div class="sourceCode" id="cb15" style="background: #f1f3f5;"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb15-1"><span class="co" style="color: #5E5E5E;"># Oneshell means I can run multiple lines in a recipe in the same shell, so I don't have to</span></span>
-<span id="cb15-2"><span class="co" style="color: #5E5E5E;"># chain commands together with semicolon</span></span>
-<span id="cb15-3"><span class="ex" style="color: null;">.ONESHELL:</span></span>
-<span id="cb15-4"><span class="co" style="color: #5E5E5E;"># Need to specify bash in order for conda activate to work.</span></span>
-<span id="cb15-5"><span class="va" style="color: #111111;">SHELL</span><span class="op" style="color: #5E5E5E;">=</span>/bin/bash</span>
-<span id="cb15-6"><span class="co" style="color: #5E5E5E;"># Note that the extra activate is needed to ensure that the activate floats env to the front of PATH</span></span>
-<span id="cb15-7"><span class="va" style="color: #111111;">CONDA_ACTIVATE</span><span class="op" style="color: #5E5E5E;">=</span>source <span class="va" style="color: #111111;">$$</span><span class="kw" style="color: #003B4F;">(</span><span class="ex" style="color: null;">conda</span> info <span class="at" style="color: #657422;">--base</span><span class="kw" style="color: #003B4F;">)</span><span class="ex" style="color: null;">/etc/profile.d/conda.sh</span> <span class="kw" style="color: #003B4F;">;</span> <span class="ex" style="color: null;">conda</span> activate <span class="kw" style="color: #003B4F;">;</span> <span class="ex" style="color: null;">conda</span> activate</span>
-<span id="cb15-8"></span>
-<span id="cb15-9"><span class="ex" style="color: null;">test:</span></span>
-<span id="cb15-10">    <span class="va" style="color: #111111;">$(</span><span class="ex" style="color: null;">CONDA_ACTIVATE</span><span class="va" style="color: #111111;">)</span> eg_env</span>
-<span id="cb15-11">    <span class="bu" style="color: null;">echo</span> <span class="va" style="color: #111111;">$$</span><span class="er" style="color: #AD0000;">(</span><span class="fu" style="color: #4758AB;">which</span> python<span class="kw" style="color: #003B4F;">)</span></span>
-<span id="cb15-12"></span>
-<span id="cb15-13"><span class="co" style="color: #5E5E5E;"># format the file with black</span></span>
-<span id="cb15-14"><span class="ex" style="color: null;">lint:</span></span>
-<span id="cb15-15">    <span class="va" style="color: #111111;">$(</span><span class="ex" style="color: null;">CONDA_ACTIVATE</span><span class="va" style="color: #111111;">)</span> eg_env</span>
-<span id="cb15-16">    <span class="ex" style="color: null;">black</span> eg.py</span>
-<span id="cb15-17"></span>
-<span id="cb15-18"><span class="co" style="color: #5E5E5E;"># Run the file directly</span></span>
-<span id="cb15-19"><span class="ex" style="color: null;">run_py:</span></span>
-<span id="cb15-20">    <span class="va" style="color: #111111;">$(</span><span class="ex" style="color: null;">CONDA_ACTIVATE</span><span class="va" style="color: #111111;">)</span> eg_env</span>
-<span id="cb15-21">    <span class="ex" style="color: null;">python</span> eg.py</span>
-<span id="cb15-22"></span>
-<span id="cb15-23"><span class="co" style="color: #5E5E5E;"># Run the file from a shell script</span></span>
-<span id="cb15-24"><span class="ex" style="color: null;">run_sh:</span></span>
-<span id="cb15-25">    <span class="va" style="color: #111111;">$(</span><span class="ex" style="color: null;">CONDA_ACTIVATE</span><span class="va" style="color: #111111;">)</span> eg_env</span>
-<span id="cb15-26">    <span class="fu" style="color: #4758AB;">bash</span> eg.sh</span></code></pre></div>
-<p>I’m also going to update <code>eg.sh</code> to remove the environment activation I set up earlier, because the idea is that <code>make</code> should be handling this for me now.</p>
-<p>All of these work! I’m a little bummed I have to put that <code>$(CONDA_ACTIVATE) eg_env</code> at the top of each recipe, but that’s still pretty solid. I tried adding an <code>active</code> recipe and setting it as a requirement for the other recipes like so:</p>
-<div class="sourceCode" id="cb16" style="background: #f1f3f5;"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb16-1"><span class="ex" style="color: null;">active:</span></span>
-<span id="cb16-2">    <span class="va" style="color: #111111;">$(</span><span class="ex" style="color: null;">CONDA_ACTIVATE</span><span class="va" style="color: #111111;">)</span> eg_env</span>
-<span id="cb16-3"></span>
-<span id="cb16-4"><span class="ex" style="color: null;">test:</span> active</span>
-<span id="cb16-5">    <span class="bu" style="color: null;">echo</span> <span class="va" style="color: #111111;">$$</span><span class="er" style="color: #AD0000;">(</span><span class="fu" style="color: #4758AB;">which</span> python<span class="kw" style="color: #003B4F;">)</span></span></code></pre></div>
-<p>But the activation from <code>active</code> didn’t persist into running <code>test</code>. Maybe there’s a way to get that working but I’m going to call this close enough for my needs.</p>
-</section>
-<section id="conclusion" class="level1">
-<h1>Conclusion</h1>
-<p>Getting conda activation to work from within bash and Makefiles is a finicky process. Or at least I don’t have a strong enough understanding of subshells, environment variables conda and probably some other things to make it seem otherwise. That said, the steps outlined in this guide should allow you to automate processes involving conda environments without too much hassle.</p>
-</section>
-<section id="the-final-scripts" class="level1">
-<h1>The final scripts</h1>
-<p>For reference, here’s the final form of what I used to setup and test this demo:</p>
-<section id="makefile" class="level2">
-<h2 class="anchored" data-anchor-id="makefile">Makefile</h2>
-<div class="sourceCode" id="cb17" style="background: #f1f3f5;"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb17-1"><span class="co" style="color: #5E5E5E;"># Oneshell means I can run multiple lines in a recipe in the same shell, so I don't have to</span></span>
-<span id="cb17-2"><span class="co" style="color: #5E5E5E;"># chain commands together with semicolon</span></span>
-<span id="cb17-3"><span class="ex" style="color: null;">.ONESHELL:</span></span>
-<span id="cb17-4"><span class="co" style="color: #5E5E5E;"># Need to specify bash in order for conda activate to work.</span></span>
-<span id="cb17-5"><span class="va" style="color: #111111;">SHELL</span><span class="op" style="color: #5E5E5E;">=</span>/bin/bash</span>
-<span id="cb17-6"><span class="co" style="color: #5E5E5E;"># Note that the extra activate is needed to ensure that the activate floats env to the front of PATH</span></span>
-<span id="cb17-7"><span class="va" style="color: #111111;">CONDA_ACTIVATE</span><span class="op" style="color: #5E5E5E;">=</span>source <span class="va" style="color: #111111;">$$</span><span class="kw" style="color: #003B4F;">(</span><span class="ex" style="color: null;">conda</span> info <span class="at" style="color: #657422;">--base</span><span class="kw" style="color: #003B4F;">)</span><span class="ex" style="color: null;">/etc/profile.d/conda.sh</span> <span class="kw" style="color: #003B4F;">;</span> <span class="ex" style="color: null;">conda</span> activate <span class="kw" style="color: #003B4F;">;</span> <span class="ex" style="color: null;">conda</span> activate</span>
-<span id="cb17-8"></span>
-<span id="cb17-9"><span class="ex" style="color: null;">test:</span></span>
-<span id="cb17-10">    <span class="va" style="color: #111111;">$(</span><span class="ex" style="color: null;">CONDA_ACTIVATE</span><span class="va" style="color: #111111;">)</span> eg_env</span>
-<span id="cb17-11">    <span class="bu" style="color: null;">echo</span> <span class="va" style="color: #111111;">$$</span><span class="er" style="color: #AD0000;">(</span><span class="fu" style="color: #4758AB;">which</span> python<span class="kw" style="color: #003B4F;">)</span></span>
-<span id="cb17-12"></span>
-<span id="cb17-13"><span class="co" style="color: #5E5E5E;"># format the file with black</span></span>
-<span id="cb17-14"><span class="ex" style="color: null;">lint:</span></span>
-<span id="cb17-15">    <span class="va" style="color: #111111;">$(</span><span class="ex" style="color: null;">CONDA_ACTIVATE</span><span class="va" style="color: #111111;">)</span> eg_env</span>
-<span id="cb17-16">    <span class="ex" style="color: null;">black</span> eg.py</span>
-<span id="cb17-17"></span>
-<span id="cb17-18"><span class="co" style="color: #5E5E5E;"># Run the file directly</span></span>
-<span id="cb17-19"><span class="ex" style="color: null;">run_py:</span></span>
-<span id="cb17-20">    <span class="va" style="color: #111111;">$(</span><span class="ex" style="color: null;">CONDA_ACTIVATE</span><span class="va" style="color: #111111;">)</span> eg_env</span>
-<span id="cb17-21">    <span class="ex" style="color: null;">python</span> eg.py</span>
-<span id="cb17-22"></span>
-<span id="cb17-23"><span class="co" style="color: #5E5E5E;"># Run the file from a shell script</span></span>
-<span id="cb17-24"><span class="ex" style="color: null;">run_sh:</span></span>
-<span id="cb17-25">    <span class="va" style="color: #111111;">$(</span><span class="ex" style="color: null;">CONDA_ACTIVATE</span><span class="va" style="color: #111111;">)</span> eg_env</span>
-<span id="cb17-26">    <span class="fu" style="color: #4758AB;">bash</span> eg.sh</span></code></pre></div>
-</section>
-<section id="env.yml" class="level2">
-<h2 class="anchored" data-anchor-id="env.yml">env.yml</h2>
-<div class="sourceCode" id="cb18" style="background: #f1f3f5;"><pre class="sourceCode yml code-with-copy"><code class="sourceCode yaml"><span id="cb18-1"><span class="fu" style="color: #4758AB;">name</span><span class="kw" style="color: #003B4F;">:</span><span class="at" style="color: #657422;"> eg_env</span></span>
-<span id="cb18-2"><span class="fu" style="color: #4758AB;">dependencies</span><span class="kw" style="color: #003B4F;">:</span></span>
-<span id="cb18-3"><span class="at" style="color: #657422;">    </span><span class="kw" style="color: #003B4F;">-</span><span class="at" style="color: #657422;"> numpy</span></span>
-<span id="cb18-4"><span class="at" style="color: #657422;">    </span><span class="kw" style="color: #003B4F;">-</span><span class="at" style="color: #657422;"> black</span></span></code></pre></div>
-</section>
-<section id="eg.py" class="level2">
-<h2 class="anchored" data-anchor-id="eg.py">eg.py</h2>
-<div class="sourceCode" id="cb19" style="background: #f1f3f5;"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb19-1"><span class="im" style="color: #00769E;">import</span> numpy <span class="im" style="color: #00769E;">as</span> np</span>
-<span id="cb19-2"></span>
-<span id="cb19-3"><span class="bu" style="color: null;">print</span>(np.__version__)</span></code></pre></div>
-</section>
-<section id="eg.sh-for-makefile" class="level2">
-<h2 class="anchored" data-anchor-id="eg.sh-for-makefile">eg.sh (for makefile)</h2>
-<div class="sourceCode" id="cb20" style="background: #f1f3f5;"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb20-1"><span class="co" style="color: #5E5E5E;">#!/bin/bash</span></span>
-<span id="cb20-2"></span>
-<span id="cb20-3"><span class="bu" style="color: null;">echo</span> <span class="st" style="color: #20794D;">"This is my test bash script"</span></span>
-<span id="cb20-4"><span class="bu" style="color: null;">echo</span> <span class="st" style="color: #20794D;">"Running python script"</span></span>
-<span id="cb20-5"><span class="ex" style="color: null;">python</span> eg.py</span></code></pre></div>
-</section>
-<section id="eg.sh-standalone" class="level2">
-<h2 class="anchored" data-anchor-id="eg.sh-standalone">eg.sh (standalone)</h2>
-<div class="sourceCode" id="cb21" style="background: #f1f3f5;"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb21-1"><span class="co" style="color: #5E5E5E;">#!/bin/bash</span></span>
-<span id="cb21-2"></span>
-<span id="cb21-3"><span class="bu" style="color: null;">echo</span> <span class="st" style="color: #20794D;">"This is my test bash script"</span></span>
-<span id="cb21-4"><span class="bu" style="color: null;">echo</span> <span class="st" style="color: #20794D;">"Activating conda environment"</span></span>
-<span id="cb21-5"><span class="bu" style="color: null;">eval</span> <span class="st" style="color: #20794D;">"</span><span class="va" style="color: #111111;">$($(</span><span class="fu" style="color: #4758AB;">which</span> conda<span class="va" style="color: #111111;">)</span> <span class="st" style="color: #20794D;">'shell.bash'</span> <span class="st" style="color: #20794D;">'hook'</span><span class="va" style="color: #111111;">)</span><span class="st" style="color: #20794D;">"</span></span>
-<span id="cb21-6"><span class="ex" style="color: null;">conda</span> activate eg_env</span>
-<span id="cb21-7"><span class="bu" style="color: null;">echo</span> <span class="st" style="color: #20794D;">"Running python script"</span></span>
-<span id="cb21-8"><span class="ex" style="color: null;">python</span> eg.py</span></code></pre></div>
-
-
-</section>
-</section>
-
- ]]></description>
-  <category>conda</category>
-  <category>python</category>
-  <category>bash</category>
-  <guid>https://ianepreston.github.io/blog/posts/2020-05-13-conda_envs.html</guid>
-  <pubDate>Wed, 13 May 2020 00:00:00 GMT</pubDate>
 </item>
 </channel>
 </rss>
