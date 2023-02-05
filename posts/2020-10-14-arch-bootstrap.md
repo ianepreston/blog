@@ -18,10 +18,10 @@ toc: true
 
 This is part 1 of a 4 part series describing how I provision my systems. Links to each part are below:
 
-* [part 1 - The base OS install](https://blog.ianpreston.ca/configuration/linux/arch/bash/2020/10/14/arch-bootstrap.html)
-* [part 2 - Software install and system configuration with Ansible](https://blog.ianpreston.ca/configuration/ansible/linux/arch/2020/11/21/ansible.html)
-* [part 3 - User level and python environment config with dotfiles and mkrc](https://blog.ianpreston.ca/configuration/linux/arch/python/2020/11/25/dotfiles.html)
-* [part 4 - The tldr that wraps up how to do the whole thing from start to finish](https://blog.ianpreston.ca/configuration/linux/arch/2020/11/26/arch-tldr.html)]
+* [part 1 - The base OS install](2020-10-14-arch-bootstrap.md)
+* [part 2 - Software install and system configuration with Ansible](2020-11-21-ansible.md)
+* [part 3 - User level and python environment config with dotfiles and mkrc](2020-11-25-dotfiles.md)
+* [part 4 - The tldr that wraps up how to do the whole thing from start to finish](2020-11-26-arch-tldr.md)]
 
 # Introduction
 
@@ -667,7 +667,7 @@ install_base_system() {
 }
 ```
 
-Next up we have some user account setup and configuration for ansible, which will be used for the rest of the configuration of the machine. The original script added some public keys to the ansible user's authorized keys file. I'd like to add some automation to handle [my key management approach](http://blog.ianpreston.ca/2020/05/03/ssh.html) but the VM I'm working in makes USB passthrough a hassle. (I switched to Hyper-V part way through making this guide as Virtualbox and WSL2 were fighting on my machine).
+Next up we have some user account setup and configuration for ansible, which will be used for the rest of the configuration of the machine. The original script added some public keys to the ansible user's authorized keys file. I'd like to add some automation to handle [my key management approach](2020-05-03-ssh.md) but the VM I'm working in makes USB passthrough a hassle. (I switched to Hyper-V part way through making this guide as Virtualbox and WSL2 were fighting on my machine).
 
 There's a script for updating the root user account, but it has a subset of what's in the ansible account, so let's just look at that one:
 

@@ -100,7 +100,7 @@ listings from rental and sales sites daily, and then combines them with other da
 like commute times, grocery store locations, and flood risk to produce personalized
 lists of candidate listings. The blog describes the implementation in more detail, along
 with some important lessons I learned and links to the code. The blog post is
-[here](https://blog.ianpreston.ca/data/python/yyc/2021/12/30/wheretolive.html).
+[here](2021-12-30-wheretolive.md).
 
 ## Paper Reproduction - "Alberta’s Fiscal Responses To Fluctuations In Non-Renewable-Resource Revenue" in python
 
@@ -109,12 +109,12 @@ Calgary's school of public policy. In the course of reproducing the paper I actu
 found a data error in the original paper. After correcting the error the conclusions of
 the paper do not appear to be supported. An interesting exercise in coding, and
 reproducibility in science. The blog post is
-[here](https://blog.ianpreston.ca/econometrics/jupyter/python/alberta/2021/02/26/ferede.html).
+[here](2021-02-26-ferede.ipynb).
 
 ## Automating provisioning Arch
 
 I use Arch Linux btw.
-[This post](https://blog.ianpreston.ca/configuration/linux/arch/2020/11/26/arch-tldr.html)
+[This post](2020-11-26-arch-tldr.md)
 links to a 3 part post series I did about automating the setup of my workstations and
 servers. It goes from a detailed breakdown of the bash script that's used to get a bare
 bones arch install, through to using [ansible](https://www.ansible.com/) to do all the
@@ -134,11 +134,11 @@ full blown package. Also, most guides don't cover conda, and I find the conda do
 really tuned towards people who are bundling C code or something else with their
 package, not just making a pure python package. To bridge this gap, and to help cement
 my own understanding of packaging, I wrote
-[this guide](https://blog.ianpreston.ca/python/poetry/conda/2020/07/09/pypack.html).
+[this guide](2020-07-09-pypack.md).
 
 ## Setting up a data science environment in Windows
 
-[This guide](https://blog.ianpreston.ca/data/python/configuration/2020/02/15/windows-ds-software.html)
+[This guide](2020-02-15-windows-ds-software.md)
 is for everyone out there that only has a locked down Windows machine, but still wants
 to work with data in python. Almost all the guides I could find online assumed you had a
 Mac or Linux machine, and even the Windows ones often assumed you had administrative
