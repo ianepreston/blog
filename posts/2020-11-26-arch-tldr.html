@@ -224,10 +224,10 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 
 <p>This is part 4 of a 4 part series describing how I provision my systems. Links to each part are below:</p>
 <ul>
-<li><a href="https://blog.ianpreston.ca/configuration/linux/arch/bash/2020/10/14/arch-bootstrap.html">part 1 - The base OS install</a></li>
-<li><a href="https://blog.ianpreston.ca/configuration/ansible/linux/arch/2020/11/21/ansible.html">part 2 - Software install and system configuration with Ansible</a></li>
-<li><a href="https://blog.ianpreston.ca/configuration/linux/arch/python/2020/11/25/dotfiles.html">part 3 - User level and python environment config with dotfiles and mkrc</a></li>
-<li><a href="https://blog.ianpreston.ca/configuration/linux/arch/2020/11/26/arch-tldr.html">part 4 - The tldr that wraps up how to do the whole thing from start to finish</a>]</li>
+<li><a href="../posts/2020-10-14-arch-bootstrap.html">part 1 - The base OS install</a></li>
+<li><a href="../posts/2020-11-21-ansible.html">part 2 - Software install and system configuration with Ansible</a></li>
+<li><a href="../posts/2020-11-25-dotfiles.html">part 3 - User level and python environment config with dotfiles and mkrc</a></li>
+<li><a href="../posts/2020-11-26-arch-tldr.html">part 4 - The tldr that wraps up how to do the whole thing from start to finish</a>]</li>
 </ul>
 <section id="introduction" class="level1">
 <h1>Introduction</h1>
@@ -262,7 +262,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 </section>
 <section id="set-up-ssh-keys" class="level1">
 <h1>Set up ssh keys</h1>
-<p>Plug in the USB with ssh keys on it. <a href="http://blog.ianpreston.ca/2020/05/03/ssh.html">Guide for reference</a></p>
+<p>Plug in the USB with ssh keys on it. <a href="../posts/2020-05-03-ssh.html">Guide for reference</a></p>
 <div class="sourceCode" id="cb3"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="ex">lsblk</span>  <span class="co"># find where the partition with the keys is stored</span></span>
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="fu">mkdir</span> ssh  <span class="co"># make a mount point</span></span>
 <span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> mount /dev/sd<span class="op">&lt;</span>something<span class="op">&gt;</span> ssh</span>
