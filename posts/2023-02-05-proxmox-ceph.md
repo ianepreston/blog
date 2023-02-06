@@ -329,3 +329,58 @@ in the base repository I've been working off.
 # Run the playbook
 
 Moment of truth, will it work or will I get errors?
+
+```json
+{"changed": true, "cmd": ["pveceph", "createosd", "/dev/sda"], "delta": "0:00:00.421412", "end": "2023-02-05 20:09:49.235881", "msg": "non-zero return code", "rc": 2, "start": "2023-02-05 20:09:48.814469", "stderr": "binary not installed: /usr/sbin/ceph-volume", "stderr_lines": ["binary not installed: /usr/sbin/ceph-volume"], "stdout": "", "stdout_lines": []}
+```
+
+Of course it's not that easy. I made it to the `ceph_osd` role but then hit this failure.
+Let's compare the steps I've put into my playbook with the [proxmox docs](https://pve.proxmox.com/pve-docs/chapter-pveceph.html) and see if I missed anything.
+
+It looks like the manual tasks match what I did in the playbook, so that's not it. Next
+I'll search for the error message I got from ansible (probably should have done that first).
+I found a bug report stating that `ceph-volume` is only recommended by `ceph-osd`, so depending
+on apt settings it may not get installed. Weird, but easy to fix. In the `ceph_node` role
+I add the following:
+
+```yml
+
+- name: Install extra ceph packages
+  apt:
+    name: ceph-volume
+```
+
+Ok, that got me a bit farther, but now I have new errors. First off, let's manually check
+what state my system is in before I assess anything else. Looking at the ceph dashboard
+in proxmox I have 1 OSD showing in and up, -1 (?) showing out and up, and 1 showing out
+and down. That's interesting. Running `pgrep ceph-osd` on each node I get a PID for my
+second node, but not for the other two. Fun. Let's just try manually zapping the SSD on
+the other two hosts and see what happens. First I run `ceph-volume lvm zap /dev/sda --destroy`
+to wipe the SSD (just to be safe), and then I run `pveceph createosd /dev/sda`. Let's find
+out how that goes.
+
+```bash
+root@pve1:~# pveceph createosd /dev/sda
+create OSD on /dev/sda (bluestore)
+wiping block device /dev/sda
+200+0 records in
+200+0 records out
+209715200 bytes (210 MB, 200 MiB) copied, 0.520585 s, 403 MB/s
+Running command: /bin/ceph-authtool --gen-print-key
+Running command: /bin/ceph --cluster ceph --name client.bootstrap-osd --keyring /var/lib/ceph/bootstrap-osd/ceph.keyring -i - osd new ab6b5e33-e5ca-40b6-a94e-40d3ce61283d
+ stderr: 2023-02-06T16:01:03.421-0700 7f32c24e1700 -1 auth: unable to find a keyring on /etc/pve/priv/ceph.client.bootstrap-osd.keyring: (2) No such file or directory
+ stderr: 2023-02-06T16:01:03.421-0700 7f32c24e1700 -1 AuthRegistry(0x7f32bc060800) no keyring found at /etc/pve/priv/ceph.client.bootstrap-osd.keyring, disabling cephx
+ stderr: 2023-02-06T16:01:03.425-0700 7f32bb7fe700 -1 monclient(hunting): handle_auth_bad_method server allowed_methods [2] but i only support [2]
+ stderr: 2023-02-06T16:01:03.425-0700 7f32c0a7e700 -1 monclient(hunting): handle_auth_bad_method server allowed_methods [2] but i only support [2]
+ stderr: [errno 13] RADOS permission denied (error connecting to the cluster)
+-->  RuntimeError: Unable to create a new OSD id
+command 'ceph-volume lvm create --cluster-fsid 6d4cf20c-f09d-4edf-ae78-0038b57f9709 --data /dev/sda' failed: exit code 1
+```
+
+Ok so I'm getting an error connecting to the cluster, why would that be? Checking
+the ceph status from the proxmox interface it appears that the monitor is skipping between
+running on my first and third nodes, but not my second (which is where I was able to install
+the OSD). Now I'm really confused and wondering if maybe I should have just done this whole
+thing manually through the GUI. But what would I learn that way? Ok, one thing I didn't
+do was create a separate network for ceph. Maybe I should have done that. Let's destroy
+these monitors and initialize the ceph cluster with the network flag.
