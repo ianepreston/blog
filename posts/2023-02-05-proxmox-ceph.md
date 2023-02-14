@@ -383,4 +383,73 @@ running on my first and third nodes, but not my second (which is where I was abl
 the OSD). Now I'm really confused and wondering if maybe I should have just done this whole
 thing manually through the GUI. But what would I learn that way? Ok, one thing I didn't
 do was create a separate network for ceph. Maybe I should have done that. Let's destroy
-these monitors and initialize the ceph cluster with the network flag.
+these monitors and initialize the ceph cluster with the network flag. Fun update, I can't
+destroy the last monitor in a cluster. Maybe I have to reverse some of the other steps first?
+
+The last thing I did before trying to create OSDs was create managers, so let's remove
+those with `pveceph destroymgr <hostname>` on each of the nodes.
+
+Back to my second node I try `pveceph destroymon pve2` and get the error
+`can't remove last monitor`. Ok, maybe I can add the other two back now that I don't have
+managers? Nope.
+
+Ok, ceph has docs on [removing monitors from an unhealthy cluster](https://docs.ceph.com/en/latest/rados/operations/add-or-rm-mons/#removing-monitors-from-an-unhealthy-cluster)
+I'd say that's what I have. After running these commands I don't see any running monitors,
+and I'm also getting a timeout on the ceph page of proxmox and `ceph -s` is hanging from
+the terminal. Since I don't have any monitors now I shouldn't have any managers either.
+`pveceph mon destroy` indicates that it destroys managers as well. I can also run
+`pgrep ceph-mgr` to confirm there's no manager process running.
+
+Alright, let's try manually creating some monitors this time. Starting with my first node
+I'll run `pveceph mon create` and... get an error:
+
+```bash
+root@pve1:~# pveceph mon create
+Could not connect to ceph cluster despite configured monitors
+```
+
+Ok, so there must still be something in my ceph config that's pointing to the monitors,
+even though I destroyed them. Maybe I'll take a step further back and remove that file
+as well. After deleting the file I now get a popup in the proxmox UI on the ceph page
+saying "Ceph is not initialized. You need to create an initial config once." with a
+button to configure ceph. That seems like I've got everything reset back, except maybe
+those initially installed packages, but that should be fine. Let's try running the
+playbook again with a proper ceph network defined. Aaaand we fail to create monitors.
+Let's see what's going on.
+
+Here's the cleaned up output of the error, it's the same as from ansible just not
+in json format:
+
+```bash
+root@pve1:~# pveceph mon create
+unable to get monitor info from DNS SRV with service name: ceph-mon
+Could not connect to ceph cluster despite configured monitors
+```
+
+Alright, I clearly haven't reset my state properly. A little more searching leads me to
+`pveceph purge`. That sounds promising, let's give that a shot. I'll run it on all nodes
+to be safe, and with the `--crash` and `--logs` flags to purge all the logs.
+[This thread](https://forum.proxmox.com/threads/reinstall-ceph-on-proxmox-6.57691/)
+has some details about purging ceph config to start clean, although the posters there
+are having lots of problems, so I hope I don't have to go that far. After running the
+purge command I ran my playbook and... failed at creating monitors again. However,
+this time I could ssh into each host and create a monitor from the command line, same
+for managers. Checking my ceph dashboard I now see all three nodes with monitors and
+managers up and running. Let's leave the playbook alone for now and just try and do the
+rest of this manually. One node 1 I was able to create an OSD no problem. On node 2 I
+got told `device '/dev/sda' is already in use`. Following the guide I run
+`ceph-volume lvm zap /dev/sda --destroy`:
+
+```bash
+root@pve2:~# ceph-volume lvm zap /dev/sda --destroy
+--> Zapping: /dev/sda
+--> Zapping lvm member /dev/sda. lv_path is /dev/ceph-ff288a69-40e3-4076-a422-52e100d7d302/osd-block-64f34da5-6b0c-4d20-8a60-ddc7227345ed
+--> Unmounting /var/lib/ceph/osd/ceph-0
+Running command: /usr/bin/umount -v /var/lib/ceph/osd/ceph-0
+ stderr: umount: /var/lib/ceph/osd/ceph-0: target is busy.
+-->  RuntimeError: command returned non-zero exit status: 32
+```
+
+Ok, so it looks like this is already set up as an OSD, except I don't actually see it
+when I go to the ceph panel. Let's try the third node and come back to this one. That
+one added just fine too, what is going on with my second node?
