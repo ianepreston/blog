@@ -452,4 +452,59 @@ Running command: /usr/bin/umount -v /var/lib/ceph/osd/ceph-0
 
 Ok, so it looks like this is already set up as an OSD, except I don't actually see it
 when I go to the ceph panel. Let's try the third node and come back to this one. That
-one added just fine too, what is going on with my second node?
+one added just fine too, what is going on with my second node? First test, when in doubt
+try turning it off and on again. After a reboot I try the commands again:
+
+```bash
+root@pve2:~# ceph-volume lvm zap /dev/sda --destroy
+--> Zapping: /dev/sda
+Running command: /usr/bin/dd if=/dev/zero of=/dev/sda bs=1M count=10 conv=fsync
+ stderr: 10+0 records in
+10+0 records out
+ stderr: 10485760 bytes (10 MB, 10 MiB) copied, 0.0274736 s, 382 MB/s
+--> Zapping successful for: <Raw Device: /dev/sda>
+root@pve2:~# pveceph createosd /dev/sda
+device '/dev/sda' is already in use
+```
+
+Ok, that's a bit of progress, I can actually run the zap, but then why can't I
+create the osd? Why is it saying the device is already in use? From the disks page in
+the proxmox UI I selected the disk and picked "wipe". Let's try again. And it worked.
+Computers are weird.
+
+My ceph cluster is healthy! Three monitors, three managers, three OSDs, 2.73TB of raw
+disk. Let's create a storage pool:
+
+```bash
+root@pve2:~# pveceph pool create tank --add_storages
+pool tank: applying size = 3
+pool tank: applying application = rbd
+pool tank: applying min_size = 2
+pool tank: applying pg_autoscale_mode = warn
+pool tank: applying pg_num = 128
+```
+
+Next up I create a metadata service on each nodes so I can run cephfs:
+
+```bash
+root@pve3:~# pveceph mds create
+creating MDS directory '/var/lib/ceph/mds/ceph-pve3'
+creating keys for 'mds.pve3'
+setting ceph as owner for service directory
+enabling service 'ceph-mds@pve3.service'
+Created symlink /etc/systemd/system/ceph-mds.target.wants/ceph-mds@pve3.service -> /lib/systemd/system/ceph-mds@.service.
+starting service 'ceph-mds@pve3.service'
+```
+
+This looked the same on all three nodes. Finally, some consistency!
+
+The last piece from the playbook was to create a cephfs:
+
+```bash
+root@pve1:~# pveceph fs create --pg_num 128 --add-storage
+creating data pool 'cephfs_data'...
+error with 'osd pool create': mon_cmd failed -  pg_num 128 size 3 would mean 771 total pgs, which exceeds max 750 (mon_max_pg_per_osd 250 * num_in_osds 3) 
+```
+
+So close! That's what I get for just copy pasting. I guess I have to figure out how many
+placement groups I should actually have.
