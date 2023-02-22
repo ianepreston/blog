@@ -2,11 +2,12 @@
   {
     "listing": "/index.html",
     "items": [
+      "/posts/2023-02-05-proxmox-ceph.html",
       "/posts/2023-02-03-migration.html",
       "/posts/2023-01-21-proxmox3.html",
       "/posts/2022-12-31-proxmox2.html",
-      "/posts/2022-12-30-devcontainers.html",
       "/posts/2022-12-30-rootless-docker.html",
+      "/posts/2022-12-30-devcontainers.html",
       "/posts/2022-11-21-proxmox.html",
       "/posts/2022-08-01-dunning.html",
       "/posts/2022-03-17-mortgage.html",

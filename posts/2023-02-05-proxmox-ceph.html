@@ -1,0 +1,761 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.2.335">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="dcterms.date" content="2023-02-05">
+<meta name="description" content="What’s HA services without HA storage?">
+
+<title>Ian’s blog - Home Cluster Part 4 - Setup CEPH</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1.6em;
+  vertical-align: middle;
+}
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+    color: #aaaaaa;
+  }
+pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+code span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code span.at { color: #7d9029; } /* Attribute */
+code span.bn { color: #40a070; } /* BaseN */
+code span.bu { color: #008000; } /* BuiltIn */
+code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code span.ch { color: #4070a0; } /* Char */
+code span.cn { color: #880000; } /* Constant */
+code span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code span.dt { color: #902000; } /* DataType */
+code span.dv { color: #40a070; } /* DecVal */
+code span.er { color: #ff0000; font-weight: bold; } /* Error */
+code span.ex { } /* Extension */
+code span.fl { color: #40a070; } /* Float */
+code span.fu { color: #06287e; } /* Function */
+code span.im { color: #008000; font-weight: bold; } /* Import */
+code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+code span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code span.op { color: #666666; } /* Operator */
+code span.ot { color: #007020; } /* Other */
+code span.pp { color: #bc7a00; } /* Preprocessor */
+code span.sc { color: #4070a0; } /* SpecialChar */
+code span.ss { color: #bb6688; } /* SpecialString */
+code span.st { color: #4070a0; } /* String */
+code span.va { color: #19177c; } /* Variable */
+code span.vs { color: #4070a0; } /* VerbatimString */
+code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+</style>
+
+
+<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../">
+<script src="../site_libs/quarto-html/quarto.js"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../site_libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 20,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit"
+  }
+}</script>
+
+
+<link rel="stylesheet" href="../styles.css">
+</head>
+
+<body class="nav-fixed">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg navbar-dark ">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container">
+    <a class="navbar-brand" href="../index.html">
+    <span class="navbar-title">Ian’s blog</span>
+    </a>
+  </div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll ms-auto">
+  <li class="nav-item">
+    <a class="nav-link" href="../about.html">
+ <span class="menu-text">about</span></a>
+  </li>  
+  <li class="nav-item compact">
+    <a class="nav-link" href="https://github.com/ianepreston"><i class="bi bi-github" role="img">
+</i> 
+ <span class="menu-text"></span></a>
+  </li>  
+</ul>
+              <div id="quarto-search" class="" title="Search"></div>
+          </div> <!-- /navcollapse -->
+      </div> <!-- /container-fluid -->
+    </nav>
+</header>
+<!-- content -->
+<header id="title-block-header" class="quarto-title-block default page-columns page-full">
+  <div class="quarto-title-banner page-columns page-full">
+    <div class="quarto-title column-body">
+      <h1 class="title">Home Cluster Part 4 - Setup CEPH</h1>
+                  <div>
+        <div class="description">
+          What’s HA services without HA storage?
+        </div>
+      </div>
+                          <div class="quarto-categories">
+                <div class="quarto-category">configuration</div>
+                <div class="quarto-category">proxmox</div>
+                <div class="quarto-category">Linux</div>
+                <div class="quarto-category">ceph</div>
+              </div>
+                  </div>
+  </div>
+    
+  
+  <div class="quarto-title-meta">
+
+      
+      <div>
+      <div class="quarto-title-meta-heading">Published</div>
+      <div class="quarto-title-meta-contents">
+        <p class="date">February 5, 2023</p>
+      </div>
+    </div>
+    
+      
+    </div>
+    
+  
+  </header><div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#introduction" id="toc-introduction" class="nav-link active" data-scroll-target="#introduction">Introduction</a>
+  <ul class="collapse">
+  <li><a href="#note" id="toc-note" class="nav-link" data-scroll-target="#note">Note</a></li>
+  </ul></li>
+  <li><a href="#initial-attempt-using-ansible" id="toc-initial-attempt-using-ansible" class="nav-link" data-scroll-target="#initial-attempt-using-ansible">Initial attempt using Ansible</a>
+  <ul class="collapse">
+  <li><a href="#setting-up-the-inventory" id="toc-setting-up-the-inventory" class="nav-link" data-scroll-target="#setting-up-the-inventory">Setting up the inventory</a></li>
+  <li><a href="#checking-the-library-folder" id="toc-checking-the-library-folder" class="nav-link" data-scroll-target="#checking-the-library-folder">Checking the library folder</a></li>
+  <li><a href="#roles" id="toc-roles" class="nav-link" data-scroll-target="#roles">Roles</a>
+  <ul class="collapse">
+  <li><a href="#ceph_node" id="toc-ceph_node" class="nav-link" data-scroll-target="#ceph_node">ceph_node</a></li>
+  <li><a href="#ceph_master" id="toc-ceph_master" class="nav-link" data-scroll-target="#ceph_master">ceph_master</a></li>
+  <li><a href="#ceph_mon" id="toc-ceph_mon" class="nav-link" data-scroll-target="#ceph_mon">ceph_mon</a></li>
+  <li><a href="#ceph_mgr" id="toc-ceph_mgr" class="nav-link" data-scroll-target="#ceph_mgr">ceph_mgr</a></li>
+  <li><a href="#ceph_osd" id="toc-ceph_osd" class="nav-link" data-scroll-target="#ceph_osd">ceph_osd</a></li>
+  <li><a href="#ceph_pool" id="toc-ceph_pool" class="nav-link" data-scroll-target="#ceph_pool">ceph_pool</a></li>
+  <li><a href="#ceph_mds" id="toc-ceph_mds" class="nav-link" data-scroll-target="#ceph_mds">ceph_mds</a></li>
+  <li><a href="#ceph_fs" id="toc-ceph_fs" class="nav-link" data-scroll-target="#ceph_fs">ceph_fs</a></li>
+  </ul></li>
+  <li><a href="#adding-them-to-the-playbook" id="toc-adding-them-to-the-playbook" class="nav-link" data-scroll-target="#adding-them-to-the-playbook">Adding them to the playbook</a></li>
+  </ul></li>
+  <li><a href="#troubleshoot-the-playbook" id="toc-troubleshoot-the-playbook" class="nav-link" data-scroll-target="#troubleshoot-the-playbook">Troubleshoot the playbook</a></li>
+  <li><a href="#get-back-to-square-one" id="toc-get-back-to-square-one" class="nav-link" data-scroll-target="#get-back-to-square-one">Get back to square one</a>
+  <ul class="collapse">
+  <li><a href="#clean-up-the-install" id="toc-clean-up-the-install" class="nav-link" data-scroll-target="#clean-up-the-install">Clean up the install</a>
+  <ul class="collapse">
+  <li><a href="#remove-cephfs" id="toc-remove-cephfs" class="nav-link" data-scroll-target="#remove-cephfs">remove cephfs</a></li>
+  <li><a href="#remove-my-other-pool" id="toc-remove-my-other-pool" class="nav-link" data-scroll-target="#remove-my-other-pool">remove my other pool</a></li>
+  <li><a href="#remove-osds" id="toc-remove-osds" class="nav-link" data-scroll-target="#remove-osds">remove OSDs</a></li>
+  <li><a href="#remove-mds" id="toc-remove-mds" class="nav-link" data-scroll-target="#remove-mds">remove MDS</a></li>
+  <li><a href="#remove-managers-and-monitors" id="toc-remove-managers-and-monitors" class="nav-link" data-scroll-target="#remove-managers-and-monitors">remove managers and monitors</a></li>
+  <li><a href="#try-purging-again" id="toc-try-purging-again" class="nav-link" data-scroll-target="#try-purging-again">try purging again</a></li>
+  </ul></li>
+  </ul></li>
+  <li><a href="#retry-using-ansible" id="toc-retry-using-ansible" class="nav-link" data-scroll-target="#retry-using-ansible">Retry using ansible</a></li>
+  <li><a href="#conclusion" id="toc-conclusion" class="nav-link" data-scroll-target="#conclusion">Conclusion</a></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content quarto-banner-title-block" id="quarto-document-content">
+
+
+
+
+<section id="introduction" class="level1">
+<h1>Introduction</h1>
+<p>This is the fourth post ( <a href="../posts/2022-11-21-proxmox.html">part 1</a>, <a href="../posts/2022-12-31-proxmox2.html">part 2</a>, <a href="../posts/2023-01-21-proxmox3.html">part 3</a> ) in my home cluster with proxmox series. In this post we’re going to add distributed storage to the cluster using <a href="https://ceph.com/en/">ceph</a>. As with the other posts in this series, this is not a how-to guide from an established practitioner, but a journal I’m writing as I try and do something new.</p>
+<p>Ceph in many ways is overkill for what I’m doing here. It’s designed to support absolutely massive distributed storage at huge scale and throughput while maintaining data integrity. To accomplish that it’s very complicated and their <a href="https://docs.ceph.com/en/octopus/start/hardware-recommendations/">hardware recommendations</a> reflect that. On the other hand, it’s integrated with proxmox and I’ve seen it run <a href="https://www.youtube.com/watch?v=Vd8GG9twjRU">on even lower spec gear</a> than I’m using. In this post my goal is to get a ceph cluster working that uses the 3 1TB SSDs I have in my nodes for file sharing. I’m not going to do any performance testing or tuning, and other than deploying an image to one just to confirm it works I probably won’t even use it in this section. The thing I actually want this storage for is to be my persistent storage in kubernetes, backed by <a href="https://rook.io/">rook</a>, but that will come later once I actually have kubernetes set up.</p>
+<p>As with most things with computers I won’t be starting from scratch. I’ve found a <a href="https://github.com/peacedata0/proxmox-ansible-1">repository</a> of ansible roles for setting up a proxmox cluster that includes ceph configuration and is very similar to my overall setup. I’ll work through <a href="https://medium.com/plain-and-simple/dependency-vendoring-dd765be75655">vendoring</a> this code into my <a href="https://github.com/ianepreston/recipes">recipes</a> repository through this post.</p>
+<section id="note" class="level2">
+<h2 class="anchored" data-anchor-id="note">Note</h2>
+<p>I ran into <em>lots</em> of problems getting this working. This post is definitely less of a guide and more a diary of the struggles I had getting ceph working. There may be some value to another reader if they find themselves having a similar challenge to me, but mostly this was just my scratchpad as I worked through getting things set up.</p>
+</section>
+</section>
+<section id="initial-attempt-using-ansible" class="level1">
+<h1>Initial attempt using Ansible</h1>
+<p>I was hoping that similar to my experience with postfix I’d be able to grab some ansible roles that had been previously developed, tweak their settings a bit, and be good to go.</p>
+<p>As you’ll see, this was not the case, but here are my notes of working through the ansible files and figuring out what they do.</p>
+<section id="setting-up-the-inventory" class="level2">
+<h2 class="anchored" data-anchor-id="setting-up-the-inventory">Setting up the inventory</h2>
+<p>The first section of the repo that I’ll incorporate is the <code>inventory</code> folder. This contains descriptions of the hosts, as well as what groups they belong to for roles. The inventory folder in this repo also contains <code>group_vars</code> and <code>host_vars</code>, which I keep in their own folders in my repo.</p>
+<p>Looking at the actual inventory there are a bunch of groups created for various ceph roles like <code>mds</code>, <code>mgr</code>, and <code>osd</code>. However, in the example case and in my case all nodes will fulfill all roles, so this is only necessary for expansion or comprehensibility of what tasks are doing what when a role is run. There is one differentiator for <code>ceph_master</code>, which only targets the first node to handle tasks that are managed at the proxmox cluster level. In my previous setup I’ve just had a <code>pve</code> group for the cluster and manually set <code>pve1</code> as the host for things that take place at the cluster level. If I end up growing my cluster a lot and want to split things out I’ll have to refactor, but for now for simplicity I’m going to stick with just using the <code>pve</code> group. Based on this I don’t need any actual changes to my inventory. Looking at <code>host_vars</code> there are host specific variables identifying the separate NIC and IP address the nodes are using for the ceph network. Having a separate network for ceph is a recommendation that I am not following at this point so I don’t need to worry about that. They also have a host var specifying which storage drive should be attached to the ceph cluster. For me that’s <code>/dev/sda</code> on all of my nodes. I’ll have to refactor that out if I add another node that deviates from that, but for now I’m going to minimize the complexity in terms of number of files I have to reference and leave that alone. Looking at the group vars under ceph there’s an entry for the pool name, and for the list of nodes. Again, both of those I can just set as defaults for now and refactor later if I have to expand. So based on initial reading I’m going to leave this folder alone.</p>
+</section>
+<section id="checking-the-library-folder" class="level2">
+<h2 class="anchored" data-anchor-id="checking-the-library-folder">Checking the library folder</h2>
+<p>The library folder contains a script for managing proxmox VMs with the <code>qm</code> command. That’s interesting, but not relevant to what I’m trying to do with ceph so I won’t worry about it here.</p>
+</section>
+<section id="roles" class="level2">
+<h2 class="anchored" data-anchor-id="roles">Roles</h2>
+<p>Here is going to be the bread and butter of this process. There are a number of roles in this folder helpfully prepended with <code>ceph_</code> that I’ll want to take a look at.</p>
+<p>In terms of order of reviewing these files I’m going to look at the <code>site.yml</code> file that’s at the base of the repository to understand what order they’re called in. That should make the most sense.</p>
+<section id="ceph_node" class="level3">
+<h3 class="anchored" data-anchor-id="ceph_node">ceph_node</h3>
+<p>The first role is <code>ceph_node</code> which runs on all the nodes. There are two steps here, the first with the name “Install ceph packages”, and the second “Configure ceph network”, which I’ll ignore. There’s also a <a href="https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_handlers.html#handlers">handler</a> in this role, but it’s only to restart the network after configuring the second network, so I don’t need that. The first task looks like this:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode yml code-with-copy"><code class="sourceCode yaml"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> Install ceph packages</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">shell</span><span class="kw">:</span><span class="at"> yes | pveceph install</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">args</span><span class="kw">:</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">creates</span><span class="kw">:</span><span class="at"> /etc/apt/sources.list.d/ceph.list</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>There are a few things I have not seen before here that I’d like to understand before I blindly copy paste. The first is the <code>yes</code> command. <a href="https://www.howtogeek.com/415535/how-to-use-the-yes-command-on-linux/">This post</a> explains what it is and why I’d use it. It’s basically for entering <code>y</code> into the user input of everything the command it’s piped to installs. The other thing I haven’t seen before is <code>args</code>. While args appears to be a generic <a href="https://docs.ansible.com/ansible/latest/reference_appendices/playbooks_keywords.html#task">keyword</a> its use in this case is pretty well documented in the <a href="https://docs.ansible.com/ansible/latest/collections/ansible/builtin/shell_module.html">docs for shell</a>. In this case it’s being used to say that running this command will create that file, so if it exists the file doesn’t need to be run, ensuring idempotency. Pretty handy!</p>
+<p>While I’m sure this would just work, I do want to know a bit about what I’m hitting <code>y</code> to by running this playbook, so let’s ssh into one of my nodes and manually run the command and save the output.</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ex">root@pve1:~#</span> ls /etc/apt/sources.list.d <span class="kw">|</span> <span class="fu">grep</span> ceph</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="ex">download_proxmox_com_debian_ceph_quincy.list</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Prior to running the command I can confirm I do not have that file present.</p>
+<p>Running <code>pveceph install</code> prompts an <code>apt install</code> command, the <code>y</code> is to confirm that I want to install a ton of ceph related packages. There are no other prompts so this seems safe to run.</p>
+</section>
+<section id="ceph_master" class="level3">
+<h3 class="anchored" data-anchor-id="ceph_master">ceph_master</h3>
+<p>The next role is described as creating the ceph cluster and only needs to be run on one node. This is also a small task and it looks like this:</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode yml code-with-copy"><code class="sourceCode yaml"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> Check ceph status</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">shell</span><span class="kw">:</span><span class="at"> pveceph status 2&gt;&amp;1 | grep -v "not initialized"</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">register</span><span class="kw">:</span><span class="at"> pveceph_status</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">ignore_errors</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">changed_when</span><span class="kw">:</span><span class="at"> </span><span class="ch">false</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> Create ceph network</span></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">command</span><span class="kw">:</span><span class="at"> pveceph init --network 10.10.10.0/24</span></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">when</span><span class="kw">:</span><span class="at"> pveceph_status.rc == 1</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>I’ll have to modify the network part to match my own setup, but otherwise this looks straightforward. Just for curiosity, let’s see what the first command looks like. As a reminder to myself, the <code>2&gt;&amp;1</code> redirects <code>stderr</code> to <code>stdout</code>.</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="ex">root@pve1:~#</span> pveceph status <span class="dv">2</span><span class="op">&gt;&amp;</span><span class="dv">1</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="ex">pveceph</span> configuration not initialized</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Looking at the <a href="https://pve.proxmox.com/pve-docs/pveceph.1.html">pveceph docs</a> it looks like I can just drop the <code>--network</code> argument if I’m not specifying a separate one, so this will be a very small task. <em>Note from me in the future: you need the network flag.</em></p>
+</section>
+<section id="ceph_mon" class="level3">
+<h3 class="anchored" data-anchor-id="ceph_mon">ceph_mon</h3>
+<p>Next up we create <a href="https://docs.ceph.com/en/latest/rados/operations/add-or-rm-mons/">monitors</a>. This is also a simple looking role:</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode yml code-with-copy"><code class="sourceCode yaml"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> Check for ceph-mon</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">command</span><span class="kw">:</span><span class="at"> pgrep ceph-mon</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">register</span><span class="kw">:</span><span class="at"> ceph_mon_status</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">ignore_errors</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">changed_when</span><span class="kw">:</span><span class="at"> </span><span class="ch">false</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> Create ceph-mon</span></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">shell</span><span class="kw">:</span><span class="at"> pveceph createmon</span></span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">when</span><span class="kw">:</span><span class="at"> ceph_mon_status.rc == 1</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p><code>pgrep</code> looks for running processes, so that’s how we check if the monitor is already up and running. If it’s not, we create a monitor. The only arguements for this command are to assign an address or ID, neither of which I want to explicitly do, so I can leave this as is.</p>
+</section>
+<section id="ceph_mgr" class="level3">
+<h3 class="anchored" data-anchor-id="ceph_mgr">ceph_mgr</h3>
+<p>After the monitor we create a <a href="https://docs.ceph.com/en/quincy/mgr/index.html">manager</a>. The setup is basically the same as the monitor and the command it runs has even fewer arguments than the monitor so I won’t spell it out here.</p>
+</section>
+<section id="ceph_osd" class="level3">
+<h3 class="anchored" data-anchor-id="ceph_osd">ceph_osd</h3>
+<p>Now we have to create an <a href="https://docs.ceph.com/en/latest/man/8/ceph-osd/">osd</a> which is the first place we’ll have to touch an actual disk. Having this step not be idempotent would be <em>really</em> bad as it could lead to wiping disks. The task looks like this:</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode yml code-with-copy"><code class="sourceCode yaml"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> Check for existing ceph_osd</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">command</span><span class="kw">:</span><span class="at"> pgrep ceph-osd</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">register</span><span class="kw">:</span><span class="at"> ceph_osd_pid</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">changed_when</span><span class="kw">:</span><span class="at"> </span><span class="ch">false</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">ignore_errors</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> Read first 5KB of ceph device to determine state</span></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">shell</span><span class="kw">:</span><span class="at"> dd if={{ ceph_device }} bs=5K count=1 | sha256sum</span></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">when</span><span class="kw">:</span><span class="at"> </span><span class="st">"ceph_osd_pid.rc != 0"</span></span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">register</span><span class="kw">:</span><span class="at"> ceph_device_first_5KB_sha256</span></span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">changed_when</span><span class="kw">:</span><span class="at"> </span><span class="ch">false</span></span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> Determine if should initialize ceph_osd</span></span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">when</span><span class="kw">:</span><span class="at"> </span><span class="st">"ceph_osd_pid.rc != 0 and ceph_device_first_5KB_sha256.stdout == 'a11937f356a9b0ba592c82f5290bac8016cb33a3f9bc68d3490147c158ebb10d  -'"</span></span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">set_fact</span><span class="kw">:</span></span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">ceph_device_initialize</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
+<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a><span class="at">  </span></span>
+<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> Initialize ceph_osd device</span></span>
+<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">when</span><span class="kw">:</span><span class="at"> ceph_device_initialize == True</span></span>
+<span id="cb6-20"><a href="#cb6-20" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">command</span><span class="kw">:</span><span class="at"> pveceph createosd {{ ceph_device }}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>There’s also a default variable for <code>ceph_device_initialize</code> that’s set to <code>False</code>. It only gets updated to true if that third step’s condition is met. I’m a little confused and worried about this role to be honest. The first step is fine, we’re just checking if the <code>osd</code> process is running. The next one is apparently making some assumption about what the hash of the first 5KB of my disk should look like if it doesn’t already have an osd installed. I don’t know how this would work and searching didn’t turn anything up. Let’s test though and check what it returns on my drives:</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="ex">root@pve1:~#</span> dd if=/dev/sda bs=5K count=1 <span class="kw">|</span> <span class="fu">sha256sum</span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="ex">1+0</span> records in</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="ex">1+0</span> records out</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="ex">5120</span> bytes <span class="er">(</span><span class="ex">5.1</span> kB, 5.0 KiB<span class="kw">)</span> <span class="ex">copied,</span> 0.00509153 s, 1.0 MB/s</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a><span class="ex">a11937f356a9b0ba592c82f5290bac8016cb33a3f9bc68d3490147c158ebb10d</span>  <span class="at">-</span></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a><span class="ex">root@pve2:~#</span> dd if=/dev/sda bs=5K count=1 <span class="kw">|</span> <span class="fu">sha256sum</span></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a><span class="ex">1+0</span> records in</span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a><span class="ex">1+0</span> records out</span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a><span class="ex">5120</span> bytes <span class="er">(</span><span class="ex">5.1</span> kB, 5.0 KiB<span class="kw">)</span> <span class="ex">copied,</span> 0.00511535 s, 1.0 MB/s</span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a><span class="ex">a11937f356a9b0ba592c82f5290bac8016cb33a3f9bc68d3490147c158ebb10d</span>  <span class="at">-</span></span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a><span class="ex">root@pve3:~#</span> dd if=/dev/sda bs=5K count=1 <span class="kw">|</span> <span class="fu">sha256sum</span></span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a><span class="ex">1+0</span> records in</span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a><span class="ex">1+0</span> records out</span>
+<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a><span class="ex">5120</span> bytes <span class="er">(</span><span class="ex">5.1</span> kB, 5.0 KiB<span class="kw">)</span> <span class="ex">copied,</span> 0.00503435 s, 1.0 MB/s</span>
+<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a><span class="ex">a11937f356a9b0ba592c82f5290bac8016cb33a3f9bc68d3490147c158ebb10d</span>  <span class="at">-</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Just to make sure I wasn’t losing it, I tried it on another device that wasn’t blank and got a different hash. This is why I love the internet, there is absolutely no way I would have figured that out on my own. I don’t know how it works and that makes me a little nervous, but at this point I’m convinced that it will work. I’ll add in a default variable for my ceph device of <code>/dev/sda</code> and should be good to go.</p>
+</section>
+<section id="ceph_pool" class="level3">
+<h3 class="anchored" data-anchor-id="ceph_pool">ceph_pool</h3>
+<p>Now that I’ve got my OSDs, it’s time to create a <a href="https://docs.ceph.com/en/latest/rados/operations/pools/">pool</a>. This role also has a defaults file, with currently just one variable to specify the minimum number of nodes that must be up for pool creation (set to 3 which works for me). I’ll have to add in another default to mine for the pool name, as the original repo sets that in group vars. Beyond that let’s focus on the task:</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode yml code-with-copy"><code class="sourceCode yaml"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> Check ceph status</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">command</span><span class="kw">:</span><span class="at"> pveceph status</span></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">register</span><span class="kw">:</span><span class="at"> pveceph_status</span></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">ignore_errors</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">changed_when</span><span class="kw">:</span><span class="at"> </span><span class="ch">false</span></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> Check ceph pools</span></span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">shell</span><span class="kw">:</span><span class="at"> pveceph pool ls | grep -e "^{{ ceph_pool }} "</span></span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">register</span><span class="kw">:</span><span class="at"> ceph_pool_status</span></span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">changed_when</span><span class="kw">:</span><span class="at"> </span><span class="ch">false</span></span>
+<span id="cb8-11"><a href="#cb8-11" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">ignore_errors</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
+<span id="cb8-12"><a href="#cb8-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-13"><a href="#cb8-13" aria-hidden="true" tabindex="-1"></a><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> Create ceph pool</span></span>
+<span id="cb8-14"><a href="#cb8-14" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">when</span><span class="kw">:</span><span class="at"> ceph_pool_status.rc &gt; 0 and (pveceph_status.stdout | from_json).osdmap.osdmap.num_up_osds &gt;= minimum_num_osds_for_pool</span></span>
+<span id="cb8-15"><a href="#cb8-15" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">command</span><span class="kw">:</span><span class="at"> pveceph pool create {{ ceph_pool }}</span></span>
+<span id="cb8-16"><a href="#cb8-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-17"><a href="#cb8-17" aria-hidden="true" tabindex="-1"></a><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> Check ceph-vm storage</span></span>
+<span id="cb8-18"><a href="#cb8-18" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">command</span><span class="kw">:</span><span class="at"> pvesm list ceph-vm</span></span>
+<span id="cb8-19"><a href="#cb8-19" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">changed_when</span><span class="kw">:</span><span class="at"> </span><span class="ch">false</span></span>
+<span id="cb8-20"><a href="#cb8-20" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">ignore_errors</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
+<span id="cb8-21"><a href="#cb8-21" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">register</span><span class="kw">:</span><span class="at"> ceph_vm_status</span></span>
+<span id="cb8-22"><a href="#cb8-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-23"><a href="#cb8-23" aria-hidden="true" tabindex="-1"></a><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> Create ceph VM storage (ceph-vm)</span></span>
+<span id="cb8-24"><a href="#cb8-24" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">when</span><span class="kw">:</span><span class="at"> ceph_vm_status.rc &gt; 0</span></span>
+<span id="cb8-25"><a href="#cb8-25" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">command</span><span class="kw">:</span><span class="at"> pvesm add rbd ceph-vm -nodes {{ ceph_nodes }} -pool {{ ceph_pool }} -content images</span></span>
+<span id="cb8-26"><a href="#cb8-26" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-27"><a href="#cb8-27" aria-hidden="true" tabindex="-1"></a><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> Check ceph-ct storage</span></span>
+<span id="cb8-28"><a href="#cb8-28" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">command</span><span class="kw">:</span><span class="at"> pvesm list ceph-ct</span></span>
+<span id="cb8-29"><a href="#cb8-29" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">changed_when</span><span class="kw">:</span><span class="at"> </span><span class="ch">false</span></span>
+<span id="cb8-30"><a href="#cb8-30" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">ignore_errors</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
+<span id="cb8-31"><a href="#cb8-31" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">register</span><span class="kw">:</span><span class="at"> ceph_ct_status</span></span>
+<span id="cb8-32"><a href="#cb8-32" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-33"><a href="#cb8-33" aria-hidden="true" tabindex="-1"></a><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> Create ceph container storage (ceph-ct)</span></span>
+<span id="cb8-34"><a href="#cb8-34" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">when</span><span class="kw">:</span><span class="at"> ceph_ct_status.rc &gt; 0</span></span>
+<span id="cb8-35"><a href="#cb8-35" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">command</span><span class="kw">:</span><span class="at"> pvesm add rbd ceph-ct -nodes {{ ceph_nodes }} -pool {{ ceph_pool }} -content rootdir</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>The first step pulls up a detailed description of the ceph pool status. In the third step we’ll parse it to check that we have the minimum number of OSDs up. The next one is pretty straightforward, make sure the pool we want to create doesn’t already exist. Next, assuming we have at least the minimum number of OSDs and our pool hasn’t been created, create it. This one is using all the defaults of the command since we don’t pass any arguments. Briefly, they are:</p>
+<ul>
+<li>not to configure VM and CT storage for the pool (that appears to happen later)</li>
+<li>set the application as <a href="https://docs.ceph.com/en/quincy/rbd/index.html">rbd</a> (we will configure ceph fs later on).</li>
+<li>Some other stuff about scaling and erasure coding that I don’t understand and hopefully won’t need for now. Full docs <a href="https://pve.proxmox.com/pve-docs/pveceph.1.html">here</a>, search for <code>pveceph pool create &lt;name&gt; [OPTIONS]</code></li>
+</ul>
+<p>The next four parts configure proxmox to use ceph as a storage location for VMs and containers. I actually don’t want to do that, my VMs will live on my nvme drives, but it won’t hurt to have as an option I guess, and at least I can test if I can do stuff on the pool with this enabled so I’ll leave it but not spend much time working out how it works. I will have to add a variable for <code>ceph_nodes</code> to my defaults that maps to a comma separated list of my nodes.</p>
+</section>
+<section id="ceph_mds" class="level3">
+<h3 class="anchored" data-anchor-id="ceph_mds">ceph_mds</h3>
+<p>After this we’re doing some necessary pre-configuration for enabling ceph-fs. Specifically the <a href="https://docs.ceph.com/en/latest/glossary/#term-MDS">ceph metadata server</a>. This is another very short task that checks if the service is running and starts it if not with a oneliner, so I won’t reproduce it here.</p>
+</section>
+<section id="ceph_fs" class="level3">
+<h3 class="anchored" data-anchor-id="ceph_fs">ceph_fs</h3>
+<p>Last one. Ceph fs, from what little I’ve read of it would be nice to have as it will enable sharing storage across pods (<a href="https://rook.io/docs/rook/v1.10/Storage-Configuration/Shared-Filesystem-CephFS/filesystem-storage/">docs</a>). This task has very similar structure to the earlier ones as well so I won’t write it up in detail here.</p>
+</section>
+</section>
+<section id="adding-them-to-the-playbook" class="level2">
+<h2 class="anchored" data-anchor-id="adding-them-to-the-playbook">Adding them to the playbook</h2>
+<p>Having created the roles, I now need to make sure they’re done in the correct order in my playbook. As mentioned above I can base that on the order they’re listed in <code>site.yml</code> in the base repository I’ve been working off.</p>
+</section>
+</section>
+<section id="troubleshoot-the-playbook" class="level1">
+<h1>Troubleshoot the playbook</h1>
+<p>Moment of truth, will it work or will I get errors?</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode json code-with-copy"><code class="sourceCode json"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="fu">{</span><span class="dt">"changed"</span><span class="fu">:</span> <span class="kw">true</span><span class="fu">,</span> <span class="dt">"cmd"</span><span class="fu">:</span> <span class="ot">[</span><span class="st">"pveceph"</span><span class="ot">,</span> <span class="st">"createosd"</span><span class="ot">,</span> <span class="st">"/dev/sda"</span><span class="ot">]</span><span class="fu">,</span> <span class="dt">"delta"</span><span class="fu">:</span> <span class="st">"0:00:00.421412"</span><span class="fu">,</span> <span class="dt">"end"</span><span class="fu">:</span> <span class="st">"2023-02-05 20:09:49.235881"</span><span class="fu">,</span> <span class="dt">"msg"</span><span class="fu">:</span> <span class="st">"non-zero return code"</span><span class="fu">,</span> <span class="dt">"rc"</span><span class="fu">:</span> <span class="dv">2</span><span class="fu">,</span> <span class="dt">"start"</span><span class="fu">:</span> <span class="st">"2023-02-05 20:09:48.814469"</span><span class="fu">,</span> <span class="dt">"stderr"</span><span class="fu">:</span> <span class="st">"binary not installed: /usr/sbin/ceph-volume"</span><span class="fu">,</span> <span class="dt">"stderr_lines"</span><span class="fu">:</span> <span class="ot">[</span><span class="st">"binary not installed: /usr/sbin/ceph-volume"</span><span class="ot">]</span><span class="fu">,</span> <span class="dt">"stdout"</span><span class="fu">:</span> <span class="st">""</span><span class="fu">,</span> <span class="dt">"stdout_lines"</span><span class="fu">:</span> <span class="ot">[]</span><span class="fu">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Of course it’s not that easy. I made it to the <code>ceph_osd</code> role but then hit this failure. Let’s compare the steps I’ve put into my playbook with the <a href="https://pve.proxmox.com/pve-docs/chapter-pveceph.html">proxmox docs</a> and see if I missed anything.</p>
+<p>It looks like the manual tasks match what I did in the playbook, so that’s not it. Next I’ll search for the error message I got from ansible (probably should have done that first). I found a bug report stating that <code>ceph-volume</code> is only recommended by <code>ceph-osd</code>, so depending on apt settings it may not get installed. Weird, but easy to fix. In the <code>ceph_node</code> role I add the following:</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode yml code-with-copy"><code class="sourceCode yaml"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> Install extra ceph packages</span></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">apt</span><span class="kw">:</span></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">name</span><span class="kw">:</span><span class="at"> ceph-volume</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Ok, that got me a bit farther, but now I have new errors. First off, let’s manually check what state my system is in before I assess anything else. Looking at the ceph dashboard in proxmox I have 1 OSD showing in and up, -1 (?) showing out and up, and 1 showing out and down. That’s interesting. Running <code>pgrep ceph-osd</code> on each node I get a PID for my second node, but not for the other two. Fun. Let’s just try manually zapping the SSD on the other two hosts and see what happens. First I run <code>ceph-volume lvm zap /dev/sda --destroy</code> to wipe the SSD (just to be safe), and then I run <code>pveceph createosd /dev/sda</code>. Let’s find out how that goes.</p>
+<div class="sourceCode" id="cb11"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="ex">root@pve1:~#</span> pveceph createosd /dev/sda</span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="ex">create</span> OSD on /dev/sda <span class="er">(</span><span class="ex">bluestore</span><span class="kw">)</span></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a><span class="ex">wiping</span> block device /dev/sda</span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a><span class="ex">200+0</span> records in</span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a><span class="ex">200+0</span> records out</span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a><span class="ex">209715200</span> bytes <span class="er">(</span><span class="ex">210</span> MB, 200 MiB<span class="kw">)</span> <span class="ex">copied,</span> 0.520585 s, 403 MB/s</span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a><span class="ex">Running</span> command: /bin/ceph-authtool <span class="at">--gen-print-key</span></span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a><span class="ex">Running</span> command: /bin/ceph <span class="at">--cluster</span> ceph <span class="at">--name</span> client.bootstrap-osd <span class="at">--keyring</span> /var/lib/ceph/bootstrap-osd/ceph.keyring <span class="at">-i</span> <span class="at">-</span> osd new ab6b5e33-e5ca-40b6-a94e-40d3ce61283d</span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a> <span class="ex">stderr:</span> 2023-02-06T16:01:03.421-0700 7f32c24e1700 <span class="at">-1</span> auth: unable to find a keyring on /etc/pve/priv/ceph.client.bootstrap-osd.keyring: <span class="er">(</span><span class="ex">2</span><span class="kw">)</span> <span class="ex">No</span> such file or directory</span>
+<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a> <span class="ex">stderr:</span> 2023-02-06T16:01:03.421-0700 7f32c24e1700 <span class="at">-1</span> AuthRegistry<span class="er">(</span><span class="ex">0x7f32bc060800</span><span class="kw">)</span> <span class="ex">no</span> keyring found at /etc/pve/priv/ceph.client.bootstrap-osd.keyring, disabling cephx</span>
+<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a> <span class="ex">stderr:</span> 2023-02-06T16:01:03.425-0700 7f32bb7fe700 <span class="at">-1</span> monclient<span class="er">(</span><span class="ex">hunting</span><span class="kw">)</span><span class="bu">:</span> handle_auth_bad_method server allowed_methods [2] but i only support [2]</span>
+<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a> <span class="ex">stderr:</span> 2023-02-06T16:01:03.425-0700 7f32c0a7e700 <span class="at">-1</span> monclient<span class="er">(</span><span class="ex">hunting</span><span class="kw">)</span><span class="bu">:</span> handle_auth_bad_method server allowed_methods [2] but i only support [2]</span>
+<span id="cb11-13"><a href="#cb11-13" aria-hidden="true" tabindex="-1"></a> <span class="ex">stderr:</span> [errno 13] RADOS permission denied <span class="er">(</span><span class="ex">error</span> connecting to the cluster<span class="kw">)</span></span>
+<span id="cb11-14"><a href="#cb11-14" aria-hidden="true" tabindex="-1"></a><span class="ex">--</span><span class="op">&gt;</span>  RuntimeError: Unable to create a new OSD id</span>
+<span id="cb11-15"><a href="#cb11-15" aria-hidden="true" tabindex="-1"></a><span class="bu">command</span> <span class="st">'ceph-volume lvm create --cluster-fsid 6d4cf20c-f09d-4edf-ae78-0038b57f9709 --data /dev/sda'</span> failed: exit code 1</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Ok so I’m getting an error connecting to the cluster, why would that be? Checking the ceph status from the proxmox interface it appears that the monitor is skipping between running on my first and third nodes, but not my second (which is where I was able to install the OSD). Now I’m really confused and wondering if maybe I should have just done this whole thing manually through the GUI. But what would I learn that way? Ok, one thing I didn’t do was create a separate network for ceph. Maybe I should have done that. Let’s destroy these monitors and initialize the ceph cluster with the network flag. Fun update, I can’t destroy the last monitor in a cluster. Maybe I have to reverse some of the other steps first?</p>
+<p>The last thing I did before trying to create OSDs was create managers, so let’s remove those with <code>pveceph destroymgr &lt;hostname&gt;</code> on each of the nodes.</p>
+<p>Back to my second node I try <code>pveceph destroymon pve2</code> and get the error <code>can't remove last monitor</code>. Ok, maybe I can add the other two back now that I don’t have managers? Nope.</p>
+<p>Ok, ceph has docs on <a href="https://docs.ceph.com/en/latest/rados/operations/add-or-rm-mons/#removing-monitors-from-an-unhealthy-cluster">removing monitors from an unhealthy cluster</a> I’d say that’s what I have. After running these commands I don’t see any running monitors, and I’m also getting a timeout on the ceph page of proxmox and <code>ceph -s</code> is hanging from the terminal. Since I don’t have any monitors now I shouldn’t have any managers either. <code>pveceph mon destroy</code> indicates that it destroys managers as well. I can also run <code>pgrep ceph-mgr</code> to confirm there’s no manager process running.</p>
+<p>Alright, let’s try manually creating some monitors this time. Starting with my first node I’ll run <code>pveceph mon create</code> and… get an error:</p>
+<div class="sourceCode" id="cb12"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="ex">root@pve1:~#</span> pveceph mon create</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="ex">Could</span> not connect to ceph cluster despite configured monitors</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Ok, so there must still be something in my ceph config that’s pointing to the monitors, even though I destroyed them. Maybe I’ll take a step further back and remove that file as well. After deleting the file I now get a popup in the proxmox UI on the ceph page saying “Ceph is not initialized. You need to create an initial config once.” with a button to configure ceph. That seems like I’ve got everything reset back, except maybe those initially installed packages, but that should be fine. Let’s try running the playbook again with a proper ceph network defined. Aaaand we fail to create monitors. Let’s see what’s going on.</p>
+<p>Here’s the cleaned up output of the error, it’s the same as from ansible just not in json format:</p>
+<div class="sourceCode" id="cb13"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="ex">root@pve1:~#</span> pveceph mon create</span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a><span class="ex">unable</span> to get monitor info from DNS SRV with service name: ceph-mon</span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a><span class="ex">Could</span> not connect to ceph cluster despite configured monitors</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Alright, I clearly haven’t reset my state properly. A little more searching leads me to <code>pveceph purge</code>. That sounds promising, let’s give that a shot. I’ll run it on all nodes to be safe, and with the <code>--crash</code> and <code>--logs</code> flags to purge all the logs. <a href="https://forum.proxmox.com/threads/reinstall-ceph-on-proxmox-6.57691/">This thread</a> has some details about purging ceph config to start clean, although the posters there are having lots of problems, so I hope I don’t have to go that far. After running the purge command I ran my playbook and… failed at creating monitors again. However, this time I could ssh into each host and create a monitor from the command line, same for managers. Checking my ceph dashboard I now see all three nodes with monitors and managers up and running. Let’s leave the playbook alone for now and just try and do the rest of this manually. On node 1 I was able to create an OSD no problem. On node 2 I got told <code>device '/dev/sda' is already in use</code>. Following the guide I run <code>ceph-volume lvm zap /dev/sda --destroy</code>:</p>
+<div class="sourceCode" id="cb14"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="ex">root@pve2:~#</span> ceph-volume lvm zap /dev/sda <span class="at">--destroy</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a><span class="ex">--</span><span class="op">&gt;</span> Zapping: /dev/sda</span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a><span class="ex">--</span><span class="op">&gt;</span> Zapping lvm member /dev/sda. lv_path is /dev/ceph-ff288a69-40e3-4076-a422-52e100d7d302/osd-block-64f34da5-6b0c-4d20-8a60-ddc7227345ed</span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a><span class="ex">--</span><span class="op">&gt;</span> Unmounting /var/lib/ceph/osd/ceph-0</span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a><span class="ex">Running</span> command: /usr/bin/umount <span class="at">-v</span> /var/lib/ceph/osd/ceph-0</span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a> <span class="ex">stderr:</span> umount: /var/lib/ceph/osd/ceph-0: target is busy.</span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a><span class="ex">--</span><span class="op">&gt;</span>  RuntimeError: command returned non-zero exit status: 32</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Ok, so it looks like this is already set up as an OSD, except I don’t actually see it when I go to the ceph panel. Let’s try the third node and come back to this one. That one added just fine too, what is going on with my second node? First test, when in doubt try turning it off and on again. After a reboot I try the commands again:</p>
+<div class="sourceCode" id="cb15"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="ex">root@pve2:~#</span> ceph-volume lvm zap /dev/sda <span class="at">--destroy</span></span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a><span class="ex">--</span><span class="op">&gt;</span> Zapping: /dev/sda</span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a><span class="ex">Running</span> command: /usr/bin/dd if=/dev/zero of=/dev/sda bs=1M count=10 conv=fsync</span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a> <span class="ex">stderr:</span> 10+0 records in</span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a><span class="ex">10+0</span> records out</span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a> <span class="ex">stderr:</span> 10485760 bytes <span class="er">(</span><span class="ex">10</span> MB, 10 MiB<span class="kw">)</span> <span class="ex">copied,</span> 0.0274736 s, 382 MB/s</span>
+<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a><span class="ex">--</span><span class="op">&gt;</span> Zapping successful for: <span class="op">&lt;</span>Raw Device: /dev/sda<span class="op">&gt;</span></span>
+<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a><span class="ex">root@pve2:~#</span> pveceph createosd /dev/sda</span>
+<span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a><span class="ex">device</span> <span class="st">'/dev/sda'</span> is already in use</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Ok, that’s a bit of progress, I can actually run the zap, but then why can’t I create the osd? Why is it saying the device is already in use? From the disks page in the proxmox UI I selected the disk and picked “wipe”. Let’s try again. And it worked. Computers are weird.</p>
+<p>My ceph cluster is healthy! Three monitors, three managers, three OSDs, 2.73TB of raw disk. Let’s create a storage pool:</p>
+<div class="sourceCode" id="cb16"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="ex">root@pve2:~#</span> pveceph pool create tank <span class="at">--add_storages</span></span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a><span class="ex">pool</span> tank: applying size = 3</span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a><span class="ex">pool</span> tank: applying application = rbd</span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a><span class="ex">pool</span> tank: applying min_size = 2</span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a><span class="ex">pool</span> tank: applying pg_autoscale_mode = warn</span>
+<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a><span class="ex">pool</span> tank: applying pg_num = 128</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Next up I create a metadata service on each nodes so I can run cephfs:</p>
+<div class="sourceCode" id="cb17"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="ex">root@pve3:~#</span> pveceph mds create</span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a><span class="ex">creating</span> MDS directory <span class="st">'/var/lib/ceph/mds/ceph-pve3'</span></span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a><span class="ex">creating</span> keys for <span class="st">'mds.pve3'</span></span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a><span class="ex">setting</span> ceph as owner for service directory</span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a><span class="ex">enabling</span> service <span class="st">'ceph-mds@pve3.service'</span></span>
+<span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a><span class="ex">Created</span> symlink /etc/systemd/system/ceph-mds.target.wants/ceph-mds@pve3.service <span class="at">-</span><span class="op">&gt;</span> /lib/systemd/system/ceph-mds@.service.</span>
+<span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a><span class="ex">starting</span> service <span class="st">'ceph-mds@pve3.service'</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>This looked the same on all three nodes. Finally, some consistency!</p>
+<p>The last piece from the playbook was to create a cephfs:</p>
+<div class="sourceCode" id="cb18"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="ex">root@pve1:~#</span> pveceph fs create <span class="at">--pg_num</span> 128 <span class="at">--add-storage</span></span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a><span class="ex">creating</span> data pool <span class="st">'cephfs_data'</span>...</span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a><span class="ex">error</span> with <span class="st">'osd pool create'</span>: mon_cmd failed <span class="at">-</span>  pg_num 128 size 3 would mean 771 total pgs, which exceeds max 750 <span class="er">(</span><span class="ex">mon_max_pg_per_osd</span> 250 <span class="pp">*</span> num_in_osds 3<span class="kw">)</span> </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>So close! That’s what I get for just copy pasting. I guess I have to figure out how many placement groups I should actually have.</p>
+<p>After referencing <a href="https://ceph.io/rados/new-in-nautilus-pg-merging-and-autotuning/">this post</a> about auto scaling placement groups I have some idea where to go.</p>
+<p>Starting with checking my current and recommended status:</p>
+<div class="sourceCode" id="cb19"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="ex">root@pve1:~#</span> ceph osd pool autoscale-status</span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a><span class="ex">POOL</span>    SIZE  TARGET SIZE  RATE  RAW CAPACITY   RATIO  TARGET RATIO  EFFECTIVE RATIO  BIAS  PG_NUM  NEW PG_NUM  AUTOSCALE  BULK</span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a><span class="ex">.mgr</span>   1152k                3.0         2794G  0.0000                                  1.0       1              on         False</span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a><span class="ex">tank</span>      0                 3.0         2794G  0.0000                                  1.0     128          32  warn       False</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>My tank pool has 128 placement groups, with a recommended number of 32. What happens if I change autoscale from <code>warn</code> to <code>on</code>?</p>
+<p>After running <code>ceph osd pool set tank pg_autoscale_mode on</code> and waiting a little bit, I do indeed now have 32 placement groups in the pool, as expected. If I do this again I’ll add <code>--pg_autoscale_mode on</code> to the arguments for my pool creation to get this right from the beginning.</p>
+<p>Ok, back to the file system. The default <code>pg_num 128</code> seems likely to be incorrect here, I wonder if I can just have it auto-scale as well? Looking at the docs it doesn’t seem so. The default in my ansible playbook, which was for a similarly sized cluster used <code>64</code>, so let’s do that.</p>
+<div class="sourceCode" id="cb20"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="ex">root@pve1:~#</span> pveceph fs create <span class="at">--pg_num</span> 64 <span class="at">--add-storage</span></span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a><span class="ex">creating</span> data pool <span class="st">'cephfs_data'</span>...</span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a><span class="ex">pool</span> cephfs_data: applying application = cephfs</span>
+<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a><span class="ex">pool</span> cephfs_data: applying pg_num = 64</span>
+<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a><span class="ex">creating</span> metadata pool <span class="st">'cephfs_metadata'</span>...</span>
+<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a><span class="ex">pool</span> cephfs_metadata: applying pg_num = 16</span>
+<span id="cb20-7"><a href="#cb20-7" aria-hidden="true" tabindex="-1"></a><span class="ex">configuring</span> new CephFS <span class="st">'cephfs'</span></span>
+<span id="cb20-8"><a href="#cb20-8" aria-hidden="true" tabindex="-1"></a><span class="ex">Successfully</span> create CephFS <span class="st">'cephfs'</span></span>
+<span id="cb20-9"><a href="#cb20-9" aria-hidden="true" tabindex="-1"></a><span class="ex">Adding</span> <span class="st">'cephfs'</span> to storage configuration...</span>
+<span id="cb20-10"><a href="#cb20-10" aria-hidden="true" tabindex="-1"></a><span class="ex">Waiting</span> for an MDS to become active</span>
+<span id="cb20-11"><a href="#cb20-11" aria-hidden="true" tabindex="-1"></a><span class="ex">Waiting</span> for an MDS to become active</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>With that everything seems to be up! In the UI I can see my pools, and I have all green across the board.</p>
+<p>Let’s try putting an image in there just to make sure it actually works at all. I was able to stand up an image on my <code>tank</code> pool, boot into it, and live migrate it. I’d say we’re good!</p>
+</section>
+<section id="get-back-to-square-one" class="level1">
+<h1>Get back to square one</h1>
+<p>I’ve done it once, let’s make sure I can do it again.</p>
+<section id="clean-up-the-install" class="level2">
+<h2 class="anchored" data-anchor-id="clean-up-the-install">Clean up the install</h2>
+<p>As discussed in the last section I’ll run <code>pveceph purge --crash --logs</code> on all three nodes (that might be overkill but let’s be safe).</p>
+<div class="sourceCode" id="cb21"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="ex">root@pve1:~#</span> pveceph purge <span class="at">--crash</span> <span class="at">--logs</span></span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a><span class="ex">Unable</span> to purge Ceph!</span>
+<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a><span class="ex">To</span> continue:</span>
+<span id="cb21-5"><a href="#cb21-5" aria-hidden="true" tabindex="-1"></a><span class="ex">-</span> remove pools, this will !!DESTROY DATA!!</span>
+<span id="cb21-6"><a href="#cb21-6" aria-hidden="true" tabindex="-1"></a><span class="ex">-</span> remove active OSD on pve1</span>
+<span id="cb21-7"><a href="#cb21-7" aria-hidden="true" tabindex="-1"></a><span class="ex">-</span> remove active MDS on pve1</span>
+<span id="cb21-8"><a href="#cb21-8" aria-hidden="true" tabindex="-1"></a><span class="ex">-</span> remove other MONs, pve1 is not the last MON</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Ok, I can’t purge to start, I’ll have to back my way out.</p>
+<section id="remove-cephfs" class="level3">
+<h3 class="anchored" data-anchor-id="remove-cephfs">remove cephfs</h3>
+<p>The list above only talks about pools, but I’ve got a cephfs on top of that to remove first. The <a href="https://pve.proxmox.com/pve-docs/chapter-pveceph.html#_destroy_cephfs">pveceph docs</a> have a section on destroying a cephfs. Let’s follow that.</p>
+<div class="sourceCode" id="cb22"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="fu">umount</span> /mnt/pve/cephfs</span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a><span class="ex">pveceph</span> stop <span class="at">--service</span> mds.cephfs <span class="co"># Run this on all nodes</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>That didn’t seem to actually stop the MDSs, so I went into the UI and destroyed them all. Based on the guide, after that I should be able to remove it with <code>pveceph fs destroy cephfs --remove-storages --remove-pools</code> but I get <code>storage 'cephfs' is not disabled, make sure to disable and unmount the storage first</code>. A little more searching gets me <code>ceph fs rm cephfs --yes-i-really-mean-it</code> which runs ok and upon completion I don’t see any entries for cephfs anymore, so I think that’s good.</p>
+</section>
+<section id="remove-my-other-pool" class="level3">
+<h3 class="anchored" data-anchor-id="remove-my-other-pool">remove my other pool</h3>
+<p>I think I’m going to do the rest of this through the UI. It’s not the sort of thing I need to automate, and the UI seem to be cleaner and easier. Ok, my pools are gone, including some related to cephfs that didn’t seem to clear out with the old command. My nodes are still showing the pools as storage locations, but with a <code>?</code> by them. I think that will go away once I purge the config for ceph, so let’s not worry about it for now.</p>
+</section>
+<section id="remove-osds" class="level3">
+<h3 class="anchored" data-anchor-id="remove-osds">remove OSDs</h3>
+<p>From the UI, for each OSD in my cluster I first take it out, stop it, then destroy it.</p>
+</section>
+<section id="remove-mds" class="level3">
+<h3 class="anchored" data-anchor-id="remove-mds">remove MDS</h3>
+<p>Looks like that was taken care of when I removed cephfs. No action</p>
+</section>
+<section id="remove-managers-and-monitors" class="level3">
+<h3 class="anchored" data-anchor-id="remove-managers-and-monitors">remove managers and monitors</h3>
+<p>Again from the UI I <code>destroy</code> each manager, and then destroy all but one monitor.</p>
+</section>
+<section id="try-purging-again" class="level3">
+<h3 class="anchored" data-anchor-id="try-purging-again">try purging again</h3>
+<p>Hmmm, I’m still getting told to remove pools and mons. Not sure what’s up with that. Ahh, <code>pveceph pool ls</code> tells me I still have a <code>.mgr</code> pool. I didn’t realize that counted. Ok, that’s cleared out. I’ve still got this monitor listed under one of my nodes but with status unknown and I can’t seem to destroy it from the UI. Going into the <a href="https://docs.ceph.com/en/latest/rados/operations/add-or-rm-mons/">ceph docs</a> I can see there are some docs on removing mons from an unhealthy cluster. The ghost monitor is running on my third node so I ssh into it and I can see the monitor service is indeed running there. I’m able to stop the service on that node with <code>systemctl stop ceph-mon.target</code>. This still doesn’t let me run purge though. If I run it I get told that my monitor isn’t the last one running, but also if I try and remove that monitor I get told it’s the last one. That’s… confusing. Ok, let’s go back to that third node, disable the monitor service and reboot it the node. Still nothing. Running <code>ceph mon dump</code> on any node only shows the monitor I know is running on my first node. Looking at <code>/etc/pve/ceph.conf</code> I only see the one monitor. Ok, bit of googling and I’m back to <a href="https://forum.proxmox.com/threads/ceph-cant-remove-monitor-with-unknown-status.63613/">this thread</a> which reminds me to check <code>/var/lib/ceph/mon</code> on the node with the unknown status monitor. Sure enough, there’s still a folder there and after I delete it I don’t see that entry anymore. Let’s try purging again.</p>
+<p>That seems to have worked. If I go to the ceph page in the UI I’m told that it’s not configured. I can still see the storage pools on my nodes though. I wonder if that’s just in <code>/etc/pve/storage.cfg</code> like my NFS share configs are. Yup! Ok, after deleting that I no longer see them as storage in the UI. I think I’m good. One last thing to do is to go into each node through the UI and wipe the SSDs.</p>
+</section>
+</section>
+</section>
+<section id="retry-using-ansible" class="level1">
+<h1>Retry using ansible</h1>
+<p>The manual steps worked, maybe just not having the network configured correctly when I initially ran my playbook got me into an unstable state. After double checking my playbook I’ll try running through it one step at a time. I think the biggest issue was the network config being missing in the initial install, which meant the monitors couldn’t talk to each other on each node and then everything spiraled from there. I’ve gone back and fixed that in the playbook, and also added some syntax to enable pg autoscaling to avoid that other issue I had during manual config.</p>
+<p>I’m going to be a little more cautious this time and only run it with one incremental new role uncommented at a time. I got to the monitor creation before hitting an issue. The command completed no problem, but my node 3 monitor can’t see my nodes 1 and 2 (they can see each other). I’m thinking this is either because I didn’t entirely clear out my state, or maybe something about ansible running the monitor creation command in parallel is breaking things. Let’s just try deleting and re-adding the monitor on the third node. Ok, I can’t remove it the normal way because it thinks it’s the last monitor. <code>/etc/pve/ceph.conf</code> lists all three monitors. Running <code>ceph mon dump</code> either shows me two monitors on my first two nodes, or just the third monitor on my last node. This is a little different than what I had before.</p>
+<p>Following the ceph docs for removing an unhealthy monitor doesn’t help because my third node’s monitor isn’t in the monmap of my healthy monitors, that’s the problem:</p>
+<div class="sourceCode" id="cb23"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="ex">root@pve1:~#</span> pveceph stop <span class="at">--service</span> mon.pve1</span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a><span class="ex">root@pve1:~#</span> ceph-mon <span class="at">-i</span> pve1 <span class="at">--extract-monmap</span> /tmp/monmap</span>
+<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a><span class="ex">2023-02-20T16:31:41.732-0700</span> 7f41ca2cf700 <span class="at">-1</span> wrote monmap to /tmp/monmap</span>
+<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a><span class="ex">root@pve1:~#</span> monmaptool /tmp/monmap <span class="at">--rm</span> pve3</span>
+<span id="cb23-5"><a href="#cb23-5" aria-hidden="true" tabindex="-1"></a><span class="ex">monmaptool:</span> monmap file /tmp/monmap</span>
+<span id="cb23-6"><a href="#cb23-6" aria-hidden="true" tabindex="-1"></a><span class="ex">monmaptool:</span> removing pve3</span>
+<span id="cb23-7"><a href="#cb23-7" aria-hidden="true" tabindex="-1"></a><span class="ex">monmaptool:</span> map does not contain pve3</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Ok, back in the third node, let’s clear out this monitor:</p>
+<div class="sourceCode" id="cb24"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="ex">root@pve3:~#</span> systemctl stop ceph-mon.target</span>
+<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a><span class="ex">root@pve3:~#</span> systemctl disable ceph-mon.target</span>
+<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a><span class="ex">root@pve3:~#</span> cd /etc/systemd/system</span>
+<span id="cb24-4"><a href="#cb24-4" aria-hidden="true" tabindex="-1"></a><span class="ex">root@pve3:/etc/systemd/system#</span> ls <span class="kw">|</span> <span class="fu">grep</span> ceph</span>
+<span id="cb24-5"><a href="#cb24-5" aria-hidden="true" tabindex="-1"></a><span class="ex">ceph-mgr.target.wants</span></span>
+<span id="cb24-6"><a href="#cb24-6" aria-hidden="true" tabindex="-1"></a><span class="ex">ceph-mon.target.wants</span></span>
+<span id="cb24-7"><a href="#cb24-7" aria-hidden="true" tabindex="-1"></a><span class="ex">ceph.target.wants</span></span>
+<span id="cb24-8"><a href="#cb24-8" aria-hidden="true" tabindex="-1"></a><span class="ex">root@pve3:/etc/systemd/system#</span> rm <span class="at">-r</span> ceph-mon.target.wants/</span>
+<span id="cb24-9"><a href="#cb24-9" aria-hidden="true" tabindex="-1"></a><span class="ex">root@pve3:/etc/systemd/system#</span> systemctl status ceph-mgr.target</span>
+<span id="cb24-10"><a href="#cb24-10" aria-hidden="true" tabindex="-1"></a><span class="ex">●</span> ceph-mgr.target <span class="at">-</span> ceph target allowing to start/stop all ceph-mgr@.service instances at once</span>
+<span id="cb24-11"><a href="#cb24-11" aria-hidden="true" tabindex="-1"></a>     <span class="ex">Loaded:</span> loaded <span class="er">(</span><span class="ex">/lib/systemd/system/ceph-mgr.target</span><span class="kw">;</span> <span class="ex">enabled</span><span class="kw">;</span> <span class="ex">vendor</span> preset: enabled<span class="kw">)</span></span>
+<span id="cb24-12"><a href="#cb24-12" aria-hidden="true" tabindex="-1"></a>     <span class="ex">Active:</span> active since Sun 2023-02-19 15:54:58 MST<span class="kw">;</span> <span class="ex">24h</span> ago</span>
+<span id="cb24-13"><a href="#cb24-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb24-14"><a href="#cb24-14" aria-hidden="true" tabindex="-1"></a><span class="ex">Warning:</span> journal has been rotated since unit was started, output may be incomplete.</span>
+<span id="cb24-15"><a href="#cb24-15" aria-hidden="true" tabindex="-1"></a><span class="ex">root@pve3:/etc/systemd/system#</span> systemctl stop ceph-mgr.target</span>
+<span id="cb24-16"><a href="#cb24-16" aria-hidden="true" tabindex="-1"></a><span class="ex">root@pve3:/etc/systemd/system#</span> systemctl disable ceph-mgr.target</span>
+<span id="cb24-17"><a href="#cb24-17" aria-hidden="true" tabindex="-1"></a><span class="ex">Removed</span> /etc/systemd/system/multi-user.target.wants/ceph-mgr.target.</span>
+<span id="cb24-18"><a href="#cb24-18" aria-hidden="true" tabindex="-1"></a><span class="ex">Removed</span> /etc/systemd/system/ceph.target.wants/ceph-mgr.target.</span>
+<span id="cb24-19"><a href="#cb24-19" aria-hidden="true" tabindex="-1"></a><span class="ex">root@pve3:/etc/systemd/system#</span> ls <span class="kw">|</span> <span class="fu">grep</span> ceph</span>
+<span id="cb24-20"><a href="#cb24-20" aria-hidden="true" tabindex="-1"></a><span class="ex">ceph-mgr.target.wants</span></span>
+<span id="cb24-21"><a href="#cb24-21" aria-hidden="true" tabindex="-1"></a><span class="ex">ceph.target.wants</span></span>
+<span id="cb24-22"><a href="#cb24-22" aria-hidden="true" tabindex="-1"></a><span class="ex">root@pve3:/etc/systemd/system#</span> rm <span class="at">-r</span> ceph-mgr.target.wants</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>In addition to that I removed the monitor record from <code>/etc/pve/ceph.conf</code>.</p>
+<p>After that my ceph status hung for a second, which confused me until I remembered I’d turned off the monitor service on my first node to do that monmap dump. After turning it back on I seem to be ok.</p>
+<p>Now my third node is seeing my other two nodes’ monitors. If I try to create a monitor though I get told the monitor address is in use. I double checked that the unit was completely removed and ran <code>systemctl daemon-reload</code> as well as removing everything in <code>/var/lib/ceph/mon</code>. Maybe a reboot? Nope. Ahh! There’s a line up in <code>/etc/pve/ceph.conf</code> for <code>mon_host</code> that still has that IP listed. After deleting it I have three monitors up and running! I think this must be a syncing issue. I don’t have the energy to go back and run this playbook from scratch to test for sure, but I’m going to add a random sleep in front of the command like so <code>sleep $[ ( $RANDOM % 30 ) + 1 ]s &amp;&amp;</code> and hope that will do it if I ever have to run this playbook again.</p>
+<p>Back on track I added in the manager role and it worked fine. OSD creation also worked.</p>
+<p>Pool creation failed. It looks like the conditional for checking the OSD count was expecting <code>pveceph status</code> to return json that ansible could parse. It doesn’t do that for me so I substituted the command with <code>ceph osd stat | awk '{print $3}'</code> to get the number of up OSDs. I don’t know if that will work in weird failed states, but it at least worked in the happy path I could test. Note that I had to change the playbook slightly to use <code>shell</code> instead of <code>command</code> so that I could <a href="https://stackoverflow.com/questions/47994497/how-to-pipe-commands-using-ansible-e-g-curl-sl-host-com-sudo-bash">include pipes</a> and I had to cast the output of that command to an integer to let it compare to the minimum OSD requirement. I also had to change the command to search for the pool slightly to account for the output format of <code>pveceph pool ls</code> changing from when the playbook was written.</p>
+<p>At this point I’m able to fully run through the playbook. Other than that issue with monitors, that I think I’ve resolved, I have a fully functioning playbook for ceph cluster provisioning.</p>
+</section>
+<section id="conclusion" class="level1">
+<h1>Conclusion</h1>
+<p>So, was automating this worth it? For actual usability, I’d have to say no. Given the modifications I had to make to the playbook to handle the output of the status checking commands I don’t have a ton of faith that if way down the road I need to redeploy ceph that this playbook will just work. On the other hand, trying to automate it, failing terribly, learning to clean up that failed state, rebuild it manually, and then actually automating it was a decent way for me to learn some things about ceph. I also picked up a couple ansible tricks along the way. I definitely still have a ton to learn about ceph, but I feel a little more comfortable with it than I would have if I’d just followed the wizard in the UI. I can’t imagine too many people who aren’t me are going to read this post, but maybe some of the errors I’ve included in it will show up in someone’s future search and they’ll be able to see what I did about them, here’s hoping that’s useful. If not, I learned a bunch and keeping this record helped me remember what I was doing as I worked through this over the course of several days.</p>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    target: function(trigger) {
+      return trigger.previousElementSibling;
+    }
+  });
+  clipboard.on('success', function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  });
+  function tippyHover(el, contentFn) {
+    const config = {
+      allowHTML: true,
+      content: contentFn,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start'
+    };
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      return note.innerHTML;
+    });
+  }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+</body></html>
