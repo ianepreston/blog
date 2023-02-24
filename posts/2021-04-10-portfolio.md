@@ -72,18 +72,28 @@ of time writing code. To that end, in addition to completing a
 [Data Structures and Algorithms course at Athabasca University](https://www.athabascau.ca/syllabi/comp/comp272.php)
 I like to do the [Advent of Code](https://adventofcode.com/) challenges every year:
 
--   Here's my [2020 advent code](https://github.com/ianepreston/advent_2020). This year
+-   Here's my [2022 advent](https://github.com/ianepreston/scratch/tree/main/advent-of-code).
+    I'll also use this one for future years. In addition to putting everything in a package
+    as I'd done in previous years, this year was the first one where I set up my development
+    environment in a [dev container](https://containers.dev/) and a lot of what I learned
+    went into building my [devcontainers](https://github.com/ianepreston/devcontainers) repo.
+    I also built up documentation and a write up of my notes on the puzzle solutions that
+    were published to [readthedocs](https://ians-advent-of-code.readthedocs.io/en/latest/index.html).
+-   Here's my [2021 advent](https://github.com/ianepreston/scratch/tree/main/advent_2021).
+    This year I made a little data pipeline with a docker file to scrape and read in the puzzle
+    inputs automatically.
+-   Here's my [2020 advent](https://github.com/ianepreston/scratch/tree/main/advent_2020). This year
     I was also learning package development and type hinting, so the repository and code
     are really overengineered for what should be a daily coding kata. It was fun to work
     on though and I learned a lot
 -   I didn't fully complete the
-    [2019 advent](https://github.com/ianepreston/advent_2019). That was the year you
+    [2019 advent](https://github.com/ianepreston/scratch/tree/main/advent_2019). That was the year you
     implemented an assembly language emulator and built on it through the course of the
     project. Between that (not really my area of interest) and a whole lot of really
     tedious maze problems near the end (maybe I should come back to those) I didn't
     really have the motivation to complete the last few days. That was the first year I
     coded along live though, so that was a good challenge.
--   My [2018 advent](https://github.com/ianepreston/advent_2018) is a bit of a weird
+-   My [2018 advent](https://github.com/ianepreston/scratch/tree/main/advent_2018) is a bit of a weird
     one. I used the advent challenges as the material for a weekly coding tutorial I ran
     at work. To facilitate that format some of the code is done in jupyter, and a lot of
     the solutions are less efficient/elegant than I might have done in another context,
