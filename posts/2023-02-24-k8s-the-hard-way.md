@@ -320,3 +320,17 @@ to put some blame on the provider for just hanging forever instead of returning 
 After fixing the template the playbook applied and I had 6 VMs up and running, two on each
 node. It took a couple minutes to apply, but that's not bad at all. Problem solved?
 
+Almost. The newly deployed VMs are up and running, and I can ssh into them at their IPs,
+but they don't have qemu guest agents running so I can't see their IPs from the proxmox
+UI, or load up a terminal session from there. This isn't the end of the world, but I'd
+like to fix it if I can. I think the problem is that I had `agent` turned off in the proxmox
+config as part of troubleshooting the slow deploy. Let's see if I can fix that. This will
+also give me a chance to confirm that `terraform destroy` works. The destroy worked no
+problem. Setting `agent = 1` back in the template config worked fine in terms of creating
+the VM (no slowdown in deploy), but I still couldn't load them from the proxmox UI. I created a
+manual clone of the same template to see if I could figure out the issue there. This one
+did show me the configured IP, but still wouldn't let me open a console. After some more
+troubleshooting I realized this was because some changes I'd made to my proxmox ssh host
+keys were blocking me from bringing up terminal sessions on any hosts other than the one
+I was connecting to the UI through. Again, that's totally my bad, although I could have
+gone for some better error messages.
