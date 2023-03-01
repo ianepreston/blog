@@ -259,7 +259,7 @@ before trying to apply it to a resource by using `terraform console`:
 }
 ```
 
-### Put it all together
+## Put it all together
 
 Now that I've got my module created and my map to loop over I can finish up in `main.tf`
 in the root of this project:
@@ -276,5 +276,47 @@ module "ubuntu_vm" {
 
 Nice and easy! I run `terraform init` again so that the module I created is loaded,
 then `terraform plan` to make sure I'm actually getting the 6 nodes I expect. Everything
-looks good so I run `terraform apply`
+looks good so I run `terraform apply`... and wait an hour and a half for it to not actually
+deploy any nodes. When I initially tested terraform back when I was doing templates I did
+notice that it took a lot longer to deploy via terraform than via the menu, but that was
+minutes, not hours. Time to figure out what's going on here.
+
+As a fun aside to remember for later, as part of troubleshooting I tried updating
+the proxmox provider from the `2.9.11` version I was using to the `2.9.13` release
+and it just straight up doesn't work. Everything installs ok but then I get:
+
+```bash
+❯ terraform plan
+╷
+│ Error: Plugin did not respond
+│ 
+│   with provider["registry.terraform.io/telmate/proxmox"],
+│   on main.tf line 9, in provider "proxmox":
+│    9: provider "proxmox" {
+│ 
+│ The plugin encountered an error, and failed to respond to the plugin.(*GRPCProvider).ConfigureProvider call. The plugin
+│ logs may contain more details.
+╵
+```
+
+When I revert back to the old release I can at least run `terraform plan`. There are quite
+a few threads about how the proxmox provider for terraform is kind of buggy and I'm starting
+to wonder if ansible would be a better way to go. I like the ability of terraform to tear
+down infrastructure with `terraform destroy` but I'm not sure it's worth all this other
+hassle. I'll keep messing with it for a bit though.
+
+I found an
+[open issue](https://github.com/Telmate/terraform-provider-proxmox/issues/325) on the
+proxmox terraform provider about slow provisioning. There's also
+[this one](https://github.com/Telmate/terraform-provider-proxmox/issues/705) about issues
+deploying multiple VMs. Both are still open but there were
+some suggested config changes, along with a recommendation to run in debug. Let's try
+that with `TF_LOG=DEBUG terraform apply --auto-approve`. This dumped a giant stream of
+output, most of which I will not reproduce. One thing that caught my eye was that it
+couldn't find the template VM I wanted to use. Looking back at my code I realized that
+I had missed the dashes in the template name. That's definitely on me, although I'm going
+to put some blame on the provider for just hanging forever instead of returning an error.
+
+After fixing the template the playbook applied and I had 6 VMs up and running, two on each
+node. It took a couple minutes to apply, but that's not bad at all. Problem solved?
 
