@@ -334,3 +334,11 @@ troubleshooting I realized this was because some changes I'd made to my proxmox 
 keys were blocking me from bringing up terminal sessions on any hosts other than the one
 I was connecting to the UI through. Again, that's totally my bad, although I could have
 gone for some better error messages.
+
+# Provisioning a CA and Generating TLS certificates
+
+On to [chapter 4](https://github.com/kelseyhightower/kubernetes-the-hard-way/blob/master/docs/04-certificate-authority.md) in the guide!
+
+I have to do some minor modification of the scripts outlined in the doc since I'm not
+using GCP. I think for these future configs I'm going to use ansible, since that's how
+I'd like to actually manage hosts in the future.
