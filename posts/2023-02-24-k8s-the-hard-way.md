@@ -330,7 +330,9 @@ problem. Setting `agent = 1` back in the template config worked fine in terms of
 the VM (no slowdown in deploy), but I still couldn't load them from the proxmox UI. I created a
 manual clone of the same template to see if I could figure out the issue there. This one
 did show me the configured IP, but still wouldn't let me open a console. After some more
-troubleshooting I realized this was because some changes I'd made to my proxmox ssh host
+troubleshooting I realized this was because
+[some changes](https://github.com/ianepreston/recipes/commit/a98994320b20d00e4b702aaf7aa9b3357039a07b#diff-8ea9f6ece084ec63cd3ec7c27a9cc2b4d1638be05824823990187a97dad99767)
+I'd made to my proxmox ssh host
 keys were blocking me from bringing up terminal sessions on any hosts other than the one
 I was connecting to the UI through. Again, that's totally my bad, although I could have
 gone for some better error messages.
