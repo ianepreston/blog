@@ -344,3 +344,11 @@ On to [chapter 4](https://github.com/kelseyhightower/kubernetes-the-hard-way/blo
 I have to do some minor modification of the scripts outlined in the doc since I'm not
 using GCP. I think for these future configs I'm going to use ansible, since that's how
 I'd like to actually manage hosts in the future.
+
+The first big headache I ran into was getting `cfssl` installed to generate the certs.
+It didn't have a `.deb` available that I could find so I had to install `go` and then
+install the package there, as well as figuring out how to make the path to the binary
+it installed available to my user (learned a couple things about `GOPATH` in the process).
+
+Other than that creating all the keys and copying them onto the hosts was pretty straightforward
+ansible. I'll have to wait until later to see if anything broke, but for now it seems good.
