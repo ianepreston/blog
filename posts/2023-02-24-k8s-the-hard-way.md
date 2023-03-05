@@ -337,7 +337,9 @@ keys were blocking me from bringing up terminal sessions on any hosts other than
 I was connecting to the UI through. Again, that's totally my bad, although I could have
 gone for some better error messages.
 
-# Provisioning a CA and Generating TLS certificates
+# Generating config
+
+## Provisioning a CA and Generating TLS certificates
 
 On to [chapter 4](https://github.com/kelseyhightower/kubernetes-the-hard-way/blob/master/docs/04-certificate-authority.md) in the guide!
 
@@ -352,3 +354,139 @@ it installed available to my user (learned a couple things about `GOPATH` in the
 
 Other than that creating all the keys and copying them onto the hosts was pretty straightforward
 ansible. I'll have to wait until later to see if anything broke, but for now it seems good.
+
+## Generating Kubernetes configuration files for authentication
+
+On to the next thing! This section uses `kubectl`, which I fortunately already have
+available in my devcontainer, so no config required there. I'll keep going with my pattern
+of using ansible to manage the scripting. No issues with any of these steps, at least
+not at this point. I might have to come back to some of it for troubleshooting.
+
+## Generating the data encryption config and key
+
+Same as the above. I did a slightly different workflow for the ansible playbook. Since
+this called for generating a random number as part of the config, rather than doing
+something fancy like registering the output of a command to generate the random number
+and then inserting that into a template I just wrapped the whole thing in a shell command.
+
+# Bootstrap the etcd cluster
+
+On to [chapter 7](https://github.com/kelseyhightower/kubernetes-the-hard-way/blob/master/docs/07-bootstrapping-etcd.md)
+Now we're getting into interesting stuff where I'm actually starting services on the nodes.
+The instructions for this part are fairly imperative so I'll actually have to do some
+modification to make them work properly with ansible, for instance using
+[get_url](https://docs.ansible.com/ansible/latest/collections/ansible/builtin/get_url_module.html)
+instead of invoking `wget` to grab the `etcd` binary. Actually upon further reading I
+can just use the [unarchive](https://docs.ansible.com/ansible/latest/collections/ansible/builtin/unarchive_module.html)
+module to download and extract the archive, neat!
+
+This all seemed to be going well until I actually had to start the etcd service and hit
+an error:
+
+```bash
+ipreston@ubuntu-controller-1:~$ systemctl status etcd.service
+● etcd.service - etcd
+     Loaded: loaded (/etc/systemd/system/etcd.service; enabled; vendor preset: enabled)
+     Active: activating (auto-restart) (Result: exit-code) since Sat 2023-03-04 23:55:47 UTC; 3s ago
+       Docs: https://github.com/coreos
+    Process: 13038 ExecStart=/usr/local/bin/etcd \ (code=exited, status=203/EXEC)
+   Main PID: 13038 (code=exited, status=203/EXEC)
+        CPU: 1ms
+```
+
+Ok, looks like when I copied the `etcd` binaries into `/usr/local/bin` they lost their
+execute permission. Adding `mode: '0700'` to the copy task in ansible seems to fix that,
+but now I have a new failure:
+
+```bash
+ipreston@ubuntu-controller-1:~$ systemctl status etcd.service
+● etcd.service - etcd
+     Loaded: loaded (/etc/systemd/system/etcd.service; enabled; vendor preset: enabled)
+     Active: activating (auto-restart) (Result: exit-code) since Sun 2023-03-05 00:00:09 UTC; 3s ago
+       Docs: https://github.com/coreos
+    Process: 13571 ExecStart=/usr/local/bin/etcd \ (code=exited, status=1/FAILURE)
+   Main PID: 13571 (code=exited, status=1/FAILURE)
+        CPU: 13ms
+```
+
+Running `journalctl -xeu etcd.service` I think the pertinent line is:
+
+```bash
+Mar 05 00:02:26 ubuntu-controller-1 etcd[13841]: error verifying flags, '\' is not a valid flag. See 'etcd --help'.
+```
+
+I'm able to run the `etcd` binary manually, so my best guess is something in my service
+definition is wrong.
+
+Two problems came up after looking at the output of the template. First I had to change
+my variable to get the host IP address from `{{ ansible_default_ipv4 }}` to
+`{{ ansible_default_ipv4.address }}` to just get the IP address instead of a big dictionary
+of everything about the network connection. Next I think the code I copied from the guide
+had `\\` after every line break to escape the `\` character because it was being piped
+through `tee` in the example. Since I'm not doing that I swapped to just a `\`.
+
+This seems to have cleaned up the service definition, but I'm still having a failure.
+
+```bash
+ipreston@ubuntu-controller-1:~$ systemctl status etcd.service
+● etcd.service - etcd
+     Loaded: loaded (/etc/systemd/system/etcd.service; enabled; vendor preset: enabled)
+     Active: activating (auto-restart) (Result: exit-code) since Sun 2023-03-05 00:14:59 UTC; 1s ago
+       Docs: https://github.com/coreos
+    Process: 15563 ExecStart=/usr/local/bin/etcd --name ubuntu-controller-1 --cert-file=/etc/etcd/kuber>
+   Main PID: 15563 (code=exited, status=1/FAILURE)
+        CPU: 15ms
+
+Mar 05 00:14:59 ubuntu-controller-1 systemd[1]: etcd.service: Failed with result 'exit-code'.
+Mar 05 00:14:59 ubuntu-controller-1 systemd[1]: Failed to start etcd.
+```
+
+Looking at journalctl again it looks like my error is `Mar 05 00:15:09 ubuntu-controller-1 etcd[15585]: couldn't find local name "ubuntu-controller-1" in the initial cluster configuration`. Right, that's because I didn't
+update that part of the template from the hostnames used in the guide to the hostnames I
+gave my controllers. One more try.
+
+Alright, now the service is started. Running the confirmation command from the guide
+I get an output that looks good:
+
+```bash
+ipreston@ubuntu-controller-1:~$ sudo ETCDCTL_API=3 etcdctl member list \
+  --endpoints=https://127.0.0.1:2379 \cd-v3.4.15-linux-amd64$
+  --cacert=/etc/etcd/ca.pem \~/etcd/etcd-v3.4.15-linux-amd64$
+  --cert=/etc/etcd/kubernetes.pem \
+  --key=/etc/etcd/kubernetes-key.pem
+7dceec040adbf023, started, ubuntu-controller-2, https://192.168.85.71:2380, , false
+ab94230b177e1d5c, started, ubuntu-controller-1, https://192.168.85.70:2380, https://192.168.85.70:2379, false
+e88d02db26fab5bc, started, ubuntu-controller-3, https://192.168.85.72:2380, https://192.168.85.72:2379, false
+```
+
+I'm getting some concerning errors in the service status though:
+
+```bash
+ipreston@ubuntu-controller-1:~$ systemctl status etcd.service
+● etcd.service - etcd
+     Loaded: loaded (/etc/systemd/system/etcd.service; enabled; vendor preset: enabled)
+     Active: active (running) since Sun 2023-03-05 00:18:35 UTC; 3min 29s ago
+       Docs: https://github.com/coreos
+   Main PID: 16361 (etcd)
+      Tasks: 14 (limit: 9492)
+     Memory: 37.6M
+        CPU: 33.018s
+     CGroup: /system.slice/etcd.service
+             └─16361 /usr/local/bin/etcd --name ubuntu-controller-1 --cert-file=/etc/etcd/kubernetes.pem --key-file=/etc/etcd/kubernetes-key.pem --peer-cert-file=/etc/etcd/kubernetes.pem --peer-key-file=/etc/etcd/kubernetes-key.pem --trusted-ca-file=/>
+Mar 05 00:22:04 ubuntu-controller-1 etcd[16361]: rejected connection from "192.168.85.71:37770" (error "tls: \"192.168.85.71\" does not match any of DNSNames [\"kubernetes\" \"kubernetes.default\" \"kubernetes.default.svc\" \"kubernetes.default.svc.cl>
+Mar 05 00:22:04 ubuntu-controller-1 etcd[16361]: rejected connection from "192.168.85.71:37780" (error "tls: \"192.168.85.71\" does not match any of DNSNames [\"kubernetes\" \"kubernetes.default\" \"kubernetes.default.svc\" \"kubernetes.default.svc.cl>
+Mar 05 00:22:05 ubuntu-controller-1 etcd[16361]: rejected connection from "192.168.85.71:37790" (error "tls: \"192.168.85.71\" does not match any of DNSNames [\"kubernetes\" \"kubernetes.default\" \"kubernetes.default.svc\" \"kubernetes.default.svc.cl>
+Mar 05 00:22:05 ubuntu-controller-1 etcd[16361]: rejected connection from "192.168.85.71:37796" (error "tls: \"192.168.85.71\" does not match any of DNSNames [\"kubernetes\" \"kubernetes.default\" \"kubernetes.default.svc\" \"kubernetes.default.svc.cl>
+Mar 05 00:22:05 ubuntu-controller-1 etcd[16361]: health check for peer 7dceec040adbf023 could not connect: x509: certificate is valid for 192.168.85.70, 192.168.86.71, 192.168.85.72, 127.0.0.1, not 192.168.85.71
+Mar 05 00:22:05 ubuntu-controller-1 etcd[16361]: health check for peer 7dceec040adbf023 could not connect: x509: certificate is valid for 192.168.85.70, 192.168.86.71, 192.168.85.72, 127.0.0.1, not 192.168.85.71
+Mar 05 00:22:05 ubuntu-controller-1 etcd[16361]: rejected connection from "192.168.85.71:37806" (error "tls: \"192.168.85.71\" does not match any of DNSNames [\"kubernetes\" \"kubernetes.default\" \"kubernetes.default.svc\" \"kubernetes.default.svc.cl>
+Mar 05 00:22:05 ubuntu-controller-1 etcd[16361]: rejected connection from "192.168.85.71:37818" (error "tls: \"192.168.85.71\" does not match any of DNSNames [\"kubernetes\" \"kubernetes.default\" \"kubernetes.default.svc\" \"kubernetes.default.svc.cl>
+Mar 05 00:22:05 ubuntu-controller-1 etcd[16361]: rejected connection from "192.168.85.71:37828" (error "tls: \"192.168.85.71\" does not match any of DNSNames [\"kubernetes\" \"kubernetes.default\" \"kubernetes.default.svc\" \"kubernetes.default.svc.cl>
+Mar 05 00:22:05 ubuntu-controller-1 etcd[16361]: rejected connection from "192.168.85.71:37832" (error "tls: \"192.168.85.71\" does not match any of DNSNames [\"kubernetes\" \"kubernetes.default\" \"kubernetes.default.svc\" \"kubernetes.default.svc.cl>
+```
+
+Right, right, that's because I had a typo in the cert generation where I put `192.168.86.71`
+instead of `192.168.85.71`. Ok, fine. Fix that and try again.
+
+Looks like it works! The service is up and running, the status is not beset with errors
+about not being able to talk. I think I'm good!
