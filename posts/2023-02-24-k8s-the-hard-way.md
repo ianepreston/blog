@@ -7,6 +7,10 @@ toc: true
 categories: [kubernetes, proxmox, Linux]
 ---
 
+# TODO
+
+Add links to all the code once I've merged this into main on the scratch repo
+
 # Introduction
 
 In this post I'll be recording notes related to working through
@@ -490,3 +494,75 @@ instead of `192.168.85.71`. Ok, fine. Fix that and try again.
 
 Looks like it works! The service is up and running, the status is not beset with errors
 about not being able to talk. I think I'm good!
+
+# Bootstrap the kubernetes control plane
+
+A lot of the activity in this section is similar to bootstrapping the etcd cluster from
+an ansible perspective. Download some files, copy some others over into various locations,
+start up some systemd units and off you go. I had very few issues getting this initially
+set up, except that I realized I'd missed copying over one config file in the CA certs
+section so I had to go back and update that playbook to fix that issue.
+
+When it came time to verify the cluster status though I ran into an issue:
+
+```bash
+ipreston@ubuntu-controller-1:~$ sudo kubectl cluster-info --kubeconfig admin.kubeconfig
+
+To further debug and diagnose cluster problems, use 'kubectl cluster-info dump'.
+The connection to the server 127.0.0.1:6443 was refused - did you specify the right host or port?
+```
+
+So now we're in troubleshooting mode. First up, let's check the status of the services
+I just started:
+
+```bash
+ipreston@ubuntu-controller-1:~$ systemctl status kube-apiserver
+● kube-apiserver.service - Kubernetes API Server
+     Loaded: loaded (/etc/systemd/system/kube-apiserver.service; enabled; vendor preset: enabled)
+     Active: activating (auto-restart) (Result: exit-code) since Sun 2023-03-12 22:17:56 UTC; 2s ago
+       Docs: https://github.com/kubernetes/kubernetes
+    Process: 19077 ExecStart=/usr/local/bin/kube-apiserver \ (code=exited, status=1/FAILURE)
+   Main PID: 19077 (code=exited, status=1/FAILURE)
+        CPU: 83ms
+```
+
+ok, not off to a great start.
+
+Back to my old friend `journalctl -xeu kube-apiserver`:
+
+```bash
+Mar 12 22:19:04 ubuntu-controller-1 kube-apiserver[19370]: Error: "kube-apiserver" does not take any arguments, got ["\\"]
+```
+
+Oh right, this is that problem with templates again compared to how the GitHub page
+wants me to `cat` this stuff in.
+
+```bash
+ipreston@ubuntu-controller-1:~$ sudo kubectl cluster-info --kubeconfig admin.kubeconfig
+Kubernetes control plane is running at https://127.0.0.1:6443
+
+To further debug and diagnose cluster problems, use 'kubectl cluster-info dump'.
+```
+
+Alright! At least that was an easy fix. Should have remembered it from last time, but oh
+well.
+
+This section has some instructions for setting up a proxy to handle health checks from
+the load balancer, but I don't have a load balancer at this point, so I'm going to skip
+it. I'll have to figure out how to set all that up when I'm doing a proper cluster, but
+this is just for learning so I'll skip it.
+
+## RBAC for the kubelet authorization
+
+These commands I only have to run on one node, and I'm not sure how to easily make
+them idempotent with ansible. They're making changes on my cluster, not creating files
+(at least that I know of), so I don't know how to tell ansible not to re-run the commands.
+In theory running them multiple times shouldn't really matter, so I'll just do it
+manually anyway.
+
+## Front end load balancer
+
+Again, I don't actually have a load balancer (maybe that will be what I do in my next
+post). So I'll skip this part.
+
+# Bootstrapping the kubernetes worker nodes
