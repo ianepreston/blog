@@ -566,3 +566,113 @@ Again, I don't actually have a load balancer (maybe that will be what I do in my
 post). So I'll skip this part.
 
 # Bootstrapping the kubernetes worker nodes
+
+This is the last major step in having a working cluster as far as I can tell.
+The first step is installing some system dependencies, which is no problem. The next
+step is making sure swap is off. I started looking into idempotent ways to ensure this
+wasn't turned on, then decided to just check if it was in my VMs to begin with. Turns out
+I didn't set them up with swap to begin with so I can just skip that part.
+
+Next I've got a bunch of binaries to install. Some of them are gzipped tar files and
+some are straight binaries. In both cases I can refer back to what I did for setting
+up the controllers and etcd to build the playbook. All of this actually went quite smoothly.
+At the end of running the playbook it looks like I have three worker nodes in my cluster!
+
+```bash
+ipreston@ubuntu-controller-1:~$ sudo kubectl get nodes --kubeconfig admin.kubeconfig
+NAME              STATUS   ROLES    AGE     VERSION
+ubuntu-worker-1   Ready    <none>   2m35s   v1.21.0
+ubuntu-worker-2   Ready    <none>   2m35s   v1.21.0
+ubuntu-worker-3   Ready    <none>   2m35s   v1.21.0
+```
+
+# Configuring kubectl for remote access
+
+Let's try this on my devcontainer. Again, I should be pointing at a load balancer,
+but I don't have one, so I'm not. From the `workspace_ansible` folder within my devcontainer
+that has all my credentials saved I run the commands in [the guide](https://github.com/kelseyhightower/kubernetes-the-hard-way/blob/master/docs/10-configuring-kubectl.md)
+
+After setting the context I run `kubectl version` and get:
+
+```bash
+❯ kubectl version --output=json
+{
+  "clientVersion": {
+    "major": "1",
+    "minor": "26",
+    "gitVersion": "v1.26.1",
+    "gitCommit": "8f94681cd294aa8cfd3407b8191f6c70214973a4",
+    "gitTreeState": "clean",
+    "buildDate": "2023-01-18T15:58:16Z",
+    "goVersion": "go1.19.5",
+    "compiler": "gc",
+    "platform": "linux/amd64"
+  },
+  "kustomizeVersion": "v4.5.7",
+  "serverVersion": {
+    "major": "1",
+    "minor": "21",
+    "gitVersion": "v1.21.0",
+    "gitCommit": "cb303e613a121a29364f75cc67d3d580833a7479",
+    "gitTreeState": "clean",
+    "buildDate": "2021-04-08T16:25:06Z",
+    "goVersion": "go1.16.1",
+    "compiler": "gc",
+    "platform": "linux/amd64"
+  }
+}
+WARNING: version difference between client (1.26) and server (1.21) exceeds the supported minor version skew of +/-1
+```
+
+Most of this looks fine, the version skew is because I'm using old kubernetes based
+on the static guide on my server.
+
+`kubectl get nodes` returns my three worker nodes, so I'm set!
+
+# Provisioning pod network routes
+
+This appears to only matter if I'm in the cloud. I'm going to skip it.
+
+# Deploying the DNS cluster add-on
+
+I'm sure there are more DevOpsy ways to do these kubectl commands, with or without ansible,
+but I don't feel like learning them as part of this exercise, so I'm just going to run
+these commands from my devcontainer and see how it goes:
+
+```bash
+❯ kubectl apply -f https://storage.googleapis.com/kubernetes-the-hard-way/coredns-1.8.yaml
+serviceaccount/coredns created
+clusterrole.rbac.authorization.k8s.io/system:coredns created
+clusterrolebinding.rbac.authorization.k8s.io/system:coredns created
+configmap/coredns created
+deployment.apps/coredns created
+The Service "kube-dns" is invalid: spec.clusterIPs: Invalid value: []string{"10.32.0.10"}: failed to allocated ip:10.32.0.10 with error:provided IP is not in the valid range. The range of valid IPs is 192.168.85.0/24
+```
+
+Right out the gate I get an error. Nice. I guess I'll download and then modify this file.
+After downloading and modifying the IP to point to my cluster it seems to work:
+
+```bash
+❯ kubectl apply -f coredns-1.8.yaml 
+serviceaccount/coredns unchanged
+clusterrole.rbac.authorization.k8s.io/system:coredns unchanged
+clusterrolebinding.rbac.authorization.k8s.io/system:coredns unchanged
+configmap/coredns unchanged
+deployment.apps/coredns unchanged
+service/kube-dns created
+```
+
+Except maybe it didn't?
+
+```bash
+❯ kubectl get pods -l k8s-app=kube-dns -n kube-system
+No resources found in kube-system namespace.
+```
+
+Jumping ahead let's try and deploy the `busybox` pod just to see if I can get anything
+running:
+
+```bash
+❯ kubectl run busybox --image=busybox:1.28 --command -- sleep 3600
+Error from server (Forbidden): pods "busybox" is forbidden: error looking up service account default/default: serviceaccount "default" not found
+```
