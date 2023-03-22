@@ -1,7 +1,7 @@
 ---
 title: "Notes on Kubernetes the hard way"
 date: '2023-02-24'
-description: "What better way to learn k8s than implementing it?"
+description: "I may have bit off a bit more than I could chew"
 layout: post
 toc: true
 categories: [kubernetes, proxmox, Linux]
