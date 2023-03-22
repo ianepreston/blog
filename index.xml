@@ -9,8 +9,488 @@
 <link>https://blog.ianpreston.ca/index.html</link>
 <atom:link href="https://blog.ianpreston.ca/index.xml" rel="self" type="application/rss+xml"/>
 <description></description>
-<generator>quarto-1.2.335</generator>
-<lastBuildDate>Sun, 05 Feb 2023 00:00:00 GMT</lastBuildDate>
+<generator>quarto-1.2.475</generator>
+<lastBuildDate>Fri, 24 Feb 2023 00:00:00 GMT</lastBuildDate>
+<item>
+  <title>Notes on Kubernetes the hard way</title>
+  <link>https://blog.ianpreston.ca/posts/2023-02-24-k8s-the-hard-way.html</link>
+  <description><![CDATA[ 
+
+
+
+
+<section id="introduction" class="level1">
+<h1>Introduction</h1>
+<p>In this post I’ll be recording notes related to working through <a href="https://github.com/kelseyhightower/kubernetes-the-hard-way">kubernetes the hard way</a> by Kelsey Hightower. I’ve gone through a few kubernetes tutorials before, and messed around with <a href="https://minikube.sigs.k8s.io/docs/">minikube</a> a bit, but that’s it. Before I try and get a “proper” k8s cluster going on my proxmox setup I’m going to try and work through this guide in the hope that it will improve my understanding of the setup.</p>
+</section>
+<section id="provisioning-compute" class="level1">
+<h1>Provisioning compute</h1>
+<p>All the terraform code for the provisioning can be found <a href="https://github.com/ianepreston/scratch/tree/main/k8s-the-hard-way/pve-terraform">here</a>.</p>
+<p>Almost immediately I’m deviating from the guide because it expects me to deploy things in google cloud, and instead I’m going to do it on my local network. I don’t expect this to cause me a ton of problems, except I won’t have access to an external cloud load balancer, so I’ll have to figure something else out there. I’ll cross that bridge when I get to it.</p>
+<p>Additionally, I also can’t provision the VMs the guide recommends using the gcs specific commands, instead I’ll use terraform to provision VMs from the templates I set up in <a href="../posts/2023-01-21-proxmox3.html">an earlier post</a>.</p>
+<section id="sidebar-to-load-in-secrets" class="level2">
+<h2 class="anchored" data-anchor-id="sidebar-to-load-in-secrets">Sidebar to load in secrets</h2>
+<p>Terraform needs credentials to control my proxmox cluster, and I clearly don’t want to have those in git. In my earlier post I mentioned that I’d try using vault or bitwarden to manage secrets at some point. I’m going to save vault for now, but I have added the <a href="https://bitwarden.com/help/cli/">bitwarden cli</a> to my devcontainer, so I should be able to use it to securely retrieve credentials into a project. I created a secure note in bitwarden labeled <code>pve_terraform_cred</code>, now to load that into my workspace.</p>
+<p>This actually turned out to be pretty straightforward, which was a nice surprise:</p>
+<div class="sourceCode" id="cb1" style="background: #f1f3f5;"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb1-1"><span class="cf" style="color: #003B4F;">if</span> <span class="bu" style="color: null;">[</span> <span class="ot" style="color: #003B4F;">!</span> <span class="ot" style="color: #003B4F;">-f</span> pve_creds.env <span class="bu" style="color: null;">]</span><span class="kw" style="color: #003B4F;">;</span> <span class="cf" style="color: #003B4F;">then</span></span>
+<span id="cb1-2">    <span class="bu" style="color: null;">echo</span> <span class="st" style="color: #20794D;">"Credentials file doesn't already exist, loading from Bitwarden."</span></span>
+<span id="cb1-3">    <span class="bu" style="color: null;">echo</span> <span class="st" style="color: #20794D;">"Logging into bitwarden"</span></span>
+<span id="cb1-4">    <span class="ex" style="color: null;">bw</span> login</span>
+<span id="cb1-5">    <span class="bu" style="color: null;">echo</span> <span class="st" style="color: #20794D;">"Getting the terraform creds"</span></span>
+<span id="cb1-6">    <span class="ex" style="color: null;">bw</span> get notes pve_terraform_cred <span class="op" style="color: #5E5E5E;">&gt;</span> pve_creds.env</span>
+<span id="cb1-7"><span class="cf" style="color: #003B4F;">fi</span></span></code></pre></div>
+<p>Now when I start working in terraform I just have to run <code>source pve_creds.env</code> in my terminal to have the environment variables for my username and password available. I spent a bit of time trying to get the script itself to set the environment variables, but child processes can’t modify the environment of their parents so I’m stuck there.</p>
+</section>
+<section id="basic-setup" class="level2">
+<h2 class="anchored" data-anchor-id="basic-setup">Basic setup</h2>
+<p>I covered this in the templates post, but briefly let’s go over setting up the provider and a connection to my cluster. In my <code>main.tf</code> file I have the following code:</p>
+<pre class="tf"><code>terraform {
+  required_providers {
+    proxmox = {
+      source  = "telmate/proxmox"
+      version = "2.9.11"
+    }
+  }
+}
+provider "proxmox" {
+  pm_tls_insecure = true
+  pm_api_url      = "https://pve1.local.ipreston.net:8006/api2/json"
+}</code></pre>
+<p>And that’s it for setting up the connection. I have environment variables set by my script above with the username and password to my cluster so I don’t need to provide anything in the code. A quick <code>terraform init</code> followed by <code>terraform plan</code> shows that I’m all set up.</p>
+</section>
+<section id="provision-vms" class="level2">
+<h2 class="anchored" data-anchor-id="provision-vms">Provision VMs</h2>
+<p>To follow the guide I will need to create a total of 6 VMs, 3 each of controllers and workers. The configuration of all of these nodes should be largely identical, with the exception of hostname, IP address, and which proxmox node they’re loaded on. The most straightforward way to do this in terraform would be to just set up one VM, and then copy-paste its config 5 more times with slight modifications. I could do a slightly fancier version with <a href="https://developer.hashicorp.com/terraform/language/meta-arguments/for_each">for each loops</a>, but that will still have a lot of common config mixed in with the parts that are looping and will be tricky to read and update. It’s a bit overkill for something like this, but the point here is learning so I’m going to create a <a href="https://developer.hashicorp.com/terraform/tutorials/modules/module-create">module</a> that hard codes all the common aspects of the VMs I’m going to create and only leaves the parts that will change across nodes and controlllers/workers as variables.</p>
+<section id="create-a-module" class="level3">
+<h3 class="anchored" data-anchor-id="create-a-module">Create a module</h3>
+<p>In the terraform folder I’ll make a <code>modules/ubuntu-vm</code> subdirectory and in that I’ll place two files. First we have <code>variables.tf</code>:</p>
+<pre class="tf"><code>variable "node" {
+  description = "Proxmox node number to deploy to"
+  type        = number
+}
+
+variable "type" {
+  description = "A controller or worker node"
+  type        = string
+}
+
+variable "ip" {
+  description = "The static IP for the VM"
+  type        = string
+}</code></pre>
+<p>This is just defining the variables that I’ll need to pass into this module to create a resource. As described above, I want everything else about these nodes to be the same, so this is all I need for variables.</p>
+<p>Then I have a <code>main.tf</code>:</p>
+<pre class="tf"><code>terraform {
+  required_providers {
+    proxmox = {
+      source  = "telmate/proxmox"
+      version = "2.9.11"
+    }
+  }
+}
+
+resource "proxmox_vm_qemu" "ubuntu-vm" {
+  name        = "ubuntu-${var.type}-${var.node}"
+  target_node = "pve${var.node}"
+  onboot      = true
+  oncreate    = true
+  clone       = "ubuntujammytemplate"
+  full_clone  = true
+  agent       = 1
+  os_type     = "cloud-init"
+  cores       = 4
+  cpu         = "host"
+  memory      = 8192
+  bootdisk    = "scsi0"
+  disk {
+    slot     = 0
+    size     = "100G"
+    type     = "scsi"
+    storage  = "local-zfs"
+    iothread = 1
+  }
+  network {
+    model  = "virtio"
+    bridge = "vmbr0"
+  }
+  ipconfig0 = "ip=${var.ip}/24,gw=192.168.85.1"
+}</code></pre>
+<p>Having to put the required provider up here was a little confusing at first, since I had it defined in the base terraform module, but after some errors and troubleshooting I learned that I have to specify the required provider in every module that uses it. Note that I don’t have the <code>provider</code> block that explicitly points to the actual proxmox instance I want to apply this to, that only lives in the base module. The rest of this block is a standard <a href="https://registry.terraform.io/providers/Telmate/proxmox/latest/docs/resources/vm_qemu">terraform proxmox VM</a> resource where I’ve hard coded in all the parameters I want to be consistent across nodes, and plugged in variables for the parts that are going to change.</p>
+</section>
+<section id="fun-with-loops" class="level3">
+<h3 class="anchored" data-anchor-id="fun-with-loops">Fun with loops</h3>
+<p>The other tricky part of this is that I would really like to do nested for each loops, which I guess isn’t a native concept in terraform. In python to create the map of values that I want I’d do something like:</p>
+<div class="sourceCode" id="cb5" style="background: #f1f3f5;"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1">vms <span class="op" style="color: #5E5E5E;">=</span> [</span>
+<span id="cb5-2">    {</span>
+<span id="cb5-3">        <span class="st" style="color: #20794D;">"nodetype"</span>: nodetype,</span>
+<span id="cb5-4">        <span class="st" style="color: #20794D;">"pvenode"</span>: i <span class="op" style="color: #5E5E5E;">+</span> <span class="dv" style="color: #AD0000;">1</span>,</span>
+<span id="cb5-5">        <span class="st" style="color: #20794D;">"vm_ip"</span>: <span class="ss" style="color: #20794D;">f"192.168.85.</span><span class="sc" style="color: #5E5E5E;">{</span><span class="dv" style="color: #AD0000;">70</span> <span class="op" style="color: #5E5E5E;">+</span> base_octet <span class="op" style="color: #5E5E5E;">+</span> i<span class="sc" style="color: #5E5E5E;">}</span><span class="ss" style="color: #20794D;">"</span></span>
+<span id="cb5-6">    }</span>
+<span id="cb5-7">    <span class="cf" style="color: #003B4F;">for</span> nodetype, base_octet <span class="kw" style="color: #003B4F;">in</span> [(<span class="st" style="color: #20794D;">"controller"</span>, <span class="dv" style="color: #AD0000;">0</span>), (<span class="st" style="color: #20794D;">"worker"</span>, <span class="dv" style="color: #AD0000;">3</span>)]</span>
+<span id="cb5-8">    <span class="cf" style="color: #003B4F;">for</span> i <span class="kw" style="color: #003B4F;">in</span> <span class="bu" style="color: null;">range</span>(<span class="dv" style="color: #AD0000;">3</span>)</span>
+<span id="cb5-9">]</span></code></pre></div>
+<p>I can’t nest a for each in terraform, so I have to do some nested for loops in variables to create a map that I can then use for each on. <a href="https://faultbucket.ca/2020/09/terraform-nested-for_each-example/">This blog</a> has basically the same issue so I should be able to follow its logic to produce what I want. After some fiddling around I get the following:</p>
+<pre class="tf"><code>locals {
+  nodetypes = {
+    "controller" = 0
+    "worker"     = 3
+  }
+  vm_attrs_list = flatten([
+    for nodetype, baseoctet in local.nodetypes : [
+      for i in range(3) : {
+        name = "${nodetype}${i}"
+        node = "${i + 1}",
+        type = "${nodetype}",
+        ip   = "192.168.85.${70 + baseoctet + i}"
+      }
+    ]
+  ])
+  vm_attrs_map = {
+    for obj in local.vm_attrs_list : "${obj.name}" =&gt; obj
+  }
+
+}</code></pre>
+<p>Which is certainly a lot more verbose than python, but whatever. I can check it out before trying to apply it to a resource by using <code>terraform console</code>:</p>
+<div class="sourceCode" id="cb7" style="background: #f1f3f5;"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb7-1"><span class="ex" style="color: null;">❯</span> terraform console</span>
+<span id="cb7-2"><span class="op" style="color: #5E5E5E;">&gt;</span> local.vm_attrs_map</span>
+<span id="cb7-3"><span class="kw" style="color: #003B4F;">{</span></span>
+<span id="cb7-4">  <span class="st" style="color: #20794D;">"controller0"</span> = {</span>
+<span id="cb7-5">    <span class="st" style="color: #20794D;">"ip"</span> = <span class="st" style="color: #20794D;">"192.168.85.70"</span></span>
+<span id="cb7-6">    <span class="st" style="color: #20794D;">"name"</span> = <span class="st" style="color: #20794D;">"controller0"</span></span>
+<span id="cb7-7">    <span class="st" style="color: #20794D;">"node"</span> = 1</span>
+<span id="cb7-8">    <span class="st" style="color: #20794D;">"type"</span> = <span class="st" style="color: #20794D;">"controller"</span></span>
+<span id="cb7-9">  <span class="kw" style="color: #003B4F;">}</span></span>
+<span id="cb7-10">  <span class="st" style="color: #20794D;">"controller1"</span> = {</span>
+<span id="cb7-11">    <span class="st" style="color: #20794D;">"ip"</span> = <span class="st" style="color: #20794D;">"192.168.85.71"</span></span>
+<span id="cb7-12">    <span class="st" style="color: #20794D;">"name"</span> = <span class="st" style="color: #20794D;">"controller1"</span></span>
+<span id="cb7-13">    <span class="st" style="color: #20794D;">"node"</span> = 2</span>
+<span id="cb7-14">    <span class="st" style="color: #20794D;">"type"</span> = <span class="st" style="color: #20794D;">"controller"</span></span>
+<span id="cb7-15">  <span class="er" style="color: #AD0000;">}</span></span>
+<span id="cb7-16">  <span class="st" style="color: #20794D;">"controller2"</span> = {</span>
+<span id="cb7-17">    <span class="st" style="color: #20794D;">"ip"</span> = <span class="st" style="color: #20794D;">"192.168.85.72"</span></span>
+<span id="cb7-18">    <span class="st" style="color: #20794D;">"name"</span> = <span class="st" style="color: #20794D;">"controller2"</span></span>
+<span id="cb7-19">    <span class="st" style="color: #20794D;">"node"</span> = 3</span>
+<span id="cb7-20">    <span class="st" style="color: #20794D;">"type"</span> = <span class="st" style="color: #20794D;">"controller"</span></span>
+<span id="cb7-21">  <span class="er" style="color: #AD0000;">}</span></span>
+<span id="cb7-22">  <span class="st" style="color: #20794D;">"worker0"</span> = {</span>
+<span id="cb7-23">    <span class="st" style="color: #20794D;">"ip"</span> = <span class="st" style="color: #20794D;">"192.168.85.73"</span></span>
+<span id="cb7-24">    <span class="st" style="color: #20794D;">"name"</span> = <span class="st" style="color: #20794D;">"worker0"</span></span>
+<span id="cb7-25">    <span class="st" style="color: #20794D;">"node"</span> = 1</span>
+<span id="cb7-26">    <span class="st" style="color: #20794D;">"type"</span> = <span class="st" style="color: #20794D;">"worker"</span></span>
+<span id="cb7-27">  <span class="er" style="color: #AD0000;">}</span></span>
+<span id="cb7-28">  <span class="st" style="color: #20794D;">"worker1"</span> = {</span>
+<span id="cb7-29">    <span class="st" style="color: #20794D;">"ip"</span> = <span class="st" style="color: #20794D;">"192.168.85.74"</span></span>
+<span id="cb7-30">    <span class="st" style="color: #20794D;">"name"</span> = <span class="st" style="color: #20794D;">"worker1"</span></span>
+<span id="cb7-31">    <span class="st" style="color: #20794D;">"node"</span> = 2</span>
+<span id="cb7-32">    <span class="st" style="color: #20794D;">"type"</span> = <span class="st" style="color: #20794D;">"worker"</span></span>
+<span id="cb7-33">  <span class="er" style="color: #AD0000;">}</span></span>
+<span id="cb7-34">  <span class="st" style="color: #20794D;">"worker2"</span> = {</span>
+<span id="cb7-35">    <span class="st" style="color: #20794D;">"ip"</span> = <span class="st" style="color: #20794D;">"192.168.85.75"</span></span>
+<span id="cb7-36">    <span class="st" style="color: #20794D;">"name"</span> = <span class="st" style="color: #20794D;">"worker2"</span></span>
+<span id="cb7-37">    <span class="st" style="color: #20794D;">"node"</span> = 3</span>
+<span id="cb7-38">    <span class="st" style="color: #20794D;">"type"</span> = <span class="st" style="color: #20794D;">"worker"</span></span>
+<span id="cb7-39">  <span class="er" style="color: #AD0000;">}</span></span>
+<span id="cb7-40"><span class="er" style="color: #AD0000;">}</span></span></code></pre></div>
+</section>
+</section>
+<section id="put-it-all-together" class="level2">
+<h2 class="anchored" data-anchor-id="put-it-all-together">Put it all together</h2>
+<p>Now that I’ve got my module created and my map to loop over I can finish up in <code>main.tf</code> in the root of this project:</p>
+<pre class="tf"><code>module "ubuntu_vm" {
+  source   = "./modules/ubuntu-vm"
+  for_each = local.vm_attrs_map
+  node     = each.value.node
+  type     = each.value.type
+  ip       = each.value.ip
+}</code></pre>
+<p>Nice and easy! I run <code>terraform init</code> again so that the module I created is loaded, then <code>terraform plan</code> to make sure I’m actually getting the 6 nodes I expect. Everything looks good so I run <code>terraform apply</code>… and wait an hour and a half for it to not actually deploy any nodes. When I initially tested terraform back when I was doing templates I did notice that it took a lot longer to deploy via terraform than via the menu, but that was minutes, not hours. Time to figure out what’s going on here.</p>
+<p>As a fun aside to remember for later, as part of troubleshooting I tried updating the proxmox provider from the <code>2.9.11</code> version I was using to the <code>2.9.13</code> release and it just straight up doesn’t work. Everything installs ok but then I get:</p>
+<div class="sourceCode" id="cb9" style="background: #f1f3f5;"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb9-1"><span class="ex" style="color: null;">❯</span> terraform plan</span>
+<span id="cb9-2"><span class="ex" style="color: null;">╷</span></span>
+<span id="cb9-3"><span class="ex" style="color: null;">│</span> Error: Plugin did not respond</span>
+<span id="cb9-4"><span class="ex" style="color: null;">│</span> </span>
+<span id="cb9-5"><span class="ex" style="color: null;">│</span>   with provider[<span class="st" style="color: #20794D;">"registry.terraform.io/telmate/proxmox"</span>],</span>
+<span id="cb9-6"><span class="ex" style="color: null;">│</span>   on main.tf line 9, in provider <span class="st" style="color: #20794D;">"proxmox"</span>:</span>
+<span id="cb9-7"><span class="ex" style="color: null;">│</span>    9: provider <span class="st" style="color: #20794D;">"proxmox"</span> {</span>
+<span id="cb9-8"><span class="ex" style="color: null;">│</span> </span>
+<span id="cb9-9"><span class="ex" style="color: null;">│</span> The plugin encountered an error, and failed to respond to the plugin.<span class="er" style="color: #AD0000;">(</span><span class="ex" style="color: null;">*GRPCProvider</span><span class="kw" style="color: #003B4F;">)</span><span class="ex" style="color: null;">.ConfigureProvider</span> call. The plugin</span>
+<span id="cb9-10"><span class="ex" style="color: null;">│</span> logs may contain more details.</span>
+<span id="cb9-11"><span class="ex" style="color: null;">╵</span></span></code></pre></div>
+<p>When I revert back to the old release I can at least run <code>terraform plan</code>. There are quite a few threads about how the proxmox provider for terraform is kind of buggy and I’m starting to wonder if ansible would be a better way to go. I like the ability of terraform to tear down infrastructure with <code>terraform destroy</code> but I’m not sure it’s worth all this other hassle. I’ll keep messing with it for a bit though.</p>
+<p>I found an <a href="https://github.com/Telmate/terraform-provider-proxmox/issues/325">open issue</a> on the proxmox terraform provider about slow provisioning. There’s also <a href="https://github.com/Telmate/terraform-provider-proxmox/issues/705">this one</a> about issues deploying multiple VMs. Both are still open but there were some suggested config changes, along with a recommendation to run in debug. Let’s try that with <code>TF_LOG=DEBUG terraform apply --auto-approve</code>. This dumped a giant stream of output, most of which I will not reproduce. One thing that caught my eye was that it couldn’t find the template VM I wanted to use. Looking back at my code I realized that I had missed the dashes in the template name. That’s definitely on me, although I’m going to put some blame on the provider for just hanging forever instead of returning an error.</p>
+<p>After fixing the template the playbook applied and I had 6 VMs up and running, two on each node. It took a couple minutes to apply, but that’s not bad at all. Problem solved?</p>
+<p>Almost. The newly deployed VMs are up and running, and I can ssh into them at their IPs, but they don’t have qemu guest agents running so I can’t see their IPs from the proxmox UI, or load up a terminal session from there. This isn’t the end of the world, but I’d like to fix it if I can. I think the problem is that I had <code>agent</code> turned off in the proxmox config as part of troubleshooting the slow deploy. Let’s see if I can fix that. This will also give me a chance to confirm that <code>terraform destroy</code> works. The destroy worked no problem. Setting <code>agent = 1</code> back in the template config worked fine in terms of creating the VM (no slowdown in deploy), but I still couldn’t load them from the proxmox UI. I created a manual clone of the same template to see if I could figure out the issue there. This one did show me the configured IP, but still wouldn’t let me open a console. After some more troubleshooting I realized this was because <a href="https://github.com/ianepreston/recipes/commit/a98994320b20d00e4b702aaf7aa9b3357039a07b#diff-8ea9f6ece084ec63cd3ec7c27a9cc2b4d1638be05824823990187a97dad99767">some changes</a> I’d made to my proxmox ssh host keys were blocking me from bringing up terminal sessions on any hosts other than the one I was connecting to the UI through. Again, that’s totally my bad, although I could have gone for some better error messages.</p>
+</section>
+</section>
+<section id="generating-config" class="level1">
+<h1>Generating config</h1>
+<p>All the ansible playbooks and configs for the sections below can be found <a href="https://github.com/ianepreston/scratch/tree/main/k8s-the-hard-way/ansible">here</a>.</p>
+<section id="provisioning-a-ca-and-generating-tls-certificates" class="level2">
+<h2 class="anchored" data-anchor-id="provisioning-a-ca-and-generating-tls-certificates">Provisioning a CA and Generating TLS certificates</h2>
+<p><a href="https://github.com/ianepreston/scratch/blob/main/k8s-the-hard-way/ansible/01_ca_certs.yml">Ansible playbook</a></p>
+<p>On to <a href="https://github.com/kelseyhightower/kubernetes-the-hard-way/blob/master/docs/04-certificate-authority.md">chapter 4</a> in the guide!</p>
+<p>I have to do some minor modification of the scripts outlined in the doc since I’m not using GCP. I think for these future configs I’m going to use ansible, since that’s how I’d like to actually manage hosts in the future.</p>
+<p>The first big headache I ran into was getting <code>cfssl</code> installed to generate the certs. It didn’t have a <code>.deb</code> available that I could find so I had to install <code>go</code> and then install the package there, as well as figuring out how to make the path to the binary it installed available to my user (learned a couple things about <code>GOPATH</code> in the process).</p>
+<p>Other than that creating all the keys and copying them onto the hosts was pretty straightforward ansible. I’ll have to wait until later to see if anything broke, but for now it seems good.</p>
+</section>
+<section id="generating-kubernetes-configuration-files-for-authentication" class="level2">
+<h2 class="anchored" data-anchor-id="generating-kubernetes-configuration-files-for-authentication">Generating Kubernetes configuration files for authentication</h2>
+<p><a href="https://github.com/ianepreston/scratch/blob/main/k8s-the-hard-way/ansible/02_kube_config.yml">Ansible playbook</a></p>
+<p>On to the next thing! This section uses <code>kubectl</code>, which I fortunately already have available in my devcontainer, so no config required there. I’ll keep going with my pattern of using ansible to manage the scripting. No issues with any of these steps, at least not at this point. I might have to come back to some of it for troubleshooting.</p>
+</section>
+<section id="generating-the-data-encryption-config-and-key" class="level2">
+<h2 class="anchored" data-anchor-id="generating-the-data-encryption-config-and-key">Generating the data encryption config and key</h2>
+<p><a href="https://github.com/ianepreston/scratch/blob/main/k8s-the-hard-way/ansible/03_encryption.yml">Ansible playbook</a></p>
+<p>Same as the above. I did a slightly different workflow for the ansible playbook. Since this called for generating a random number as part of the config, rather than doing something fancy like registering the output of a command to generate the random number and then inserting that into a template I just wrapped the whole thing in a shell command.</p>
+</section>
+</section>
+<section id="bootstrap-the-etcd-cluster" class="level1">
+<h1>Bootstrap the etcd cluster</h1>
+<p><a href="https://github.com/ianepreston/scratch/blob/main/k8s-the-hard-way/ansible/04_bootstrap_etcd.yml">Ansible playbook</a></p>
+<p>On to <a href="https://github.com/kelseyhightower/kubernetes-the-hard-way/blob/master/docs/07-bootstrapping-etcd.md">chapter 7</a> Now we’re getting into interesting stuff where I’m actually starting services on the nodes. The instructions for this part are fairly imperative so I’ll actually have to do some modification to make them work properly with ansible, for instance using <a href="https://docs.ansible.com/ansible/latest/collections/ansible/builtin/get_url_module.html">get_url</a> instead of invoking <code>wget</code> to grab the <code>etcd</code> binary. Actually upon further reading I can just use the <a href="https://docs.ansible.com/ansible/latest/collections/ansible/builtin/unarchive_module.html">unarchive</a> module to download and extract the archive, neat!</p>
+<p>This all seemed to be going well until I actually had to start the etcd service and hit an error:</p>
+<div class="sourceCode" id="cb10" style="background: #f1f3f5;"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb10-1"><span class="ex" style="color: null;">ipreston@ubuntu-controller-1:~$</span> systemctl status etcd.service</span>
+<span id="cb10-2"><span class="ex" style="color: null;">●</span> etcd.service <span class="at" style="color: #657422;">-</span> etcd</span>
+<span id="cb10-3">     <span class="ex" style="color: null;">Loaded:</span> loaded <span class="er" style="color: #AD0000;">(</span><span class="ex" style="color: null;">/etc/systemd/system/etcd.service</span><span class="kw" style="color: #003B4F;">;</span> <span class="ex" style="color: null;">enabled</span><span class="kw" style="color: #003B4F;">;</span> <span class="ex" style="color: null;">vendor</span> preset: enabled<span class="kw" style="color: #003B4F;">)</span></span>
+<span id="cb10-4">     <span class="ex" style="color: null;">Active:</span> activating <span class="er" style="color: #AD0000;">(</span><span class="ex" style="color: null;">auto-restart</span><span class="kw" style="color: #003B4F;">)</span> <span class="kw" style="color: #003B4F;">(</span><span class="ex" style="color: null;">Result:</span> exit-code<span class="kw" style="color: #003B4F;">)</span> <span class="ex" style="color: null;">since</span> Sat 2023-03-04 23:55:47 UTC<span class="kw" style="color: #003B4F;">;</span> <span class="ex" style="color: null;">3s</span> ago</span>
+<span id="cb10-5">       <span class="ex" style="color: null;">Docs:</span> https://github.com/coreos</span>
+<span id="cb10-6">    <span class="ex" style="color: null;">Process:</span> 13038 ExecStart=/usr/local/bin/etcd <span class="dt" style="color: #AD0000;">\ </span><span class="er" style="color: #AD0000;">(</span><span class="va" style="color: #111111;">code</span><span class="op" style="color: #5E5E5E;">=</span>exited, <span class="va" style="color: #111111;">status</span><span class="op" style="color: #5E5E5E;">=</span>203/EXEC<span class="kw" style="color: #003B4F;">)</span></span>
+<span id="cb10-7">   <span class="ex" style="color: null;">Main</span> PID: 13038 <span class="er" style="color: #AD0000;">(</span><span class="va" style="color: #111111;">code</span><span class="op" style="color: #5E5E5E;">=</span>exited, <span class="va" style="color: #111111;">status</span><span class="op" style="color: #5E5E5E;">=</span>203/EXEC<span class="kw" style="color: #003B4F;">)</span></span>
+<span id="cb10-8">        <span class="ex" style="color: null;">CPU:</span> 1ms</span></code></pre></div>
+<p>Ok, looks like when I copied the <code>etcd</code> binaries into <code>/usr/local/bin</code> they lost their execute permission. Adding <code>mode: '0700'</code> to the copy task in ansible seems to fix that, but now I have a new failure:</p>
+<div class="sourceCode" id="cb11" style="background: #f1f3f5;"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb11-1"><span class="ex" style="color: null;">ipreston@ubuntu-controller-1:~$</span> systemctl status etcd.service</span>
+<span id="cb11-2"><span class="ex" style="color: null;">●</span> etcd.service <span class="at" style="color: #657422;">-</span> etcd</span>
+<span id="cb11-3">     <span class="ex" style="color: null;">Loaded:</span> loaded <span class="er" style="color: #AD0000;">(</span><span class="ex" style="color: null;">/etc/systemd/system/etcd.service</span><span class="kw" style="color: #003B4F;">;</span> <span class="ex" style="color: null;">enabled</span><span class="kw" style="color: #003B4F;">;</span> <span class="ex" style="color: null;">vendor</span> preset: enabled<span class="kw" style="color: #003B4F;">)</span></span>
+<span id="cb11-4">     <span class="ex" style="color: null;">Active:</span> activating <span class="er" style="color: #AD0000;">(</span><span class="ex" style="color: null;">auto-restart</span><span class="kw" style="color: #003B4F;">)</span> <span class="kw" style="color: #003B4F;">(</span><span class="ex" style="color: null;">Result:</span> exit-code<span class="kw" style="color: #003B4F;">)</span> <span class="ex" style="color: null;">since</span> Sun 2023-03-05 00:00:09 UTC<span class="kw" style="color: #003B4F;">;</span> <span class="ex" style="color: null;">3s</span> ago</span>
+<span id="cb11-5">       <span class="ex" style="color: null;">Docs:</span> https://github.com/coreos</span>
+<span id="cb11-6">    <span class="ex" style="color: null;">Process:</span> 13571 ExecStart=/usr/local/bin/etcd <span class="dt" style="color: #AD0000;">\ </span><span class="er" style="color: #AD0000;">(</span><span class="va" style="color: #111111;">code</span><span class="op" style="color: #5E5E5E;">=</span>exited, <span class="va" style="color: #111111;">status</span><span class="op" style="color: #5E5E5E;">=</span>1/FAILURE<span class="kw" style="color: #003B4F;">)</span></span>
+<span id="cb11-7">   <span class="ex" style="color: null;">Main</span> PID: 13571 <span class="er" style="color: #AD0000;">(</span><span class="va" style="color: #111111;">code</span><span class="op" style="color: #5E5E5E;">=</span>exited, <span class="va" style="color: #111111;">status</span><span class="op" style="color: #5E5E5E;">=</span>1/FAILURE<span class="kw" style="color: #003B4F;">)</span></span>
+<span id="cb11-8">        <span class="ex" style="color: null;">CPU:</span> 13ms</span></code></pre></div>
+<p>Running <code>journalctl -xeu etcd.service</code> I think the pertinent line is:</p>
+<div class="sourceCode" id="cb12" style="background: #f1f3f5;"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb12-1"><span class="ex" style="color: null;">Mar</span> 05 00:02:26 ubuntu-controller-1 etcd[13841]: error verifying flags, <span class="st" style="color: #20794D;">'\'</span> is not a valid flag. See <span class="st" style="color: #20794D;">'etcd --help'</span>.</span></code></pre></div>
+<p>I’m able to run the <code>etcd</code> binary manually, so my best guess is something in my service definition is wrong.</p>
+<p>Two problems came up after looking at the output of the template. First I had to change my variable to get the host IP address from <code>{{ ansible_default_ipv4 }}</code> to <code>{{ ansible_default_ipv4.address }}</code> to just get the IP address instead of a big dictionary of everything about the network connection. Next I think the code I copied from the guide had <code>\\</code> after every line break to escape the <code>\</code> character because it was being piped through <code>tee</code> in the example. Since I’m not doing that I swapped to just a <code>\</code>.</p>
+<p>This seems to have cleaned up the service definition, but I’m still having a failure.</p>
+<div class="sourceCode" id="cb13" style="background: #f1f3f5;"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb13-1"><span class="ex" style="color: null;">ipreston@ubuntu-controller-1:~$</span> systemctl status etcd.service</span>
+<span id="cb13-2"><span class="ex" style="color: null;">●</span> etcd.service <span class="at" style="color: #657422;">-</span> etcd</span>
+<span id="cb13-3">     <span class="ex" style="color: null;">Loaded:</span> loaded <span class="er" style="color: #AD0000;">(</span><span class="ex" style="color: null;">/etc/systemd/system/etcd.service</span><span class="kw" style="color: #003B4F;">;</span> <span class="ex" style="color: null;">enabled</span><span class="kw" style="color: #003B4F;">;</span> <span class="ex" style="color: null;">vendor</span> preset: enabled<span class="kw" style="color: #003B4F;">)</span></span>
+<span id="cb13-4">     <span class="ex" style="color: null;">Active:</span> activating <span class="er" style="color: #AD0000;">(</span><span class="ex" style="color: null;">auto-restart</span><span class="kw" style="color: #003B4F;">)</span> <span class="kw" style="color: #003B4F;">(</span><span class="ex" style="color: null;">Result:</span> exit-code<span class="kw" style="color: #003B4F;">)</span> <span class="ex" style="color: null;">since</span> Sun 2023-03-05 00:14:59 UTC<span class="kw" style="color: #003B4F;">;</span> <span class="ex" style="color: null;">1s</span> ago</span>
+<span id="cb13-5">       <span class="ex" style="color: null;">Docs:</span> https://github.com/coreos</span>
+<span id="cb13-6">    <span class="ex" style="color: null;">Process:</span> 15563 ExecStart=/usr/local/bin/etcd <span class="at" style="color: #657422;">--name</span> ubuntu-controller-1 <span class="at" style="color: #657422;">--cert-file</span><span class="op" style="color: #5E5E5E;">=</span>/etc/etcd/kuber<span class="op" style="color: #5E5E5E;">&gt;</span></span>
+<span id="cb13-7">   <span class="ex" style="color: null;">Main</span> PID: 15563 <span class="er" style="color: #AD0000;">(</span><span class="va" style="color: #111111;">code</span><span class="op" style="color: #5E5E5E;">=</span>exited, <span class="va" style="color: #111111;">status</span><span class="op" style="color: #5E5E5E;">=</span>1/FAILURE<span class="kw" style="color: #003B4F;">)</span></span>
+<span id="cb13-8">        <span class="ex" style="color: null;">CPU:</span> 15ms</span>
+<span id="cb13-9"></span>
+<span id="cb13-10"><span class="ex" style="color: null;">Mar</span> 05 00:14:59 ubuntu-controller-1 systemd[1]: etcd.service: Failed with result <span class="st" style="color: #20794D;">'exit-code'</span>.</span>
+<span id="cb13-11"><span class="ex" style="color: null;">Mar</span> 05 00:14:59 ubuntu-controller-1 systemd[1]: Failed to start etcd.</span></code></pre></div>
+<p>Looking at journalctl again it looks like my error is <code>Mar 05 00:15:09 ubuntu-controller-1 etcd[15585]: couldn't find local name "ubuntu-controller-1" in the initial cluster configuration</code>. Right, that’s because I didn’t update that part of the template from the hostnames used in the guide to the hostnames I gave my controllers. One more try.</p>
+<p>Alright, now the service is started. Running the confirmation command from the guide I get an output that looks good:</p>
+<div class="sourceCode" id="cb14" style="background: #f1f3f5;"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb14-1"><span class="ex" style="color: null;">ipreston@ubuntu-controller-1:~$</span> sudo ETCDCTL_API=3 etcdctl member list <span class="dt" style="color: #AD0000;">\</span></span>
+<span id="cb14-2">  <span class="at" style="color: #657422;">--endpoints</span><span class="op" style="color: #5E5E5E;">=</span>https://127.0.0.1:2379 <span class="dt" style="color: #AD0000;">\c</span>d-v3.4.15-linux-amd64$</span>
+<span id="cb14-3">  <span class="ex" style="color: null;">--cacert=/etc/etcd/ca.pem</span> <span class="dt" style="color: #AD0000;">\~</span>/etcd/etcd-v3.4.15-linux-amd64$</span>
+<span id="cb14-4">  <span class="ex" style="color: null;">--cert=/etc/etcd/kubernetes.pem</span> <span class="dt" style="color: #AD0000;">\</span></span>
+<span id="cb14-5">  <span class="at" style="color: #657422;">--key</span><span class="op" style="color: #5E5E5E;">=</span>/etc/etcd/kubernetes-key.pem</span>
+<span id="cb14-6"><span class="ex" style="color: null;">7dceec040adbf023,</span> started, ubuntu-controller-2, https://192.168.85.71:2380, , false</span>
+<span id="cb14-7"><span class="ex" style="color: null;">ab94230b177e1d5c,</span> started, ubuntu-controller-1, https://192.168.85.70:2380, https://192.168.85.70:2379, false</span>
+<span id="cb14-8"><span class="ex" style="color: null;">e88d02db26fab5bc,</span> started, ubuntu-controller-3, https://192.168.85.72:2380, https://192.168.85.72:2379, false</span></code></pre></div>
+<p>I’m getting some concerning errors in the service status though:</p>
+<div class="sourceCode" id="cb15" style="background: #f1f3f5;"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb15-1"><span class="ex" style="color: null;">ipreston@ubuntu-controller-1:~$</span> systemctl status etcd.service</span>
+<span id="cb15-2"><span class="ex" style="color: null;">●</span> etcd.service <span class="at" style="color: #657422;">-</span> etcd</span>
+<span id="cb15-3">     <span class="ex" style="color: null;">Loaded:</span> loaded <span class="er" style="color: #AD0000;">(</span><span class="ex" style="color: null;">/etc/systemd/system/etcd.service</span><span class="kw" style="color: #003B4F;">;</span> <span class="ex" style="color: null;">enabled</span><span class="kw" style="color: #003B4F;">;</span> <span class="ex" style="color: null;">vendor</span> preset: enabled<span class="kw" style="color: #003B4F;">)</span></span>
+<span id="cb15-4">     <span class="ex" style="color: null;">Active:</span> active <span class="er" style="color: #AD0000;">(</span><span class="ex" style="color: null;">running</span><span class="kw" style="color: #003B4F;">)</span> <span class="ex" style="color: null;">since</span> Sun 2023-03-05 00:18:35 UTC<span class="kw" style="color: #003B4F;">;</span> <span class="ex" style="color: null;">3min</span> 29s ago</span>
+<span id="cb15-5">       <span class="ex" style="color: null;">Docs:</span> https://github.com/coreos</span>
+<span id="cb15-6">   <span class="ex" style="color: null;">Main</span> PID: 16361 <span class="er" style="color: #AD0000;">(</span><span class="ex" style="color: null;">etcd</span><span class="kw" style="color: #003B4F;">)</span></span>
+<span id="cb15-7">      <span class="ex" style="color: null;">Tasks:</span> 14 <span class="er" style="color: #AD0000;">(</span><span class="ex" style="color: null;">limit:</span> 9492<span class="kw" style="color: #003B4F;">)</span></span>
+<span id="cb15-8">     <span class="ex" style="color: null;">Memory:</span> 37.6M</span>
+<span id="cb15-9">        <span class="ex" style="color: null;">CPU:</span> 33.018s</span>
+<span id="cb15-10">     <span class="ex" style="color: null;">CGroup:</span> /system.slice/etcd.service</span>
+<span id="cb15-11">             <span class="ex" style="color: null;">└─16361</span> /usr/local/bin/etcd <span class="at" style="color: #657422;">--name</span> ubuntu-controller-1 <span class="at" style="color: #657422;">--cert-file</span><span class="op" style="color: #5E5E5E;">=</span>/etc/etcd/kubernetes.pem <span class="at" style="color: #657422;">--key-file</span><span class="op" style="color: #5E5E5E;">=</span>/etc/etcd/kubernetes-key.pem <span class="at" style="color: #657422;">--peer-cert-file</span><span class="op" style="color: #5E5E5E;">=</span>/etc/etcd/kubernetes.pem <span class="at" style="color: #657422;">--peer-key-file</span><span class="op" style="color: #5E5E5E;">=</span>/etc/etcd/kubernetes-key.pem <span class="at" style="color: #657422;">--trusted-ca-file</span><span class="op" style="color: #5E5E5E;">=</span>/<span class="op" style="color: #5E5E5E;">&gt;</span></span>
+<span id="cb15-12"><span class="ex" style="color: null;">Mar</span> 05 00:22:04 ubuntu-controller-1 etcd[16361]: rejected connection from <span class="st" style="color: #20794D;">"192.168.85.71:37770"</span> <span class="er" style="color: #AD0000;">(</span><span class="ex" style="color: null;">error</span> <span class="st" style="color: #20794D;">"tls: </span><span class="dt" style="color: #AD0000;">\"</span><span class="st" style="color: #20794D;">192.168.85.71</span><span class="dt" style="color: #AD0000;">\"</span><span class="st" style="color: #20794D;"> does not match any of DNSNames [</span><span class="dt" style="color: #AD0000;">\"</span><span class="st" style="color: #20794D;">kubernetes</span><span class="dt" style="color: #AD0000;">\"</span><span class="st" style="color: #20794D;"> </span><span class="dt" style="color: #AD0000;">\"</span><span class="st" style="color: #20794D;">kubernetes.default</span><span class="dt" style="color: #AD0000;">\"</span><span class="st" style="color: #20794D;"> </span><span class="dt" style="color: #AD0000;">\"</span><span class="st" style="color: #20794D;">kubernetes.default.svc</span><span class="dt" style="color: #AD0000;">\"</span><span class="st" style="color: #20794D;"> </span><span class="dt" style="color: #AD0000;">\"</span><span class="st" style="color: #20794D;">kubernetes.default.svc.cl&gt;</span></span>
+<span id="cb15-13"><span class="st" style="color: #20794D;">Mar 05 00:22:04 ubuntu-controller-1 etcd[16361]: rejected connection from "</span>192.168.85.71:37780<span class="st" style="color: #20794D;">" (error "</span>tls: <span class="dt" style="color: #AD0000;">\"</span>192.168.85.71<span class="dt" style="color: #AD0000;">\"</span> does not match any of DNSNames [<span class="dt" style="color: #AD0000;">\"</span>kubernetes<span class="dt" style="color: #AD0000;">\"</span> <span class="dt" style="color: #AD0000;">\"</span>kubernetes.default<span class="dt" style="color: #AD0000;">\"</span> <span class="dt" style="color: #AD0000;">\"</span>kubernetes.default.svc<span class="dt" style="color: #AD0000;">\"</span> <span class="dt" style="color: #AD0000;">\"</span>kubernetes.default.svc.cl<span class="op" style="color: #5E5E5E;">&gt;</span></span>
+<span id="cb15-14"><span class="ex" style="color: null;">Mar</span> 05 00:22:05 ubuntu-controller-1 etcd[16361]: rejected connection from <span class="st" style="color: #20794D;">"192.168.85.71:37790"</span> <span class="er" style="color: #AD0000;">(</span><span class="ex" style="color: null;">error</span> <span class="st" style="color: #20794D;">"tls: </span><span class="dt" style="color: #AD0000;">\"</span><span class="st" style="color: #20794D;">192.168.85.71</span><span class="dt" style="color: #AD0000;">\"</span><span class="st" style="color: #20794D;"> does not match any of DNSNames [</span><span class="dt" style="color: #AD0000;">\"</span><span class="st" style="color: #20794D;">kubernetes</span><span class="dt" style="color: #AD0000;">\"</span><span class="st" style="color: #20794D;"> </span><span class="dt" style="color: #AD0000;">\"</span><span class="st" style="color: #20794D;">kubernetes.default</span><span class="dt" style="color: #AD0000;">\"</span><span class="st" style="color: #20794D;"> </span><span class="dt" style="color: #AD0000;">\"</span><span class="st" style="color: #20794D;">kubernetes.default.svc</span><span class="dt" style="color: #AD0000;">\"</span><span class="st" style="color: #20794D;"> </span><span class="dt" style="color: #AD0000;">\"</span><span class="st" style="color: #20794D;">kubernetes.default.svc.cl&gt;</span></span>
+<span id="cb15-15"><span class="st" style="color: #20794D;">Mar 05 00:22:05 ubuntu-controller-1 etcd[16361]: rejected connection from "</span>192.168.85.71:37796<span class="st" style="color: #20794D;">" (error "</span>tls: <span class="dt" style="color: #AD0000;">\"</span>192.168.85.71<span class="dt" style="color: #AD0000;">\"</span> does not match any of DNSNames [<span class="dt" style="color: #AD0000;">\"</span>kubernetes<span class="dt" style="color: #AD0000;">\"</span> <span class="dt" style="color: #AD0000;">\"</span>kubernetes.default<span class="dt" style="color: #AD0000;">\"</span> <span class="dt" style="color: #AD0000;">\"</span>kubernetes.default.svc<span class="dt" style="color: #AD0000;">\"</span> <span class="dt" style="color: #AD0000;">\"</span>kubernetes.default.svc.cl<span class="op" style="color: #5E5E5E;">&gt;</span></span>
+<span id="cb15-16"><span class="ex" style="color: null;">Mar</span> 05 00:22:05 ubuntu-controller-1 etcd[16361]: health check for peer 7dceec040adbf023 could not connect: x509: certificate is valid for 192.168.85.70, 192.168.86.71, 192.168.85.72, 127.0.0.1, not 192.168.85.71</span>
+<span id="cb15-17"><span class="ex" style="color: null;">Mar</span> 05 00:22:05 ubuntu-controller-1 etcd[16361]: health check for peer 7dceec040adbf023 could not connect: x509: certificate is valid for 192.168.85.70, 192.168.86.71, 192.168.85.72, 127.0.0.1, not 192.168.85.71</span>
+<span id="cb15-18"><span class="ex" style="color: null;">Mar</span> 05 00:22:05 ubuntu-controller-1 etcd[16361]: rejected connection from <span class="st" style="color: #20794D;">"192.168.85.71:37806"</span> <span class="er" style="color: #AD0000;">(</span><span class="ex" style="color: null;">error</span> <span class="st" style="color: #20794D;">"tls: </span><span class="dt" style="color: #AD0000;">\"</span><span class="st" style="color: #20794D;">192.168.85.71</span><span class="dt" style="color: #AD0000;">\"</span><span class="st" style="color: #20794D;"> does not match any of DNSNames [</span><span class="dt" style="color: #AD0000;">\"</span><span class="st" style="color: #20794D;">kubernetes</span><span class="dt" style="color: #AD0000;">\"</span><span class="st" style="color: #20794D;"> </span><span class="dt" style="color: #AD0000;">\"</span><span class="st" style="color: #20794D;">kubernetes.default</span><span class="dt" style="color: #AD0000;">\"</span><span class="st" style="color: #20794D;"> </span><span class="dt" style="color: #AD0000;">\"</span><span class="st" style="color: #20794D;">kubernetes.default.svc</span><span class="dt" style="color: #AD0000;">\"</span><span class="st" style="color: #20794D;"> </span><span class="dt" style="color: #AD0000;">\"</span><span class="st" style="color: #20794D;">kubernetes.default.svc.cl&gt;</span></span>
+<span id="cb15-19"><span class="st" style="color: #20794D;">Mar 05 00:22:05 ubuntu-controller-1 etcd[16361]: rejected connection from "</span>192.168.85.71:37818<span class="st" style="color: #20794D;">" (error "</span>tls: <span class="dt" style="color: #AD0000;">\"</span>192.168.85.71<span class="dt" style="color: #AD0000;">\"</span> does not match any of DNSNames [<span class="dt" style="color: #AD0000;">\"</span>kubernetes<span class="dt" style="color: #AD0000;">\"</span> <span class="dt" style="color: #AD0000;">\"</span>kubernetes.default<span class="dt" style="color: #AD0000;">\"</span> <span class="dt" style="color: #AD0000;">\"</span>kubernetes.default.svc<span class="dt" style="color: #AD0000;">\"</span> <span class="dt" style="color: #AD0000;">\"</span>kubernetes.default.svc.cl<span class="op" style="color: #5E5E5E;">&gt;</span></span>
+<span id="cb15-20"><span class="ex" style="color: null;">Mar</span> 05 00:22:05 ubuntu-controller-1 etcd[16361]: rejected connection from <span class="st" style="color: #20794D;">"192.168.85.71:37828"</span> <span class="er" style="color: #AD0000;">(</span><span class="ex" style="color: null;">error</span> <span class="st" style="color: #20794D;">"tls: </span><span class="dt" style="color: #AD0000;">\"</span><span class="st" style="color: #20794D;">192.168.85.71</span><span class="dt" style="color: #AD0000;">\"</span><span class="st" style="color: #20794D;"> does not match any of DNSNames [</span><span class="dt" style="color: #AD0000;">\"</span><span class="st" style="color: #20794D;">kubernetes</span><span class="dt" style="color: #AD0000;">\"</span><span class="st" style="color: #20794D;"> </span><span class="dt" style="color: #AD0000;">\"</span><span class="st" style="color: #20794D;">kubernetes.default</span><span class="dt" style="color: #AD0000;">\"</span><span class="st" style="color: #20794D;"> </span><span class="dt" style="color: #AD0000;">\"</span><span class="st" style="color: #20794D;">kubernetes.default.svc</span><span class="dt" style="color: #AD0000;">\"</span><span class="st" style="color: #20794D;"> </span><span class="dt" style="color: #AD0000;">\"</span><span class="st" style="color: #20794D;">kubernetes.default.svc.cl&gt;</span></span>
+<span id="cb15-21"><span class="st" style="color: #20794D;">Mar 05 00:22:05 ubuntu-controller-1 etcd[16361]: rejected connection from "</span>192.168.85.71:37832<span class="st" style="color: #20794D;">" (error "</span>tls: <span class="dt" style="color: #AD0000;">\"</span>192.168.85.71<span class="dt" style="color: #AD0000;">\"</span> does not match any of DNSNames [<span class="dt" style="color: #AD0000;">\"</span>kubernetes<span class="dt" style="color: #AD0000;">\"</span> <span class="dt" style="color: #AD0000;">\"</span>kubernetes.default<span class="dt" style="color: #AD0000;">\"</span> <span class="dt" style="color: #AD0000;">\"</span>kubernetes.default.svc<span class="dt" style="color: #AD0000;">\"</span> <span class="dt" style="color: #AD0000;">\"</span>kubernetes.default.svc.cl<span class="op" style="color: #5E5E5E;">&gt;</span></span></code></pre></div>
+<p>Right, right, that’s because I had a typo in the cert generation where I put <code>192.168.86.71</code> instead of <code>192.168.85.71</code>. Ok, fine. Fix that and try again.</p>
+<p>Looks like it works! The service is up and running, the status is not beset with errors about not being able to talk. I think I’m good!</p>
+</section>
+<section id="bootstrap-the-kubernetes-control-plane" class="level1">
+<h1>Bootstrap the kubernetes control plane</h1>
+<p><a href="https://github.com/ianepreston/scratch/blob/main/k8s-the-hard-way/ansible/05_bootstrap_control_plane.yml">Ansible playbook</a></p>
+<p>A lot of the activity in this section is similar to bootstrapping the etcd cluster from an ansible perspective. Download some files, copy some others over into various locations, start up some systemd units and off you go. I had very few issues getting this initially set up, except that I realized I’d missed copying over one config file in the CA certs section so I had to go back and update that playbook to fix that issue.</p>
+<p>When it came time to verify the cluster status though I ran into an issue:</p>
+<div class="sourceCode" id="cb16" style="background: #f1f3f5;"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb16-1"><span class="ex" style="color: null;">ipreston@ubuntu-controller-1:~$</span> sudo kubectl cluster-info <span class="at" style="color: #657422;">--kubeconfig</span> admin.kubeconfig</span>
+<span id="cb16-2"></span>
+<span id="cb16-3"><span class="ex" style="color: null;">To</span> further debug and diagnose cluster problems, use <span class="st" style="color: #20794D;">'kubectl cluster-info dump'</span>.</span>
+<span id="cb16-4"><span class="ex" style="color: null;">The</span> connection to the server 127.0.0.1:6443 was refused <span class="at" style="color: #657422;">-</span> did you specify the right host or port<span class="pp" style="color: #AD0000;">?</span></span></code></pre></div>
+<p>So now we’re in troubleshooting mode. First up, let’s check the status of the services I just started:</p>
+<div class="sourceCode" id="cb17" style="background: #f1f3f5;"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb17-1"><span class="ex" style="color: null;">ipreston@ubuntu-controller-1:~$</span> systemctl status kube-apiserver</span>
+<span id="cb17-2"><span class="ex" style="color: null;">●</span> kube-apiserver.service <span class="at" style="color: #657422;">-</span> Kubernetes API Server</span>
+<span id="cb17-3">     <span class="ex" style="color: null;">Loaded:</span> loaded <span class="er" style="color: #AD0000;">(</span><span class="ex" style="color: null;">/etc/systemd/system/kube-apiserver.service</span><span class="kw" style="color: #003B4F;">;</span> <span class="ex" style="color: null;">enabled</span><span class="kw" style="color: #003B4F;">;</span> <span class="ex" style="color: null;">vendor</span> preset: enabled<span class="kw" style="color: #003B4F;">)</span></span>
+<span id="cb17-4">     <span class="ex" style="color: null;">Active:</span> activating <span class="er" style="color: #AD0000;">(</span><span class="ex" style="color: null;">auto-restart</span><span class="kw" style="color: #003B4F;">)</span> <span class="kw" style="color: #003B4F;">(</span><span class="ex" style="color: null;">Result:</span> exit-code<span class="kw" style="color: #003B4F;">)</span> <span class="ex" style="color: null;">since</span> Sun 2023-03-12 22:17:56 UTC<span class="kw" style="color: #003B4F;">;</span> <span class="ex" style="color: null;">2s</span> ago</span>
+<span id="cb17-5">       <span class="ex" style="color: null;">Docs:</span> https://github.com/kubernetes/kubernetes</span>
+<span id="cb17-6">    <span class="ex" style="color: null;">Process:</span> 19077 ExecStart=/usr/local/bin/kube-apiserver <span class="dt" style="color: #AD0000;">\ </span><span class="er" style="color: #AD0000;">(</span><span class="va" style="color: #111111;">code</span><span class="op" style="color: #5E5E5E;">=</span>exited, <span class="va" style="color: #111111;">status</span><span class="op" style="color: #5E5E5E;">=</span>1/FAILURE<span class="kw" style="color: #003B4F;">)</span></span>
+<span id="cb17-7">   <span class="ex" style="color: null;">Main</span> PID: 19077 <span class="er" style="color: #AD0000;">(</span><span class="va" style="color: #111111;">code</span><span class="op" style="color: #5E5E5E;">=</span>exited, <span class="va" style="color: #111111;">status</span><span class="op" style="color: #5E5E5E;">=</span>1/FAILURE<span class="kw" style="color: #003B4F;">)</span></span>
+<span id="cb17-8">        <span class="ex" style="color: null;">CPU:</span> 83ms</span></code></pre></div>
+<p>ok, not off to a great start.</p>
+<p>Back to my old friend <code>journalctl -xeu kube-apiserver</code>:</p>
+<div class="sourceCode" id="cb18" style="background: #f1f3f5;"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb18-1"><span class="ex" style="color: null;">Mar</span> 12 22:19:04 ubuntu-controller-1 kube-apiserver[19370]: Error: <span class="st" style="color: #20794D;">"kube-apiserver"</span> does not take any arguments, got [<span class="st" style="color: #20794D;">"</span><span class="dt" style="color: #AD0000;">\\</span><span class="st" style="color: #20794D;">"</span>]</span></code></pre></div>
+<p>Oh right, this is that problem with templates again compared to how the GitHub page wants me to <code>cat</code> this stuff in.</p>
+<div class="sourceCode" id="cb19" style="background: #f1f3f5;"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb19-1"><span class="ex" style="color: null;">ipreston@ubuntu-controller-1:~$</span> sudo kubectl cluster-info <span class="at" style="color: #657422;">--kubeconfig</span> admin.kubeconfig</span>
+<span id="cb19-2"><span class="ex" style="color: null;">Kubernetes</span> control plane is running at https://127.0.0.1:6443</span>
+<span id="cb19-3"></span>
+<span id="cb19-4"><span class="ex" style="color: null;">To</span> further debug and diagnose cluster problems, use <span class="st" style="color: #20794D;">'kubectl cluster-info dump'</span>.</span></code></pre></div>
+<p>Alright! At least that was an easy fix. Should have remembered it from last time, but oh well.</p>
+<p>This section has some instructions for setting up a proxy to handle health checks from the load balancer, but I don’t have a load balancer at this point, so I’m going to skip it. I’ll have to figure out how to set all that up when I’m doing a proper cluster, but this is just for learning so I’ll skip it.</p>
+<section id="rbac-for-the-kubelet-authorization" class="level2">
+<h2 class="anchored" data-anchor-id="rbac-for-the-kubelet-authorization">RBAC for the kubelet authorization</h2>
+<p>These commands I only have to run on one node, and I’m not sure how to easily make them idempotent with ansible. They’re making changes on my cluster, not creating files (at least that I know of), so I don’t know how to tell ansible not to re-run the commands. In theory running them multiple times shouldn’t really matter, so I’ll just do it manually anyway.</p>
+</section>
+<section id="front-end-load-balancer" class="level2">
+<h2 class="anchored" data-anchor-id="front-end-load-balancer">Front end load balancer</h2>
+<p>Again, I don’t actually have a load balancer (maybe that will be what I do in my next post). So I’ll skip this part.</p>
+</section>
+</section>
+<section id="bootstrapping-the-kubernetes-worker-nodes" class="level1">
+<h1>Bootstrapping the kubernetes worker nodes</h1>
+<p><a href="https://github.com/ianepreston/scratch/blob/main/k8s-the-hard-way/ansible/06_bootstrap_workers.yml">Ansible playbook</a></p>
+<p>This is the last major step in having a working cluster as far as I can tell. The first step is installing some system dependencies, which is no problem. The next step is making sure swap is off. I started looking into idempotent ways to ensure this wasn’t turned on, then decided to just check if it was in my VMs to begin with. Turns out I didn’t set them up with swap to begin with so I can just skip that part.</p>
+<p>Next I’ve got a bunch of binaries to install. Some of them are gzipped tar files and some are straight binaries. In both cases I can refer back to what I did for setting up the controllers and etcd to build the playbook. All of this actually went quite smoothly. At the end of running the playbook it looks like I have three worker nodes in my cluster!</p>
+<div class="sourceCode" id="cb20" style="background: #f1f3f5;"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb20-1"><span class="ex" style="color: null;">ipreston@ubuntu-controller-1:~$</span> sudo kubectl get nodes <span class="at" style="color: #657422;">--kubeconfig</span> admin.kubeconfig</span>
+<span id="cb20-2"><span class="ex" style="color: null;">NAME</span>              STATUS   ROLES    AGE     VERSION</span>
+<span id="cb20-3"><span class="ex" style="color: null;">ubuntu-worker-1</span>   Ready    <span class="op" style="color: #5E5E5E;">&lt;</span>none<span class="op" style="color: #5E5E5E;">&gt;</span>   2m35s   v1.21.0</span>
+<span id="cb20-4"><span class="ex" style="color: null;">ubuntu-worker-2</span>   Ready    <span class="op" style="color: #5E5E5E;">&lt;</span>none<span class="op" style="color: #5E5E5E;">&gt;</span>   2m35s   v1.21.0</span>
+<span id="cb20-5"><span class="ex" style="color: null;">ubuntu-worker-3</span>   Ready    <span class="op" style="color: #5E5E5E;">&lt;</span>none<span class="op" style="color: #5E5E5E;">&gt;</span>   2m35s   v1.21.0</span></code></pre></div>
+</section>
+<section id="configuring-kubectl-for-remote-access" class="level1">
+<h1>Configuring kubectl for remote access</h1>
+<p>Let’s try this on my devcontainer. Again, I should be pointing at a load balancer, but I don’t have one, so I’m not. From the <code>workspace_ansible</code> folder within my devcontainer that has all my credentials saved I run the commands in <a href="https://github.com/kelseyhightower/kubernetes-the-hard-way/blob/master/docs/10-configuring-kubectl.md">the guide</a></p>
+<p>After setting the context I run <code>kubectl version</code> and get:</p>
+<div class="sourceCode" id="cb21" style="background: #f1f3f5;"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb21-1"><span class="ex" style="color: null;">❯</span> kubectl version <span class="at" style="color: #657422;">--output</span><span class="op" style="color: #5E5E5E;">=</span>json</span>
+<span id="cb21-2"><span class="kw" style="color: #003B4F;">{</span></span>
+<span id="cb21-3">  <span class="st" style="color: #20794D;">"clientVersion"</span><span class="ex" style="color: null;">:</span> {</span>
+<span id="cb21-4">    <span class="st" style="color: #20794D;">"major"</span><span class="ex" style="color: null;">:</span> <span class="st" style="color: #20794D;">"1"</span>,</span>
+<span id="cb21-5">    <span class="st" style="color: #20794D;">"minor"</span><span class="ex" style="color: null;">:</span> <span class="st" style="color: #20794D;">"26"</span>,</span>
+<span id="cb21-6">    <span class="st" style="color: #20794D;">"gitVersion"</span><span class="ex" style="color: null;">:</span> <span class="st" style="color: #20794D;">"v1.26.1"</span>,</span>
+<span id="cb21-7">    <span class="st" style="color: #20794D;">"gitCommit"</span><span class="ex" style="color: null;">:</span> <span class="st" style="color: #20794D;">"8f94681cd294aa8cfd3407b8191f6c70214973a4"</span>,</span>
+<span id="cb21-8">    <span class="st" style="color: #20794D;">"gitTreeState"</span><span class="ex" style="color: null;">:</span> <span class="st" style="color: #20794D;">"clean"</span>,</span>
+<span id="cb21-9">    <span class="st" style="color: #20794D;">"buildDate"</span><span class="ex" style="color: null;">:</span> <span class="st" style="color: #20794D;">"2023-01-18T15:58:16Z"</span>,</span>
+<span id="cb21-10">    <span class="st" style="color: #20794D;">"goVersion"</span><span class="ex" style="color: null;">:</span> <span class="st" style="color: #20794D;">"go1.19.5"</span>,</span>
+<span id="cb21-11">    <span class="st" style="color: #20794D;">"compiler"</span><span class="ex" style="color: null;">:</span> <span class="st" style="color: #20794D;">"gc"</span>,</span>
+<span id="cb21-12">    <span class="st" style="color: #20794D;">"platform"</span><span class="ex" style="color: null;">:</span> <span class="st" style="color: #20794D;">"linux/amd64"</span></span>
+<span id="cb21-13">  <span class="ex" style="color: null;">},</span></span>
+<span id="cb21-14">  <span class="st" style="color: #20794D;">"kustomizeVersion"</span><span class="ex" style="color: null;">:</span> <span class="st" style="color: #20794D;">"v4.5.7"</span>,</span>
+<span id="cb21-15">  <span class="st" style="color: #20794D;">"serverVersion"</span><span class="ex" style="color: null;">:</span> {</span>
+<span id="cb21-16">    <span class="st" style="color: #20794D;">"major"</span><span class="ex" style="color: null;">:</span> <span class="st" style="color: #20794D;">"1"</span>,</span>
+<span id="cb21-17">    <span class="st" style="color: #20794D;">"minor"</span><span class="ex" style="color: null;">:</span> <span class="st" style="color: #20794D;">"21"</span>,</span>
+<span id="cb21-18">    <span class="st" style="color: #20794D;">"gitVersion"</span><span class="ex" style="color: null;">:</span> <span class="st" style="color: #20794D;">"v1.21.0"</span>,</span>
+<span id="cb21-19">    <span class="st" style="color: #20794D;">"gitCommit"</span><span class="ex" style="color: null;">:</span> <span class="st" style="color: #20794D;">"cb303e613a121a29364f75cc67d3d580833a7479"</span>,</span>
+<span id="cb21-20">    <span class="st" style="color: #20794D;">"gitTreeState"</span><span class="ex" style="color: null;">:</span> <span class="st" style="color: #20794D;">"clean"</span>,</span>
+<span id="cb21-21">    <span class="st" style="color: #20794D;">"buildDate"</span><span class="ex" style="color: null;">:</span> <span class="st" style="color: #20794D;">"2021-04-08T16:25:06Z"</span>,</span>
+<span id="cb21-22">    <span class="st" style="color: #20794D;">"goVersion"</span><span class="ex" style="color: null;">:</span> <span class="st" style="color: #20794D;">"go1.16.1"</span>,</span>
+<span id="cb21-23">    <span class="st" style="color: #20794D;">"compiler"</span><span class="ex" style="color: null;">:</span> <span class="st" style="color: #20794D;">"gc"</span>,</span>
+<span id="cb21-24">    <span class="st" style="color: #20794D;">"platform"</span><span class="ex" style="color: null;">:</span> <span class="st" style="color: #20794D;">"linux/amd64"</span></span>
+<span id="cb21-25">  <span class="kw" style="color: #003B4F;">}</span></span>
+<span id="cb21-26"><span class="er" style="color: #AD0000;">}</span></span>
+<span id="cb21-27"><span class="ex" style="color: null;">WARNING:</span> version difference between client <span class="er" style="color: #AD0000;">(</span><span class="ex" style="color: null;">1.26</span><span class="kw" style="color: #003B4F;">)</span> <span class="ex" style="color: null;">and</span> server <span class="er" style="color: #AD0000;">(</span><span class="ex" style="color: null;">1.21</span><span class="kw" style="color: #003B4F;">)</span> <span class="ex" style="color: null;">exceeds</span> the supported minor version skew of +/-1</span></code></pre></div>
+<p>Most of this looks fine, the version skew is because I’m using old kubernetes based on the static guide on my server.</p>
+<p><code>kubectl get nodes</code> returns my three worker nodes, so I’m set!</p>
+</section>
+<section id="provisioning-pod-network-routes" class="level1">
+<h1>Provisioning pod network routes</h1>
+<p>This appears to only matter if I’m in the cloud. I’m going to skip it.</p>
+</section>
+<section id="deploying-the-dns-cluster-add-on" class="level1">
+<h1>Deploying the DNS cluster add-on</h1>
+<p>I’m sure there are more DevOpsy ways to do these kubectl commands, with or without ansible, but I don’t feel like learning them as part of this exercise, so I’m just going to run these commands from my devcontainer and see how it goes:</p>
+<div class="sourceCode" id="cb22" style="background: #f1f3f5;"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb22-1"><span class="ex" style="color: null;">❯</span> kubectl apply <span class="at" style="color: #657422;">-f</span> https://storage.googleapis.com/kubernetes-the-hard-way/coredns-1.8.yaml</span>
+<span id="cb22-2"><span class="ex" style="color: null;">serviceaccount/coredns</span> created</span>
+<span id="cb22-3"><span class="ex" style="color: null;">clusterrole.rbac.authorization.k8s.io/system:coredns</span> created</span>
+<span id="cb22-4"><span class="ex" style="color: null;">clusterrolebinding.rbac.authorization.k8s.io/system:coredns</span> created</span>
+<span id="cb22-5"><span class="ex" style="color: null;">configmap/coredns</span> created</span>
+<span id="cb22-6"><span class="ex" style="color: null;">deployment.apps/coredns</span> created</span>
+<span id="cb22-7"><span class="ex" style="color: null;">The</span> Service <span class="st" style="color: #20794D;">"kube-dns"</span> is invalid: spec.clusterIPs: Invalid value: []string{<span class="st" style="color: #20794D;">"10.32.0.10"</span>}: failed to allocated ip:10.32.0.10 with error:provided IP is not in the valid range. The range of valid IPs is 192.168.85.0/24</span></code></pre></div>
+<p>Right out the gate I get an error. Nice. I guess I’ll download and then modify this file. After downloading and modifying the IP to point to my cluster it seems to work:</p>
+<div class="sourceCode" id="cb23" style="background: #f1f3f5;"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb23-1"><span class="ex" style="color: null;">❯</span> kubectl apply <span class="at" style="color: #657422;">-f</span> coredns-1.8.yaml </span>
+<span id="cb23-2"><span class="ex" style="color: null;">serviceaccount/coredns</span> unchanged</span>
+<span id="cb23-3"><span class="ex" style="color: null;">clusterrole.rbac.authorization.k8s.io/system:coredns</span> unchanged</span>
+<span id="cb23-4"><span class="ex" style="color: null;">clusterrolebinding.rbac.authorization.k8s.io/system:coredns</span> unchanged</span>
+<span id="cb23-5"><span class="ex" style="color: null;">configmap/coredns</span> unchanged</span>
+<span id="cb23-6"><span class="ex" style="color: null;">deployment.apps/coredns</span> unchanged</span>
+<span id="cb23-7"><span class="ex" style="color: null;">service/kube-dns</span> created</span></code></pre></div>
+<p>Except maybe it didn’t?</p>
+<div class="sourceCode" id="cb24" style="background: #f1f3f5;"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb24-1"><span class="ex" style="color: null;">❯</span> kubectl get pods <span class="at" style="color: #657422;">-l</span> k8s-app=kube-dns <span class="at" style="color: #657422;">-n</span> kube-system</span>
+<span id="cb24-2"><span class="ex" style="color: null;">No</span> resources found in kube-system namespace.</span></code></pre></div>
+<p>Jumping ahead let’s try and deploy the <code>busybox</code> pod just to see if I can get anything running:</p>
+<div class="sourceCode" id="cb25" style="background: #f1f3f5;"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb25-1"><span class="ex" style="color: null;">❯</span> kubectl run busybox <span class="at" style="color: #657422;">--image</span><span class="op" style="color: #5E5E5E;">=</span>busybox:1.28 <span class="at" style="color: #657422;">--command</span> <span class="at" style="color: #657422;">--</span> sleep 3600</span>
+<span id="cb25-2"><span class="ex" style="color: null;">Error</span> from server <span class="er" style="color: #AD0000;">(</span><span class="ex" style="color: null;">Forbidden</span><span class="kw" style="color: #003B4F;">)</span><span class="bu" style="color: null;">:</span> pods <span class="st" style="color: #20794D;">"busybox"</span> is forbidden: error looking up service account default/default: serviceaccount <span class="st" style="color: #20794D;">"default"</span> not found</span></code></pre></div>
+<p>Ok, do I have any service accounts?</p>
+<div class="sourceCode" id="cb26" style="background: #f1f3f5;"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb26-1"><span class="ex" style="color: null;">❯</span> kubectl get serviceAccounts</span>
+<span id="cb26-2"><span class="ex" style="color: null;">No</span> resources found in default namespace</span></code></pre></div>
+<p>Guess not. What step did I miss? From <a href="https://stackoverflow.com/questions/33528398/why-dont-i-have-a-default-serviceaccount-on-kubernetes">this post</a> I should get this from the <code>kube-controller-manager</code> binary. Looking back I can see that I did at least attemp to install that program and set up a service for it. Let’s see check its status on one of my controller nodes:</p>
+<div class="sourceCode" id="cb27" style="background: #f1f3f5;"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb27-1"><span class="ex" style="color: null;">ipreston@ubuntu-controller-1:~$</span> systemctl status kube-controller-manager</span>
+<span id="cb27-2"><span class="ex" style="color: null;">●</span> kube-controller-manager.service <span class="at" style="color: #657422;">-</span> Kubernetes Controller Manager</span>
+<span id="cb27-3">     <span class="ex" style="color: null;">Loaded:</span> loaded <span class="er" style="color: #AD0000;">(</span><span class="ex" style="color: null;">/etc/systemd/system/kube-controller-manager.service</span><span class="kw" style="color: #003B4F;">;</span> <span class="ex" style="color: null;">enabled</span><span class="kw" style="color: #003B4F;">;</span> <span class="ex" style="color: null;">vendor</span> preset: enabled<span class="kw" style="color: #003B4F;">)</span></span>
+<span id="cb27-4">     <span class="ex" style="color: null;">Active:</span> activating <span class="er" style="color: #AD0000;">(</span><span class="ex" style="color: null;">auto-restart</span><span class="kw" style="color: #003B4F;">)</span> <span class="kw" style="color: #003B4F;">(</span><span class="ex" style="color: null;">Result:</span> exit-code<span class="kw" style="color: #003B4F;">)</span> <span class="ex" style="color: null;">since</span> Fri 2023-03-17 17:20:35 UTC<span class="kw" style="color: #003B4F;">;</span> <span class="ex" style="color: null;">127ms</span> ago</span>
+<span id="cb27-5">       <span class="ex" style="color: null;">Docs:</span> https://github.com/kubernetes/kubernetes</span>
+<span id="cb27-6">    <span class="ex" style="color: null;">Process:</span> 589315 ExecStart=/usr/local/bin/kube-controller-manager <span class="at" style="color: #657422;">--bind-address</span><span class="op" style="color: #5E5E5E;">=</span>0.0.0.0 <span class="at" style="color: #657422;">--cluster-cidr</span><span class="op" style="color: #5E5E5E;">=</span>192.168.85.0<span class="op" style="color: #5E5E5E;">&gt;</span></span>
+<span id="cb27-7">   <span class="ex" style="color: null;">Main</span> PID: 589315 <span class="er" style="color: #AD0000;">(</span><span class="va" style="color: #111111;">code</span><span class="op" style="color: #5E5E5E;">=</span>exited, <span class="va" style="color: #111111;">status</span><span class="op" style="color: #5E5E5E;">=</span>1/FAILURE<span class="kw" style="color: #003B4F;">)</span></span>
+<span id="cb27-8">        <span class="ex" style="color: null;">CPU:</span> 651ms</span></code></pre></div>
+<p>Cool, that would explain it. Looking through <code>journalctl -xeu kube-controller-manager</code> I see <code>/var/lib/kubernetes/kube-controller-manager.kubeconfig: no such file or directory</code>. Let’s see where I was supposed to generate that and figure out what went wrong. Going back into my code I see I generated the file but didn’t copy it into <code>/var/lib/kubernetes</code> in my control plane playbook when I copied the rest of the configs in. Let’s try again.</p>
+<p>Ok, after re-running the playbook with that file added the service is up and running.</p>
+<p>Let’s try that command again.</p>
+<div class="sourceCode" id="cb28" style="background: #f1f3f5;"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb28-1"><span class="ex" style="color: null;">❯</span> kubectl get serviceAccounts</span>
+<span id="cb28-2"><span class="ex" style="color: null;">NAME</span>      SECRETS   AGE</span>
+<span id="cb28-3"><span class="ex" style="color: null;">default</span>   1         43s</span></code></pre></div>
+<p>Nice! Ok, back to the DNS and busybox stuff.</p>
+<div class="sourceCode" id="cb29" style="background: #f1f3f5;"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb29-1"><span class="ex" style="color: null;">❯</span> kubectl get pods <span class="at" style="color: #657422;">-l</span> k8s-app=kube-dns <span class="at" style="color: #657422;">-n</span> kube-system</span>
+<span id="cb29-2"><span class="ex" style="color: null;">NAME</span>                       READY   STATUS              RESTARTS   AGE</span>
+<span id="cb29-3"><span class="ex" style="color: null;">coredns-8494f9c688-2bz8x</span>   0/1     ContainerCreating   0          88s</span>
+<span id="cb29-4"><span class="ex" style="color: null;">coredns-8494f9c688-pxw6f</span>   0/1     ContainerCreating   0          88s</span></code></pre></div>
+<p>Without re-running anything it looks like the controller manager has picked up what I ran before. Now I just have to wait a bit for it to create the container, I hope…</p>
+<div class="sourceCode" id="cb30" style="background: #f1f3f5;"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb30-1"><span class="ex" style="color: null;">❯</span> kubectl get pods <span class="at" style="color: #657422;">-l</span> k8s-app=kube-dns <span class="at" style="color: #657422;">-n</span> kube-system</span>
+<span id="cb30-2"><span class="ex" style="color: null;">NAME</span>                       READY   STATUS              RESTARTS   AGE</span>
+<span id="cb30-3"><span class="ex" style="color: null;">coredns-8494f9c688-2bz8x</span>   0/1     ContainerCreating   0          60m</span>
+<span id="cb30-4"><span class="ex" style="color: null;">coredns-8494f9c688-pxw6f</span>   0/1     ContainerCreating   0          60m</span></code></pre></div>
+<p>I took the dog for a walk and came back to this. There’s no way these containers should take an hour to create, so something else is broken. Time for more learning!</p>
+<p>Running <code>kubectl describe pods -l k8s-app=kube-dns -n kube-system</code> I get so much information about what’s not working, neat! I think the relevant part is:</p>
+<p><code>Warning  FailedCreatePodSandBox  58s (x369 over 86m)  kubelet  Failed to create pod sandbox: rpc error: code = Unknown desc = failed to create containerd task: cgroups: cgroup mountpoint does not exist: unknown</code></p>
+<p>searching isn’t giving me a silver bullet solution to this, but it suggests there’s something wrong with my container runtime, so let’s take a look at my worker node.</p>
+<p>First thing to do is check the status of the services I was supposed to start. <code>containerd</code>, <code>kubelet</code> and <code>kube-proxy</code> services all appear to be up and running. I can see the same error about cgroup mountpoint not existing in <code>journalctl -xeu containerd</code> so the problem is in there, but I’m still not sure what’s actually broken.</p>
+<p>Ok, with a little more context that I should be searching for that error in association with containerd I find <a href="https://github.com/kubernetes/minikube/issues/11310">this issue</a>.</p>
+<p>Now I have to figure out how to apply that to this guide. First let’s check if there are open issues in the repository to resolve it. There’s a <a href="https://github.com/kelseyhightower/kubernetes-the-hard-way/pull/728/commits/2adb5c0f5cae7e9d3129a4d8ab9f2ff8daf8ffaf#diff-387650bdd066d5645818d0579c5d3d562ceac2c9c94bd176a9e3162bc9917e94">PR</a> to upgrade to a newer kubernetes, that includes a different way of generating the containerd config file. I’m not sure how exactly to apply that in my example though.</p>
+<p>I found a nice <a href="https://github.com/kubernetes/minikube/pull/11325/commits/813138734d347b3d84c527ed135fb37e509983f0">PR</a> in the minikube project that showed how to do the upgrade. After running it I got a little better, but was still having some resolution errors and backoffs. I’d noticed some other weird behaviour with my worker nodes so I decided to give them a reboot to see how that worked.</p>
+<p>After a reboot here’s where I am:</p>
+<div class="sourceCode" id="cb31" style="background: #f1f3f5;"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb31-1"><span class="ex" style="color: null;">❯</span> kubectl get pods <span class="at" style="color: #657422;">-l</span> k8s-app=kube-dns <span class="at" style="color: #657422;">-n</span> kube-system</span>
+<span id="cb31-2"><span class="ex" style="color: null;">NAME</span>                       READY   STATUS             RESTARTS   AGE</span>
+<span id="cb31-3"><span class="ex" style="color: null;">coredns-8494f9c688-2bz8x</span>   0/1     ImagePullBackOff   0          3h30m</span>
+<span id="cb31-4"><span class="ex" style="color: null;">coredns-8494f9c688-pxw6f</span>   0/1     ImagePullBackOff   0          3h30m</span></code></pre></div>
+<p>I ssh into a worker node and find that DNS no longer works on it. Controller nodes still resolve hosts fine, and if I put in the IP of a local or external site I can ping it. So something about how I configured that DNS service has broken things for my workers. Hmmmm. Even more fun, after a bit of this, DNS on my entire home network broke. I shut down all the nodes, rebooted my router and got DNS back.</p>
+<p>After being afraid to touch this for a while I decided to start the nodes back up and see what happened. Right now DNS is ok on my host machine at least. Connecting into my worker nodes I can see that DNS doesn’t work on two of them, and a whole bunch of extra network interfaces have been created. That would definitely explain why I can’t pull images. I wonder if my earlier attempt to apply that manifest left something in a failed state that they can’t recover from. I give <code>kubectl delete -f coredns-1.8.yaml</code> a run to reverse the playbook. I can’t immediately resolve names on those nodes after running that, but let’s give them a reboot and see what happens. Ok, after a reboot DNS is back up. Let’s try applying that playbook again and see what happens:</p>
+<div class="sourceCode" id="cb32" style="background: #f1f3f5;"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb32-1"><span class="ex" style="color: null;">❯</span> kubectl get pods <span class="at" style="color: #657422;">-l</span> k8s-app=kube-dns <span class="at" style="color: #657422;">-n</span> kube-system</span>
+<span id="cb32-2"><span class="ex" style="color: null;">NAME</span>                       READY   STATUS         RESTARTS   AGE</span>
+<span id="cb32-3"><span class="ex" style="color: null;">coredns-8494f9c688-jn25z</span>   0/1     ErrImagePull   0          3s</span>
+<span id="cb32-4"><span class="ex" style="color: null;">coredns-8494f9c688-lhhg5</span>   0/1     ErrImagePull   0          3s</span></code></pre></div>
+<p>So we’re back to not working. At least the rest of my network is still ok for now. Looking at the workers that are coming back up, I think I see something confusing. The nodes that are running the coredns pods have a new network interface with an IP that matches my router: <code>cnio0:</code>. I can still ping my router by its IP, and I can still ping external sites if I know their IP, so routing isn’t completely broken, but name resolution seems to be. At this point I decided to confirm whether the weird network wide DNS failure I had previously was indeed a result of this configuration. I rebooted my phone and when it came back up DNS no longer worked. I deleted the manifest, rebooted my router, and all was right with the world again. I don’t even have my head around how this could happen, let alone what it means. I guess that <code>cnio0</code> device is broadcasting that it has my router’s IP or something?</p>
+<p>Reading through <a href="https://github.com/ehlesp/smallab-k8s-pve-guide/blob/main/G017%20-%20Virtual%20Networking%20~%20Network%20configuration.md#g017-virtual-networking-network-configuration">this guide</a> a bit, which is more focused on a homelab k8s deployment I can see that they had two virtual network interfaces for the cluster, one for external facing connectivity, and one for internal facing cluster communication. I think probably trying to do everything on one network is part of what’s causing me problems.</p>
+</section>
+<section id="call-it-quits" class="level1">
+<h1>Call it quits</h1>
+<p>At this point I feel like I’m hitting pretty serious diminishing returns in terms of how much I’m learning vs how weird the edge cases I’m encountering are. I’m definitely not done learning kubernetes, and I might even come back to this later, but I think there are clearly some other aspects of my setup and kubernetes that I have to learn about more before working through this will provide additional value.</p>
+
+
+</section>
+
+ ]]></description>
+  <category>kubernetes</category>
+  <category>proxmox</category>
+  <category>Linux</category>
+  <guid>https://blog.ianpreston.ca/posts/2023-02-24-k8s-the-hard-way.html</guid>
+  <pubDate>Fri, 24 Feb 2023 00:00:00 GMT</pubDate>
+</item>
 <item>
   <title>Home Cluster Part 4 - Setup CEPH</title>
   <link>https://blog.ianpreston.ca/posts/2023-02-05-proxmox-ceph.html</link>
@@ -9658,570 +10138,6 @@ local-data: "ian.ca A &lt;my server IP&gt;"</code></pre>
   <category>pi</category>
   <guid>https://blog.ianpreston.ca/posts/2020-07-20-pi-bluetooth.html</guid>
   <pubDate>Mon, 20 Jul 2020 00:00:00 GMT</pubDate>
-</item>
-<item>
-  <title>Python packaging</title>
-  <link>https://blog.ianpreston.ca/posts/2020-07-09-pypack.html</link>
-  <description><![CDATA[ 
-
-
-
-
-<section id="intro" class="level1">
-<h1>Intro</h1>
-<p>Probably the best way to introduce this post is to explain a bit of my background, and then describe the problem I’m trying to solve.</p>
-<section id="background" class="level2">
-<h2 class="anchored" data-anchor-id="background">Background</h2>
-<p>I have been using python for data analysis work since about 2017, so around 3 years at the time of writing this post. I work on a small team, and so it’s necessary for us to be able to share code for things like implementing business logic, or connecting to internal data sources. I also maintain an open source package called <a href="https://github.com/ianepreston/stats_can">stats_can</a> that can be used to access Statistics Canada datasets in python.</p>
-</section>
-<section id="my-current-packaging-approach" class="level2">
-<h2 class="anchored" data-anchor-id="my-current-packaging-approach">My current packaging approach</h2>
-<p>The current way my team shares code is by having a repository with a <code>lib</code> folder in it, and adding that folder to the <code>PYTHONPATH</code> environment variable in Windows.</p>
-<p>The current way I build new versions of <code>stats_can</code> is through a <a href="https://en.wikipedia.org/wiki/Cargo_cult">cargo cult</a> sequence of steps that I kind of sort of understand.</p>
-</section>
-<section id="the-problem" class="level2">
-<h2 class="anchored" data-anchor-id="the-problem">The problem</h2>
-<p>For the shared team library all of our stuff is basically in one giant package, broken up into subpackages. This leads to all sorts of problems:</p>
-<ul>
-<li>It’s very difficult to write tests for it.</li>
-<li>There’s no version numbering so it’s impossible to pin code at a particular version.</li>
-<li>We can’t share it easily with other teams, and we really can’t share just one particular subpackage of it with other teams.</li>
-<li>The whole thing just feels very wrong to me. I knew it wasn’t the way to go when I set it up, but I was very new to python and just didn’t have the experience/capacity to find a better way and it worked for the time being.</li>
-</ul>
-<p>For stats_can my current system more or less works, it just has two problems:</p>
-<ul>
-<li>I only build conda packages. I’d like to allow <code>pip</code> users to access it but…</li>
-<li>Like I said, the build process is a bit of a house of cards that I barely understand, so adding in another build steps scares me.</li>
-</ul>
-<p>Both of the examples described above are for libraries. I’ve built a couple of small apps, but have even less of an idea the correct way to build/deploy them.</p>
-</section>
-<section id="what-im-hoping-to-do-here" class="level2">
-<h2 class="anchored" data-anchor-id="what-im-hoping-to-do-here">What I’m hoping to do here</h2>
-<p>Basically I want to figure out the current best practice way to do the following:</p>
-<ul>
-<li>build a library package with versions that can be installed with <code>pip</code> and <code>conda</code></li>
-<li>deploy those packages to both a privately hosted repository (for work specific stuff) as well as <a href="https://pypi.org/">pypi</a> and <a href="https://anaconda.org/">Anaconda Cloud</a> or <a href="https://conda-forge.org/">conda-forge</a> for public open source stuff</li>
-<li>Originally I was also going to include building user facing (web or CLI) apps but this got pretty long already so I think I’m going to leave that for another post</li>
-<li>Ditto for CI/CD, linting, extensive testing, and all the other things that go into managing a project. Too big to include in this post.</li>
-</ul>
-<p>So a library with <code>conda</code> and <code>pip</code> packages, hosted both publicly and privately means four total ways to manage the library.</p>
-</section>
-<section id="how-this-will-progress" class="level2">
-<h2 class="anchored" data-anchor-id="how-this-will-progress">How this will progress</h2>
-<p>I find that most of the packaging guides I’ve read show either how to build a completely trivial project that demonstrates one narrow feature, or some giant project that’s a lot to take in all at once. My aim is to start from a single file script and gradually build it up to the final product that I laid out in the what I’m trying to accomplish section. I’ll host the repositories for the library/app on GitHub, and use <a href="https://git-scm.com/book/en/v2/Git-Basics-Tagging">tags</a> in order to mark the progress of the project through various stages.</p>
-</section>
-</section>
-<section id="the-process" class="level1">
-<h1>The process</h1>
-<section id="preliminary-setup" class="level2">
-<h2 class="anchored" data-anchor-id="preliminary-setup">Preliminary setup</h2>
-<section id="create-repository" class="level3">
-<h3 class="anchored" data-anchor-id="create-repository">Create repository</h3>
-<p>The first step in any project is to make a repository. This one has the uncreative name of <a href="https://github.com/ianepreston/ianlibdemo">ianlibdemo</a>. If you want to follow along at home you can clone it and check out the tag for the associated stage in the tutorial. The state of the repository right after being created in this case can be accessed with <code>git checkout eg01</code></p>
-</section>
-<section id="set-up-environment" class="level3">
-<h3 class="anchored" data-anchor-id="set-up-environment">Set up environment</h3>
-<p>So I have somewhere to work from, and also to make this process reproducible for others the next thing I have to do is create an isolated python environment to work in. I’m a <code>conda</code> user so I’ll create an <code>environment.yml</code> file:</p>
-<div class="sourceCode" id="cb1" style="background: #f1f3f5;"><pre class="sourceCode yml code-with-copy"><code class="sourceCode yaml"><span id="cb1-1"><span class="fu" style="color: #4758AB;">name</span><span class="kw" style="color: #003B4F;">:</span><span class="at" style="color: #657422;"> ianlibdemo_conda_env</span></span>
-<span id="cb1-2"><span class="fu" style="color: #4758AB;">dependencies</span><span class="kw" style="color: #003B4F;">:</span></span>
-<span id="cb1-3"><span class="at" style="color: #657422;">  </span><span class="kw" style="color: #003B4F;">-</span><span class="at" style="color: #657422;"> python</span></span></code></pre></div>
-<p>Then I’ll create the environment with <code>conda env create -f environment.yml</code>.</p>
-<p>There’s absolutely nothing to this environment, which is kind of the point.</p>
-</section>
-<section id="make-my-super-sweet-library" class="level3">
-<h3 class="anchored" data-anchor-id="make-my-super-sweet-library">Make my super sweet library</h3>
-<p>Enough talk! Let’s write some code! Well, actually, I’m not going to write any code. The point of this tutorial is to build a package, not write a super awesome library, so I’m just going to copy the demo project used in <a href="https://www.youtube.com/watch?v=xiI1i525ljE">SciPy 2018 - the sheer joy of packaging</a>. The original code is <a href="https://github.com/python-packaging-tutorial/python-packaging-tutorial/tree/master/setup_example/capitalize/capitalize">here</a>. Basically what the module does is take a text file and output a copy with all the words capitalized (except a specified subset).</p>
-<p>In the root directory of the repository I’ll copy the <code>capital_mod.py</code> file and <code>cap_data.txt</code>. I’ll also create an <code>example_in.txt</code> file that I can use to manually test the capitalize function.</p>
-<p>Now I have the following files in my repository:</p>
-<div class="sourceCode" id="cb2" style="background: #f1f3f5;"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb2-1"><span class="ex" style="color: null;">$</span> ls</span>
-<span id="cb2-2"><span class="ex" style="color: null;">__pycache__/</span>  capital_mod.py   example_in.txt   LICENSE</span>
-<span id="cb2-3"><span class="ex" style="color: null;">cap_data.txt</span>  environment.yml  README.md</span></code></pre></div>
-<p>I can test the “package” out from the interactive prompt:</p>
-<div class="sourceCode" id="cb3" style="background: #f1f3f5;"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb3-1"><span class="ex" style="color: null;">$</span> python <span class="at" style="color: #657422;">-i</span></span>
-<span id="cb3-2"><span class="ex" style="color: null;">Python</span> 3.8.3 <span class="er" style="color: #AD0000;">(</span><span class="ex" style="color: null;">default,</span> May 19 2020, 06:50:17<span class="kw" style="color: #003B4F;">)</span> <span class="ex" style="color: null;">[MSC</span> v.1916 64 bit <span class="er" style="color: #AD0000;">(</span><span class="ex" style="color: null;">AMD64</span><span class="kw" style="color: #003B4F;">)</span><span class="ex" style="color: null;">]</span> :: Anaconda, Inc. on win32</span>
-<span id="cb3-3"><span class="ex" style="color: null;">Type</span> <span class="st" style="color: #20794D;">"help"</span>, <span class="st" style="color: #20794D;">"copyright"</span>, <span class="st" style="color: #20794D;">"credits"</span> or <span class="st" style="color: #20794D;">"license"</span> for more information.</span>
-<span id="cb3-4"><span class="op" style="color: #5E5E5E;">&gt;&gt;&gt;</span> import <span class="ex" style="color: null;">capital_mod</span></span>
-<span id="cb3-5"><span class="op" style="color: #5E5E5E;">&gt;&gt;&gt;</span> capital_mod.get_datafile_name<span class="kw" style="color: #003B4F;">()</span></span>
-<span id="cb3-6"><span class="ex" style="color: null;">WindowsPath</span><span class="er" style="color: #AD0000;">(</span><span class="st" style="color: #20794D;">'C:/Users/ianep/Documents/ianlibdemo/cap_data.txt'</span><span class="kw" style="color: #003B4F;">)</span></span>
-<span id="cb3-7"><span class="op" style="color: #5E5E5E;">&gt;&gt;&gt;</span> capital_mod.capitalize<span class="kw" style="color: #003B4F;">(</span><span class="st" style="color: #20794D;">"example_in.txt"</span><span class="ex" style="color: null;">,</span> <span class="st" style="color: #20794D;">"example_out.txt"</span><span class="kw" style="color: #003B4F;">)</span></span>
-<span id="cb3-8"><span class="op" style="color: #5E5E5E;">&gt;&gt;&gt;</span> quit<span class="kw" style="color: #003B4F;">()</span></span></code></pre></div>
-<p>Everything looks like it ran fine, and if I check in the directory I have file <code>example_out.txt</code> that is indeed a capitalized version of <code>example_in.txt</code>. If you want to get your repository to this point run <code>git checkout eg02</code>.</p>
-<p>So everything works great and we can go home, right?</p>
-</section>
-</section>
-<section id="run-into-problems" class="level2">
-<h2 class="anchored" data-anchor-id="run-into-problems">Run into problems</h2>
-<p>This is all well and good, but I don’t just want to use this functionality in this folder. The idea is that this is a utility library. Presumably there are all sorts of scripts that I want to add this file capitalization capability to. Maybe I have coworkers I want to share this with, or use it in an app I’m building. As it stands how can I accomplish this?</p>
-</section>
-<section id="some-bad-ways-to-solve-the-problem" class="level2">
-<h2 class="anchored" data-anchor-id="some-bad-ways-to-solve-the-problem">Some bad ways to solve the problem</h2>
-<section id="just-copy-the-file-everywhere" class="level3">
-<h3 class="anchored" data-anchor-id="just-copy-the-file-everywhere">Just copy the file everywhere</h3>
-<p>Fine. It only works from the local directory? I’ll just put a copy of it everywhere I want it. This is pretty clearly a bad idea. It will be annoying to copy the file into every location I might want to use it, if I ever have to update the functionality I will then have to track down every instance of that file and make the change repeatedly, and it violates <a href="https://en.wikipedia.org/wiki/Don%27t_repeat_yourself">DRY</a> so any experienced developer that sees me do it will make fun of me. Better not do it this way.</p>
-</section>
-<section id="add-it-to-the-path" class="level3">
-<h3 class="anchored" data-anchor-id="add-it-to-the-path">Add it to the path</h3>
-<p>This is already going to be a really long guide so I don’t want to add too much about the python path directly. <a href="https://chrisyeh96.github.io/2017/08/08/definitive-guide-python-imports.html">This guide by Chris Yeh</a> is the best I’ve found on the python path and import statements, so if you’re curious by all means check that out. Briefly though, let’s demonstrate the two ways we could directly add this “package” to the path, and therefore run it without being in the same directory.</p>
-<p>To set the stage I’ve created a new directory separate from the package, and created a text file that I will try and capitalize:</p>
-<div class="sourceCode" id="cb4" style="background: #f1f3f5;"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb4-1"><span class="kw" style="color: #003B4F;">(</span><span class="ex" style="color: null;">ianlibdemo_conda_env</span><span class="kw" style="color: #003B4F;">)</span> <span class="ex" style="color: null;">Ian@terra</span> ~/Documents/demo_tmp</span>
-<span id="cb4-2"><span class="ex" style="color: null;">$</span> ls</span>
-<span id="cb4-3"><span class="ex" style="color: null;">demo_in.txt</span></span>
-<span id="cb4-4"><span class="kw" style="color: #003B4F;">(</span><span class="ex" style="color: null;">ianlibdemo_conda_env</span><span class="kw" style="color: #003B4F;">)</span> <span class="ex" style="color: null;">Ian@terra</span> ~/Documents/demo_tmp</span>
-<span id="cb4-5"><span class="ex" style="color: null;">$</span> cat demo_in.txt</span>
-<span id="cb4-6"><span class="ex" style="color: null;">i</span> want to capitalize this text file, but it<span class="st" style="color: #20794D;">'s in the wrong folder. oh no!</span></span></code></pre></div>
-<p>If I just try and do the same steps I did from within the folder it will fail:</p>
-<div class="sourceCode" id="cb5" style="background: #f1f3f5;"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><span class="op" style="color: #5E5E5E;">&gt;&gt;&gt;</span> <span class="im" style="color: #00769E;">import</span> capital_mod</span>
-<span id="cb5-2">Traceback (most recent call last):</span>
-<span id="cb5-3">  File <span class="st" style="color: #20794D;">"&lt;stdin&gt;"</span>, line <span class="dv" style="color: #AD0000;">1</span>, <span class="kw" style="color: #003B4F;">in</span> <span class="op" style="color: #5E5E5E;">&lt;</span>module<span class="op" style="color: #5E5E5E;">&gt;</span></span>
-<span id="cb5-4">ModuleNotFoundError: No module named <span class="st" style="color: #20794D;">'capital_mod'</span></span></code></pre></div>
-<p>That’s because the folder with <code>capital_mod.py</code> is not on my path.</p>
-<p>One way I can solve this is by adding the path to <code>capital_mod.py</code> to my path. Like so:</p>
-<div class="sourceCode" id="cb6" style="background: #f1f3f5;"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb6-1"><span class="ex" style="color: null;">$</span> export PYTHONPATH=<span class="st" style="color: #20794D;">"/c/Users/Ian/Documents/ianlibdemo"</span></span>
-<span id="cb6-2"><span class="kw" style="color: #003B4F;">(</span><span class="ex" style="color: null;">ianlibdemo_conda_env</span><span class="kw" style="color: #003B4F;">)</span> <span class="ex" style="color: null;">Ian@terra</span> ~/Documents/demo_tmp</span>
-<span id="cb6-3"><span class="ex" style="color: null;">$</span> python <span class="at" style="color: #657422;">-i</span></span>
-<span id="cb6-4"><span class="ex" style="color: null;">Python</span> 3.8.2 <span class="kw" style="color: #003B4F;">|</span> <span class="ex" style="color: null;">packaged</span> by conda-forge <span class="kw" style="color: #003B4F;">|</span> <span class="kw" style="color: #003B4F;">(</span><span class="ex" style="color: null;">default,</span> Apr 24 2020, 07:34:03<span class="kw" style="color: #003B4F;">)</span> <span class="ex" style="color: null;">[MSC</span> v.1916 64 bit <span class="er" style="color: #AD0000;">(</span><span class="ex" style="color: null;">AMD64</span><span class="kw" style="color: #003B4F;">)</span><span class="ex" style="color: null;">]</span> on win32</span>
-<span id="cb6-5"><span class="ex" style="color: null;">Type</span> <span class="st" style="color: #20794D;">"help"</span>, <span class="st" style="color: #20794D;">"copyright"</span>, <span class="st" style="color: #20794D;">"credits"</span> or <span class="st" style="color: #20794D;">"license"</span> for more information.</span>
-<span id="cb6-6"><span class="op" style="color: #5E5E5E;">&gt;&gt;&gt;</span> import <span class="ex" style="color: null;">capital_mod</span></span>
-<span id="cb6-7"><span class="op" style="color: #5E5E5E;">&gt;&gt;&gt;</span> capital_mod.get_datafile_name<span class="kw" style="color: #003B4F;">()</span></span>
-<span id="cb6-8"><span class="ex" style="color: null;">WindowsPath</span><span class="er" style="color: #AD0000;">(</span><span class="st" style="color: #20794D;">'C:/Users/Ian/Documents/ianlibdemo/cap_data.txt'</span><span class="kw" style="color: #003B4F;">)</span></span>
-<span id="cb6-9"><span class="op" style="color: #5E5E5E;">&gt;&gt;&gt;</span> capital_mod.capitalize<span class="kw" style="color: #003B4F;">(</span><span class="st" style="color: #20794D;">"demo_in.txt"</span><span class="ex" style="color: null;">,</span> <span class="st" style="color: #20794D;">"demo_out.txt"</span><span class="kw" style="color: #003B4F;">)</span></span>
-<span id="cb6-10"><span class="op" style="color: #5E5E5E;">&gt;&gt;&gt;</span> quit<span class="kw" style="color: #003B4F;">()</span></span>
-<span id="cb6-11"><span class="kw" style="color: #003B4F;">(</span><span class="ex" style="color: null;">ianlibdemo_conda_env</span><span class="kw" style="color: #003B4F;">)</span> <span class="ex" style="color: null;">Ian@terra</span> ~/Documents/demo_tmp</span>
-<span id="cb6-12"><span class="ex" style="color: null;">$</span> cat demo_out.txt</span>
-<span id="cb6-13"><span class="ex" style="color: null;">I</span> Want to Capitalize This Text File, But It<span class="st" style="color: #20794D;">'s In the Wrong Folder. Oh No!</span></span></code></pre></div>
-<p>This worked, but I don’t want to have to run that <code>export</code> command every time before I run a script, and sharing this code with other people and telling them to do that every time seems like a hassle. There are ways to permanently add folders to your python path. <a href="https://bic-berkeley.github.io/psych-214-fall-2016/using_pythonpath.html">This guide</a> covers them nicely. But we’re not actually going to go this route so let’s move on.</p>
-<p>The <em>slightly</em> less hacky way is to use <code>sys.path</code> from within a python script. Back in my demo directory I can write a python script that looks like this:</p>
-<div class="sourceCode" id="cb7" style="background: #f1f3f5;"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><span class="im" style="color: #00769E;">import</span> sys</span>
-<span id="cb7-2">sys.path.append(<span class="vs" style="color: #20794D;">r"C:\Users\Ian\Documents\ianlibdemo"</span>)</span>
-<span id="cb7-3"><span class="im" style="color: #00769E;">import</span> capital_mod</span>
-<span id="cb7-4">capital_mod.capitalize(<span class="st" style="color: #20794D;">"demo_in.txt"</span>, <span class="st" style="color: #20794D;">"demo_out.txt"</span>)</span></code></pre></div>
-<p>We can see that this works as well:</p>
-<div class="sourceCode" id="cb8" style="background: #f1f3f5;"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb8-1"><span class="kw" style="color: #003B4F;">(</span><span class="ex" style="color: null;">ianlibdemo_conda_env</span><span class="kw" style="color: #003B4F;">)</span> <span class="ex" style="color: null;">Ian@terra</span> ~/Documents/demo_tmp</span>
-<span id="cb8-2"><span class="ex" style="color: null;">$</span> ls</span>
-<span id="cb8-3"><span class="ex" style="color: null;">demo_in.txt</span>  syspathdemo.py</span>
-<span id="cb8-4"><span class="kw" style="color: #003B4F;">(</span><span class="ex" style="color: null;">ianlibdemo_conda_env</span><span class="kw" style="color: #003B4F;">)</span> <span class="ex" style="color: null;">Ian@terra</span> ~/Documents/demo_tmp</span>
-<span id="cb8-5"><span class="ex" style="color: null;">$</span> python syspathdemo.py</span>
-<span id="cb8-6"><span class="kw" style="color: #003B4F;">(</span><span class="ex" style="color: null;">ianlibdemo_conda_env</span><span class="kw" style="color: #003B4F;">)</span> <span class="ex" style="color: null;">Ian@terra</span> ~/Documents/demo_tmp</span>
-<span id="cb8-7"><span class="ex" style="color: null;">$</span> ls</span>
-<span id="cb8-8"><span class="ex" style="color: null;">demo_in.txt</span>  demo_out.txt  syspathdemo.py</span>
-<span id="cb8-9"><span class="kw" style="color: #003B4F;">(</span><span class="ex" style="color: null;">ianlibdemo_conda_env</span><span class="kw" style="color: #003B4F;">)</span> <span class="ex" style="color: null;">Ian@terra</span> ~/Documents/demo_tmp</span>
-<span id="cb8-10"><span class="ex" style="color: null;">$</span> cat demo_out.txt</span>
-<span id="cb8-11"><span class="ex" style="color: null;">I</span> Want to Capitalize This Text File, But It<span class="st" style="color: #20794D;">'s In the Wrong Folder. Oh No!</span></span></code></pre></div>
-<p>This also worked, but I had to import <code>sys</code>, and I had to know the exact path to the library. It’s going to be annoying to have to put that in every script, and if I try and share this code with anyone else they’re going to have to modify it to point to wherever they’ve saved my library code.</p>
-</section>
-</section>
-<section id="get-hypermodern" class="level2">
-<h2 class="anchored" data-anchor-id="get-hypermodern">Get hypermodern</h2>
-<p>As I was working on this guide I discovered a series of articles by Claudio Jolowicz called <a href="https://cjolowicz.github.io/posts/hypermodern-python-01-setup/">Hypermodern Python</a>. The series is an opinionated (in a good way) look at how to configure a python project in 2020. It’s excellent and well worth a read, but I can’t completely adopt its recommendations for two related reasons. The first is that it assumes you’re either using a *NIX system or can load WSL2 on your Windows machine. For my work setup neither of those assumptions hold. It also assumes you’re working in the standard python ecosystem and therefore doesn’t reference <code>conda</code> either for environment management or packaging. For the remainder of this guide I’m going to try and follow Claudio’s suggestions where possible, but adapt them to incorporate <code>conda</code>.</p>
-</section>
-<section id="turn-our-code-into-a-poetry-package" class="level2">
-<h2 class="anchored" data-anchor-id="turn-our-code-into-a-poetry-package">Turn our code into a poetry package</h2>
-<p><a href="https://python-poetry.org/">Poetry</a> seems to be the current best practice for building python packages. Let’s see if we can get it working with <code>conda</code>.</p>
-<section id="poetry-init" class="level3">
-<h3 class="anchored" data-anchor-id="poetry-init">Poetry init</h3>
-<p>After adding <code>poetry</code> as a dependency to my <code>conda</code> environment and updating the environment I run <code>poetry init</code>:</p>
-<div class="sourceCode" id="cb9" style="background: #f1f3f5;"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb9-1"><span class="ex" style="color: null;">$</span> poetry init</span>
-<span id="cb9-2"></span>
-<span id="cb9-3"><span class="ex" style="color: null;">This</span> command will guide you through creating your pyproject.toml config.</span>
-<span id="cb9-4"></span>
-<span id="cb9-5"><span class="ex" style="color: null;">Package</span> name [ianlibdemo]:</span>
-<span id="cb9-6"><span class="ex" style="color: null;">Version</span> [0.1.0]:</span>
-<span id="cb9-7"><span class="ex" style="color: null;">Description</span> []:  Python packaging <span class="at" style="color: #657422;">-</span> how does it work<span class="pp" style="color: #AD0000;">?</span></span>
-<span id="cb9-8"><span class="ex" style="color: null;">Author</span> [[Ian Preston] <span class="op" style="color: #5E5E5E;">&lt;</span>17241371+ianepreston@users.noreply.github.com<span class="op" style="color: #5E5E5E;">&gt;</span>, n to skip]:  Ian Preston</span>
-<span id="cb9-9"><span class="ex" style="color: null;">License</span> []:  GPL-3.0-or-later</span>
-<span id="cb9-10"><span class="ex" style="color: null;">Compatible</span> Python versions [^3.7]:</span>
-<span id="cb9-11"></span>
-<span id="cb9-12"><span class="ex" style="color: null;">Would</span> you like to define your main dependencies interactively<span class="pp" style="color: #AD0000;">?</span> <span class="er" style="color: #AD0000;">(</span><span class="ex" style="color: null;">yes/no</span><span class="kw" style="color: #003B4F;">)</span> <span class="ex" style="color: null;">[yes]</span> no</span>
-<span id="cb9-13"><span class="ex" style="color: null;">Would</span> you like to define your dev dependencies <span class="er" style="color: #AD0000;">(</span><span class="ex" style="color: null;">require-dev</span><span class="kw" style="color: #003B4F;">)</span> <span class="ex" style="color: null;">interactively</span> <span class="er" style="color: #AD0000;">(</span><span class="ex" style="color: null;">yes/no</span><span class="kw" style="color: #003B4F;">)</span> <span class="ex" style="color: null;">[yes]</span> no</span>
-<span id="cb9-14"><span class="ex" style="color: null;">Generated</span> file</span>
-<span id="cb9-15"></span>
-<span id="cb9-16"><span class="ex" style="color: null;">[tool.poetry]</span></span>
-<span id="cb9-17"><span class="ex" style="color: null;">name</span> = <span class="st" style="color: #20794D;">"ianlibdemo"</span></span>
-<span id="cb9-18"><span class="ex" style="color: null;">version</span> = <span class="st" style="color: #20794D;">"0.1.0"</span></span>
-<span id="cb9-19"><span class="ex" style="color: null;">description</span> = <span class="st" style="color: #20794D;">"Python packaging - how does it work?"</span></span>
-<span id="cb9-20"><span class="ex" style="color: null;">authors</span> = [<span class="st" style="color: #20794D;">"Ian Preston"</span>]</span>
-<span id="cb9-21"><span class="ex" style="color: null;">license</span> = <span class="st" style="color: #20794D;">"GPL-3.0-or-later"</span></span>
-<span id="cb9-22"></span>
-<span id="cb9-23"><span class="ex" style="color: null;">[tool.poetry.dependencies]</span></span>
-<span id="cb9-24"><span class="ex" style="color: null;">python</span> = <span class="st" style="color: #20794D;">"^3.7"</span></span>
-<span id="cb9-25"></span>
-<span id="cb9-26"><span class="ex" style="color: null;">[tool.poetry.dev-dependencies]</span></span>
-<span id="cb9-27"></span>
-<span id="cb9-28"><span class="ex" style="color: null;">[build-system]</span></span>
-<span id="cb9-29"><span class="ex" style="color: null;">requires</span> = [<span class="st" style="color: #20794D;">"poetry&gt;=0.12"</span>]</span>
-<span id="cb9-30"><span class="ex" style="color: null;">build-backend</span> = <span class="st" style="color: #20794D;">"poetry.masonry.api"</span></span>
-<span id="cb9-31"></span>
-<span id="cb9-32"></span>
-<span id="cb9-33"><span class="ex" style="color: null;">Do</span> you confirm generation<span class="pp" style="color: #AD0000;">?</span> <span class="er" style="color: #AD0000;">(</span><span class="ex" style="color: null;">yes/no</span><span class="kw" style="color: #003B4F;">)</span> <span class="ex" style="color: null;">[yes]</span> yes</span></code></pre></div>
-<p>At the end of this process I have a <code>pyproject.toml</code> file in the root of my repository with the text listed above inside.</p>
-</section>
-<section id="src-layout" class="level3">
-<h3 class="anchored" data-anchor-id="src-layout">src layout</h3>
-<p>The root folder of this repository is getting crowded. I’ve got various files that either describe the project or the environment I’m supposed to work on it in intermingled with the actual source code for the package. To address this I’ll make a separate folder for the actual package files, and as recommended by hypermodern python I’ll use <a href="https://hynek.me/articles/testing-packaging/">src layout</a></p>
-</section>
-<section id="poetry-install" class="level3">
-<h3 class="anchored" data-anchor-id="poetry-install">poetry install</h3>
-<p>The last step for a basic install is to use poetry to install the package into the environment. Since poetry 1.0 it should be able to detect <code>conda</code> environments and do its installation directly into them based on <a href="https://github.com/python-poetry/poetry/pull/1432">this PR</a>.</p>
-<div class="sourceCode" id="cb10" style="background: #f1f3f5;"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb10-1"><span class="ex" style="color: null;">$</span> poetry install</span>
-<span id="cb10-2"><span class="ex" style="color: null;">Updating</span> dependencies</span>
-<span id="cb10-3"><span class="ex" style="color: null;">Resolving</span> dependencies... <span class="er" style="color: #AD0000;">(</span><span class="ex" style="color: null;">0.1s</span><span class="kw" style="color: #003B4F;">)</span></span>
-<span id="cb10-4"></span>
-<span id="cb10-5"><span class="ex" style="color: null;">Writing</span> lock file</span>
-<span id="cb10-6"></span>
-<span id="cb10-7"><span class="ex" style="color: null;">No</span> dependencies to install or update</span>
-<span id="cb10-8"></span>
-<span id="cb10-9">  <span class="ex" style="color: null;">-</span> Installing ianlibdemo <span class="er" style="color: #AD0000;">(</span><span class="ex" style="color: null;">0.1.0</span><span class="kw" style="color: #003B4F;">)</span></span></code></pre></div>
-<p>Seems to work, let’s try that old example that wouldn’t run before:</p>
-<div class="sourceCode" id="cb11" style="background: #f1f3f5;"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb11-1"><span class="kw" style="color: #003B4F;">(</span><span class="ex" style="color: null;">ianlibdemo_conda_env</span><span class="kw" style="color: #003B4F;">)</span> <span class="ex" style="color: null;">e975360@N2012</span> /c/tfs/text_demo</span>
-<span id="cb11-2"><span class="ex" style="color: null;">$</span> ls</span>
-<span id="cb11-3"><span class="ex" style="color: null;">example_in.txt</span></span>
-<span id="cb11-4"><span class="kw" style="color: #003B4F;">(</span><span class="ex" style="color: null;">ianlibdemo_conda_env</span><span class="kw" style="color: #003B4F;">)</span> <span class="ex" style="color: null;">e975360@N2012</span> /c/tfs/text_demo</span>
-<span id="cb11-5"><span class="ex" style="color: null;">$</span> python <span class="at" style="color: #657422;">-i</span></span>
-<span id="cb11-6"><span class="ex" style="color: null;">Python</span> 3.7.7 <span class="er" style="color: #AD0000;">(</span><span class="ex" style="color: null;">default,</span> May  6 2020, 11:45:54<span class="kw" style="color: #003B4F;">)</span> <span class="ex" style="color: null;">[MSC</span> v.1916 64 bit <span class="er" style="color: #AD0000;">(</span><span class="ex" style="color: null;">AMD64</span><span class="kw" style="color: #003B4F;">)</span><span class="ex" style="color: null;">]</span> :: Anaconda, Inc. on win32</span>
-<span id="cb11-7"><span class="ex" style="color: null;">Type</span> <span class="st" style="color: #20794D;">"help"</span>, <span class="st" style="color: #20794D;">"copyright"</span>, <span class="st" style="color: #20794D;">"credits"</span> or <span class="st" style="color: #20794D;">"license"</span> for more information.</span>
-<span id="cb11-8"><span class="op" style="color: #5E5E5E;">&gt;&gt;&gt;</span> from <span class="ex" style="color: null;">ianlibdemo.capital_mod</span> import capitalize</span>
-<span id="cb11-9"><span class="op" style="color: #5E5E5E;">&gt;&gt;&gt;</span> capitalize<span class="kw" style="color: #003B4F;">(</span><span class="st" style="color: #20794D;">"example_in.txt"</span><span class="ex" style="color: null;">,</span> <span class="st" style="color: #20794D;">"example_out.txt"</span><span class="kw" style="color: #003B4F;">)</span></span>
-<span id="cb11-10"><span class="op" style="color: #5E5E5E;">&gt;&gt;&gt;</span> quit<span class="kw" style="color: #003B4F;">()</span></span>
-<span id="cb11-11"><span class="kw" style="color: #003B4F;">(</span><span class="ex" style="color: null;">ianlibdemo_conda_env</span><span class="kw" style="color: #003B4F;">)</span> <span class="ex" style="color: null;">e975360@N2012</span> /c/tfs/text_demo</span>
-<span id="cb11-12"><span class="ex" style="color: null;">$</span> cat example_in.txt</span>
-<span id="cb11-13"><span class="ex" style="color: null;">these</span> words will all get capitalized, except the ones in that super special text file, like is, or, and a.</span>
-<span id="cb11-14"><span class="kw" style="color: #003B4F;">(</span><span class="ex" style="color: null;">ianlibdemo_conda_env</span><span class="kw" style="color: #003B4F;">)</span> <span class="ex" style="color: null;">e975360@N2012</span> /c/tfs/text_demo</span>
-<span id="cb11-15"><span class="ex" style="color: null;">$</span> cat example_out.txt</span>
-<span id="cb11-16"><span class="ex" style="color: null;">These</span> Words Will All Get Capitalized, Except the Ones In That Super Special Text File, Like Is, Or, And A.</span></code></pre></div>
-<p>Magic! Note that I have to do one more layer of importing from the <code>ianlibdemo</code> package whereas before I was directly importing the <code>capital_mod</code> module, but otherwise we’re gold.</p>
-<p>Of course this hasn’t really solved my problem yet, I still don’t have an actual package that other people can install. But still, progress!</p>
-</section>
-<section id="poetry-build" class="level3">
-<h3 class="anchored" data-anchor-id="poetry-build">poetry build</h3>
-<p>It turns out that making it to the previous step was essentially all I needed to create a <code>pip</code> installable package. Just running <code>poetry build</code> from the root of the repository creates a <code>dist</code> folder containing a <a href="https://packaging.python.org/glossary/#term-source-distribution-or-sdist">sdist</a> and a <a href="https://packaging.python.org/glossary/#term-wheel">wheel</a></p>
-<section id="test-the-build" class="level4">
-<h4 class="anchored" data-anchor-id="test-the-build">test the build</h4>
-<p>Having built this package, how would I install it?</p>
-<p>To start the test I’ll create a new empty conda environment and make sure I can’t import the <code>ianlibdemo</code> package.</p>
-<div class="sourceCode" id="cb12" style="background: #f1f3f5;"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb12-1"><span class="ex" style="color: null;">$</span> conda create <span class="at" style="color: #657422;">-n</span> pyonly python</span>
-<span id="cb12-2"><span class="ex" style="color: null;">...</span></span>
-<span id="cb12-3"><span class="ex" style="color: null;">$</span> conda activate pyonly</span>
-<span id="cb12-4"><span class="ex" style="color: null;">$</span> python <span class="at" style="color: #657422;">-i</span></span>
-<span id="cb12-5"><span class="op" style="color: #5E5E5E;">&gt;&gt;&gt;</span> import <span class="ex" style="color: null;">ianlibdemo</span></span>
-<span id="cb12-6"><span class="ex" style="color: null;">Traceback</span> <span class="er" style="color: #AD0000;">(</span><span class="ex" style="color: null;">most</span> recent call last<span class="kw" style="color: #003B4F;">)</span><span class="bu" style="color: null;">:</span></span>
-<span id="cb12-7">  <span class="ex" style="color: null;">File</span> <span class="st" style="color: #20794D;">"&lt;stdin&gt;"</span>, line 1, in <span class="op" style="color: #5E5E5E;">&lt;</span>module<span class="op" style="color: #5E5E5E;">&gt;</span></span>
-<span id="cb12-8"><span class="ex" style="color: null;">ModuleNotFoundError:</span> No module named <span class="st" style="color: #20794D;">'ianlibdemo'</span></span></code></pre></div>
-<p>This verifies that I have a clean environment without that package installed. I can use <code>pip</code> to install it like so:</p>
-<div class="sourceCode" id="cb13" style="background: #f1f3f5;"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb13-1"><span class="ex" style="color: null;">$</span> pip install /c/tfs/ianlibdemo/dist/ianlibdemo-0.1.0-py3-none-any.whl</span>
-<span id="cb13-2"><span class="ex" style="color: null;">$</span> python <span class="at" style="color: #657422;">-i</span></span>
-<span id="cb13-3"><span class="ex" style="color: null;">Python</span> 3.8.3 <span class="er" style="color: #AD0000;">(</span><span class="ex" style="color: null;">default,</span> May 19 2020, 06:50:17<span class="kw" style="color: #003B4F;">)</span> <span class="ex" style="color: null;">[MSC</span> v.1916 64 bit <span class="er" style="color: #AD0000;">(</span><span class="ex" style="color: null;">AMD64</span><span class="kw" style="color: #003B4F;">)</span><span class="ex" style="color: null;">]</span> :: Anaconda, Inc. on win32</span>
-<span id="cb13-4"><span class="ex" style="color: null;">Type</span> <span class="st" style="color: #20794D;">"help"</span>, <span class="st" style="color: #20794D;">"copyright"</span></span>
-<span id="cb13-5"><span class="op" style="color: #5E5E5E;">&gt;&gt;&gt;</span> import <span class="ex" style="color: null;">ianlibdemo</span></span></code></pre></div>
-<p>The import ran successfully. I haven’t done a lot of validation that the package works the way I’d expect, but I’ll get to that when we set up testing later. Note that I installed the package using the <code>.whl</code> file that the build process created, but I could have also used the <code>.tar.gz</code> file in the same folder just as easily.</p>
-<p>Since we’ve now built a working package this seems like another good place for a checkpoint. To see the state of the project at this point you can run <code>git checkout eg03</code>.</p>
-</section>
-</section>
-</section>
-<section id="automate-testing" class="level2">
-<h2 class="anchored" data-anchor-id="automate-testing">Automate testing</h2>
-<p>This is already going to be a big post so I’m definitely not going to offer extensive notes on testing, but I’d like to include enough to at least ensure it integrates with the rest of the process, and to save manually testing after each step.</p>
-<section id="add-a-pytest-dependency" class="level3">
-<h3 class="anchored" data-anchor-id="add-a-pytest-dependency">Add a pytest dependency</h3>
-<p>We want to use <a href="https://docs.pytest.org/en/latest/">pytest</a> for testing, so the first step is to add it as a development dependency. Normally this would be a simple one liner, <code>poetry add --dev pytest</code>, but because of <a href="https://github.com/python-poetry/poetry/issues/1290">this bug</a> between conda and poetry, at least at the time of this writing I had to install an update of msgpack before I could get it to run. I’ve amended the <code>environment.yml</code> file to include this fix, so between that and hopefully this bug being resolved in time this shouldn’t be an issue for anyone else following this guide, I just wanted to flag what I encountered and how I resolved it.</p>
-</section>
-<section id="write-tests" class="level3">
-<h3 class="anchored" data-anchor-id="write-tests">Write tests</h3>
-<p>Now in the base of the repository we add a <code>tests</code> folder and add an empty <code>__init__.py</code> file and a <code>test_capitalize.py</code> file. The test file looks like this:</p>
-<div class="sourceCode" id="cb14" style="background: #f1f3f5;"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb14-1"><span class="im" style="color: #00769E;">from</span> ianlibdemo <span class="im" style="color: #00769E;">import</span> capital_mod</span>
-<span id="cb14-2"></span>
-<span id="cb14-3"></span>
-<span id="cb14-4"><span class="kw" style="color: #003B4F;">def</span> test_capitalize_file(tmp_path):</span>
-<span id="cb14-5">    in_file <span class="op" style="color: #5E5E5E;">=</span> tmp_path <span class="op" style="color: #5E5E5E;">/</span> <span class="st" style="color: #20794D;">"in_file.txt"</span></span>
-<span id="cb14-6">    in_content <span class="op" style="color: #5E5E5E;">=</span> <span class="st" style="color: #20794D;">"this is the lowercase input sentence"</span></span>
-<span id="cb14-7">    in_file.write_text(in_content)</span>
-<span id="cb14-8">    out_file <span class="op" style="color: #5E5E5E;">=</span> tmp_path <span class="op" style="color: #5E5E5E;">/</span> <span class="st" style="color: #20794D;">"out_file.txt"</span></span>
-<span id="cb14-9">    out_content <span class="op" style="color: #5E5E5E;">=</span> <span class="st" style="color: #20794D;">"This is the Lowercase Input Sentence</span><span class="ch" style="color: #20794D;">\n</span><span class="st" style="color: #20794D;">"</span></span>
-<span id="cb14-10">    <span class="co" style="color: #5E5E5E;"># Output shouldn't exist before we call the function</span></span>
-<span id="cb14-11">    <span class="cf" style="color: #003B4F;">assert</span> <span class="kw" style="color: #003B4F;">not</span> out_file.exists()</span>
-<span id="cb14-12">    capital_mod.capitalize(in_file, out_file)</span>
-<span id="cb14-13">    <span class="cf" style="color: #003B4F;">assert</span> out_file.exists()</span>
-<span id="cb14-14">    <span class="cf" style="color: #003B4F;">assert</span> out_file.read_text() <span class="op" style="color: #5E5E5E;">==</span> out_content</span></code></pre></div>
-<p>Now from the base directory of the repository I can run pytest with <code>poetry run pytest</code>.</p>
-<p>To see the project at this stage run <code>git checkout eg04</code>.</p>
-</section>
-</section>
-<section id="publish-to-pypi" class="level2">
-<h2 class="anchored" data-anchor-id="publish-to-pypi">Publish to pypi</h2>
-<p>I’ve built a package, I can test that it works, the next step is to publish it somewhere for others to access. The defacto source for python packages is <a href="https://pypi.org/">PyPi</a>. However, since this is just a demo package I don’t want to publish it there, since it will just add clutter. Fortunately, there is a similar location designed exactly for testing out publishing packages, appropriately named <a href="https://test.pypi.org/">Test PyPi</a>.</p>
-<section id="set-up-for-publishing" class="level3">
-<h3 class="anchored" data-anchor-id="set-up-for-publishing">Set up for publishing</h3>
-<p>In order to publish packages you need an account. The registration process is straightforward. Note that pypi and test pypi use completely separate databases, and you will need an account for each of them. For now we’re just publishing to test pypi so it’s not an issue, but just something to keep in mind.</p>
-<p>Next I want to create an API token. You can just use your username and password to authenticate and publish packages, but tokens are the preferred method. Once you’re logged in you can click on your account, go to account settings, and under API tokens click “add API token”. Give it a descriptive name and save it somewhere secure (I put mine in a LastPass note). As they warn on the page it will only be displayed once, and if you lose it you’ll have to delete it and create a new one.</p>
-<p>Now we need to set up the test pypi repository in poetry. From the <a href="https://python-poetry.org/docs/repositories/">poetry docs</a> you can see that repositories are added to your poetry config:</p>
-<div class="sourceCode" id="cb15" style="background: #f1f3f5;"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb15-1"><span class="ex" style="color: null;">poetry</span> config repositories.testpypi https://test.pypi.org/legacy/</span>
-<span id="cb15-2"><span class="ex" style="color: null;">poetry</span> config pypi-token.testpypi <span class="op" style="color: #5E5E5E;">&lt;</span>your api key<span class="op" style="color: #5E5E5E;">&gt;</span></span></code></pre></div>
-<p>Note that these configurations are global to poetry, so they’re not saved in your repository. If you switch machines, or (I think) change conda environments since we installed poetry with conda you’ll have to redo these configurations.</p>
-</section>
-<section id="publish" class="level3">
-<h3 class="anchored" data-anchor-id="publish">Publish</h3>
-<p>Once this is set up publishing is quite straightforward. If you haven’t already built the package do so with <code>poetry build</code> and then run <code>poetry publish --repository testpypi</code>.</p>
-<div class="quarto-figure quarto-figure-center">
-<figure class="figure">
-<figure class="figure">
-<img src="https://blog.ianpreston.ca/posts/pypack/testpypi.PNG" title="package uploaded" class="img-fluid figure-img">
-</figure>
-<p></p><figcaption class="figure-caption">test pypi</figcaption><p></p>
-</figure>
-</div>
-<p>Look at that! There it is!</p>
-</section>
-<section id="pull-it-back-down-and-test" class="level3">
-<h3 class="anchored" data-anchor-id="pull-it-back-down-and-test">Pull it back down and test</h3>
-<p>Let’s just make sure that all worked.</p>
-<p>First make a clean conda environment with just pytest for testing and activate it:</p>
-<div class="sourceCode" id="cb16" style="background: #f1f3f5;"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb16-1"><span class="ex" style="color: null;">conda</span> create <span class="at" style="color: #657422;">-n</span> test_env pytest</span>
-<span id="cb16-2"><span class="ex" style="color: null;">conda</span> activate test_env</span></code></pre></div>
-<p>Navigate to the root of your package folder and try running tests. They should fail, because we don’t have the package installed in this environment:</p>
-<div class="sourceCode" id="cb17" style="background: #f1f3f5;"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb17-1"><span class="bu" style="color: null;">cd</span> ~/Documents/ianlibdemo</span>
-<span id="cb17-2"><span class="ex" style="color: null;">pytest</span></span>
-<span id="cb17-3"><span class="bu" style="color: null;">.</span></span>
-<span id="cb17-4"><span class="bu" style="color: null;">.</span></span>
-<span id="cb17-5"><span class="bu" style="color: null;">.</span></span>
-<span id="cb17-6"><span class="ex" style="color: null;">tests\test_capitalize.py:1:</span> in <span class="op" style="color: #5E5E5E;">&lt;</span>module<span class="op" style="color: #5E5E5E;">&gt;</span></span>
-<span id="cb17-7">    <span class="ex" style="color: null;">from</span> ianlibdemo import capital_mod</span>
-<span id="cb17-8"><span class="ex" style="color: null;">E</span>   ModuleNotFoundError: No module named <span class="st" style="color: #20794D;">'ianlibdemo'</span></span></code></pre></div>
-<p>Now pip install that package and try running tests again:</p>
-<div class="sourceCode" id="cb18" style="background: #f1f3f5;"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb18-1"><span class="ex" style="color: null;">pip</span> install <span class="at" style="color: #657422;">--index-url</span> https://test.pypi.org/simple/ ianlibdemo</span>
-<span id="cb18-2"><span class="ex" style="color: null;">pytest</span></span>
-<span id="cb18-3"><span class="bu" style="color: null;">.</span></span>
-<span id="cb18-4"><span class="bu" style="color: null;">.</span></span>
-<span id="cb18-5"><span class="bu" style="color: null;">.</span></span>
-<span id="cb18-6"><span class="ex" style="color: null;">========================</span> 1 passed, 1 warning in 0.09s =========================</span></code></pre></div>
-<p>Looks good!</p>
-</section>
-</section>
-<section id="publish-to-a-private-repository" class="level2">
-<h2 class="anchored" data-anchor-id="publish-to-a-private-repository">Publish to a private repository</h2>
-<p>Not all of the code we develop should be published on the public internet. Some of it you just want accessible to an internal team. I have a private package index running using <a href="https://hub.docker.com/r/pypiserver/pypiserver">this docker container</a> - setting that up will be its own post. Once you have that all set up though the process is exactly the same as for the public pypi so I’ll leave it at that for this guide.</p>
-<p>None of the steps used to publish this package required changes to the library repository, so you can still use <code>git checkout eg04</code> to view the state of the repository at this point.</p>
-</section>
-<section id="adding-dependencies" class="level2">
-<h2 class="anchored" data-anchor-id="adding-dependencies">Adding dependencies</h2>
-<p>One thing I realized I should ensure is that all of this works with libraries that depend on other libraries. Let’s add a dependency on pandas and give that a shot.</p>
-<p>Fortunately adding a dependency is easy. Since I want to require <code>pandas</code> I just run <code>poetry add pandas</code> and it’s now a dependency. I added a module called <code>fun_pandas</code> and a test for it in my tests suite. After that I rebuilt the package and uploaded it to a repository as described above, pulled it back down and tested it like before and everything worked! It’s nice when that happens.</p>
-<p>To see the project at this stage you can run <code>git checkout eg05</code>.</p>
-</section>
-<section id="now-do-conda" class="level2">
-<h2 class="anchored" data-anchor-id="now-do-conda">Now do conda</h2>
-<p>The next thing I want to work out is how to build a <code>conda</code> package. The first step is to add <code>conda-build</code> to my environment. The next step is to define a <code>meta.yaml</code> file to specify how to do the build.</p>
-<section id="sort-of-working-build" class="level3">
-<h3 class="anchored" data-anchor-id="sort-of-working-build">Sort of working build</h3>
-<p>Rather than just dump the final working file, I think it will be useful to step through from the first version I got working to the final one I’m happy with. A lot of the steps for setting this up are hacky, so seeing what doesn’t work is as important as seeing what does for people who are trying to figure out how to apply this to their own projects.</p>
-<p>Here’s the first version of my <code>meta.yaml</code> that actually built:</p>
-<div class="sourceCode" id="cb19" style="background: #f1f3f5;"><pre class="sourceCode yml code-with-copy"><code class="sourceCode yaml"><span id="cb19-1"><span class="kw" style="color: #003B4F;">{</span><span class="at" style="color: #657422;">% raw %</span><span class="kw" style="color: #003B4F;">}</span></span>
-<span id="cb19-2"><span class="kw" style="color: #003B4F;">{</span><span class="at" style="color: #657422;">% set name =  </span><span class="st" style="color: #20794D;">"ianlibdemo"</span><span class="at" style="color: #657422;"> %</span><span class="kw" style="color: #003B4F;">}</span></span>
-<span id="cb19-3"><span class="kw" style="color: #003B4F;">{</span><span class="at" style="color: #657422;">% set version = </span><span class="st" style="color: #20794D;">"0.2.0"</span><span class="at" style="color: #657422;"> %</span><span class="kw" style="color: #003B4F;">}</span></span>
-<span id="cb19-4"></span>
-<span id="cb19-5"><span class="fu" style="color: #4758AB;">package</span><span class="kw" style="color: #003B4F;">:</span></span>
-<span id="cb19-6"><span class="at" style="color: #657422;">    </span><span class="fu" style="color: #4758AB;">name</span><span class="kw" style="color: #003B4F;">:</span><span class="at" style="color: #657422;"> </span><span class="st" style="color: #20794D;">"{{ name|lower }}"</span></span>
-<span id="cb19-7"><span class="at" style="color: #657422;">    </span><span class="fu" style="color: #4758AB;">version</span><span class="kw" style="color: #003B4F;">:</span><span class="at" style="color: #657422;"> </span><span class="st" style="color: #20794D;">"{{ version }}"</span></span>
-<span id="cb19-8"></span>
-<span id="cb19-9"><span class="fu" style="color: #4758AB;">source</span><span class="kw" style="color: #003B4F;">:</span></span>
-<span id="cb19-10"><span class="at" style="color: #657422;">    </span><span class="fu" style="color: #4758AB;">path</span><span class="kw" style="color: #003B4F;">:</span><span class="at" style="color: #657422;"> ./dist/{{ name }}-{{ version }}-py3-none-any.whl</span></span>
-<span id="cb19-11"></span>
-<span id="cb19-12"><span class="fu" style="color: #4758AB;">build</span><span class="kw" style="color: #003B4F;">:</span></span>
-<span id="cb19-13"><span class="at" style="color: #657422;">    </span><span class="fu" style="color: #4758AB;">script</span><span class="kw" style="color: #003B4F;">:</span><span class="at" style="color: #657422;"> </span><span class="st" style="color: #20794D;">"{{ PYTHON }} -m pip install ./{{ name }}-{{ version }}-py3-none-any.whl --no-deps --ignore-installed -vv "</span></span>
-<span id="cb19-14"></span>
-<span id="cb19-15"><span class="fu" style="color: #4758AB;">requirements</span><span class="kw" style="color: #003B4F;">:</span></span>
-<span id="cb19-16"><span class="at" style="color: #657422;">    </span><span class="fu" style="color: #4758AB;">host</span><span class="kw" style="color: #003B4F;">:</span></span>
-<span id="cb19-17"><span class="at" style="color: #657422;">        </span><span class="kw" style="color: #003B4F;">-</span><span class="at" style="color: #657422;"> pip</span></span>
-<span id="cb19-18"><span class="at" style="color: #657422;">        </span><span class="kw" style="color: #003B4F;">-</span><span class="at" style="color: #657422;"> python</span></span>
-<span id="cb19-19"><span class="at" style="color: #657422;">    </span><span class="fu" style="color: #4758AB;">run</span><span class="kw" style="color: #003B4F;">:</span></span>
-<span id="cb19-20"><span class="at" style="color: #657422;">        </span><span class="kw" style="color: #003B4F;">-</span><span class="at" style="color: #657422;"> python</span></span>
-<span id="cb19-21"><span class="at" style="color: #657422;">        </span><span class="kw" style="color: #003B4F;">-</span><span class="at" style="color: #657422;"> pandas</span></span>
-<span id="cb19-22"></span>
-<span id="cb19-23"><span class="fu" style="color: #4758AB;">test</span><span class="kw" style="color: #003B4F;">:</span></span>
-<span id="cb19-24"><span class="at" style="color: #657422;">    </span><span class="fu" style="color: #4758AB;">imports</span><span class="kw" style="color: #003B4F;">:</span></span>
-<span id="cb19-25"><span class="at" style="color: #657422;">        </span><span class="kw" style="color: #003B4F;">-</span><span class="at" style="color: #657422;"> ianlibdemo</span></span>
-<span id="cb19-26"><span class="kw" style="color: #003B4F;">{</span><span class="at" style="color: #657422;">% endraw %</span><span class="kw" style="color: #003B4F;">}</span></span></code></pre></div>
-<p>From an environment with <code>conda-build</code> installed I can build a package by running <code>conda-build .</code> from the base of the repository. It creates a conda package as a <code>tar.bz2</code> file in a deeply nested directory. From there I can install it into an environment with something like:</p>
-<div class="sourceCode" id="cb20" style="background: #f1f3f5;"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb20-1"><span class="ex" style="color: null;">conda</span> install /c/Users/e975360/.conda/envs/conda_build_test/conda-bld/win-64/ianlibdemo-0.2.0-py38_0.tar.bz2</span></code></pre></div>
-<p>Running pytest in an environment with that package installed resulted in one passed test and one failure for the one requiring pandas. As we’ll see below, that issue will get solved if I can load it to a package repository so I’ll leave that alone at this point.</p>
-<section id="issues-with-this-build" class="level4">
-<h4 class="anchored" data-anchor-id="issues-with-this-build">Issues with this build</h4>
-<ul>
-<li>First off, note that it’s called <code>meta.yaml</code> not <code>meta.yml</code>. Despite <code>.yml</code> being the common and preferred extension for this file type (see <a href="https://stackoverflow.com/questions/21059124/is-it-yaml-or-yml#:~:text=yml%22%20is%20%22the%20file%20extension,and%20is%20much%20more%20common.">this SO thread</a>) it has to end with <code>.yaml</code> or <code>conda-build</code> can’t find it.</li>
-<li>Also note that I’m pointing it to the <code>.whl</code> file that I built with poetry, rather than the <code>.tar.gz</code> that’s in the same folder. In theory I should be able to do either, and most examples online point to <code>.tar.gz</code> files, but I got errors about not having poetry in my build environment, and when I tried to add poetry I got a version conflict because apparently the main conda repository only has the python2.7 version of poetry and… it just seemed easier to use the <code>.whl</code>.</li>
-<li>It makes a build that claims to be specific to windows and python 3.8 when in fact this should run on any OS and any python 3.</li>
-<li>I have to repeat the file name in two places</li>
-<li>I’m specifying the version number in two places now since it’s already in the <code>pyproject.toml</code> file. There’s a risk of them getting out of sync</li>
-<li>Similar to the version number I have to specify dependencies in this file as well as <code>pyproject.toml</code> (pandas in this case). Unfortunately, since conda packages can have slightly different names than their pypi counterparts, and I have to actually specify python as a dependency here I don’t think there’s an automated way to keep these in sync. Fortunately I don’t expect dependencies to change as often as the package version so this will be less of a burden to manage.</li>
-<li>To do anything with the created package I have to scroll up through a big install log and find the path to the file</li>
-<li>I get a bunch of build environments and intermediate files created on my machine (maybe this is why <a href="https://docs.conda.io/projects/conda-build/en/latest/user-guide/tutorials/build-pkgs-skeleton.html">the build guide</a> suggests using docker).</li>
-</ul>
-</section>
-<section id="fixing-the-issues" class="level4">
-<h4 class="anchored" data-anchor-id="fixing-the-issues">Fixing the issues</h4>
-<p>Setting the build to work for any OS and python is an easy fix. Under the build section you just add one line. The build section now looks like this:</p>
-<div class="sourceCode" id="cb21" style="background: #f1f3f5;"><pre class="sourceCode yml code-with-copy"><code class="sourceCode yaml"><span id="cb21-1"><span class="kw" style="color: #003B4F;">{</span><span class="at" style="color: #657422;">% raw %</span><span class="kw" style="color: #003B4F;">}</span></span>
-<span id="cb21-2"><span class="fu" style="color: #4758AB;">build</span><span class="kw" style="color: #003B4F;">:</span></span>
-<span id="cb21-3"><span class="at" style="color: #657422;">    </span><span class="fu" style="color: #4758AB;">noarch</span><span class="kw" style="color: #003B4F;">:</span><span class="at" style="color: #657422;"> python</span></span>
-<span id="cb21-4"><span class="at" style="color: #657422;">    </span><span class="fu" style="color: #4758AB;">script</span><span class="kw" style="color: #003B4F;">:</span><span class="at" style="color: #657422;"> </span><span class="st" style="color: #20794D;">"{{ PYTHON }} -m pip install ./{{ name }}-{{ version }}-py3-none-any.whl --no-deps --ignore-installed -vv "</span></span>
-<span id="cb21-5"><span class="kw" style="color: #003B4F;">{</span><span class="at" style="color: #657422;">% endraw %</span><span class="kw" style="color: #003B4F;">}</span></span></code></pre></div>
-<p>Defining the package file in once place is similarly easy. <a href="https://jinja.palletsprojects.com/en/2.11.x/">Jinja</a> lets you concatenate variables with the <code>~</code> symbol. The updated relevant section looks like this:</p>
-<div class="sourceCode" id="cb22" style="background: #f1f3f5;"><pre class="sourceCode yml code-with-copy"><code class="sourceCode yaml"><span id="cb22-1"><span class="kw" style="color: #003B4F;">{</span><span class="at" style="color: #657422;">% raw %</span><span class="kw" style="color: #003B4F;">}</span></span>
-<span id="cb22-2"><span class="kw" style="color: #003B4F;">{</span><span class="at" style="color: #657422;">% set name =  </span><span class="st" style="color: #20794D;">"ianlibdemo"</span><span class="at" style="color: #657422;"> %</span><span class="kw" style="color: #003B4F;">}</span></span>
-<span id="cb22-3"><span class="kw" style="color: #003B4F;">{</span><span class="at" style="color: #657422;">% set version = </span><span class="st" style="color: #20794D;">"0.2.0"</span><span class="at" style="color: #657422;"> %</span><span class="kw" style="color: #003B4F;">}</span></span>
-<span id="cb22-4"><span class="kw" style="color: #003B4F;">{</span><span class="at" style="color: #657422;">% set wheel = name ~ </span><span class="st" style="color: #20794D;">"-"</span><span class="at" style="color: #657422;"> ~ version ~ </span><span class="st" style="color: #20794D;">"-py3-none-any.whl"</span><span class="at" style="color: #657422;"> %</span><span class="kw" style="color: #003B4F;">}</span></span>
-<span id="cb22-5"><span class="fu" style="color: #4758AB;">package</span><span class="kw" style="color: #003B4F;">:</span></span>
-<span id="cb22-6"><span class="at" style="color: #657422;">    </span><span class="fu" style="color: #4758AB;">name</span><span class="kw" style="color: #003B4F;">:</span><span class="at" style="color: #657422;"> </span><span class="st" style="color: #20794D;">"{{ name|lower }}"</span></span>
-<span id="cb22-7"><span class="at" style="color: #657422;">    </span><span class="fu" style="color: #4758AB;">version</span><span class="kw" style="color: #003B4F;">:</span><span class="at" style="color: #657422;"> </span><span class="st" style="color: #20794D;">"{{ version }}"</span></span>
-<span id="cb22-8"></span>
-<span id="cb22-9"><span class="fu" style="color: #4758AB;">source</span><span class="kw" style="color: #003B4F;">:</span></span>
-<span id="cb22-10"><span class="at" style="color: #657422;">    </span><span class="fu" style="color: #4758AB;">path</span><span class="kw" style="color: #003B4F;">:</span><span class="at" style="color: #657422;"> ./dist/{{ wheel }}</span></span>
-<span id="cb22-11"></span>
-<span id="cb22-12"><span class="fu" style="color: #4758AB;">build</span><span class="kw" style="color: #003B4F;">:</span></span>
-<span id="cb22-13"><span class="at" style="color: #657422;">    </span><span class="fu" style="color: #4758AB;">noarch</span><span class="kw" style="color: #003B4F;">:</span><span class="at" style="color: #657422;"> python</span></span>
-<span id="cb22-14"><span class="at" style="color: #657422;">    </span><span class="fu" style="color: #4758AB;">script</span><span class="kw" style="color: #003B4F;">:</span><span class="at" style="color: #657422;"> </span><span class="st" style="color: #20794D;">"{{ PYTHON }} -m pip install ./{{ wheel }} --no-deps --ignore-installed -vv "</span></span>
-<span id="cb22-15"><span class="kw" style="color: #003B4F;">{</span><span class="at" style="color: #657422;">% endraw %</span><span class="kw" style="color: #003B4F;">}</span></span></code></pre></div>
-<section id="adding-a-makefile" class="level5">
-<h5 class="anchored" data-anchor-id="adding-a-makefile">Adding a Makefile</h5>
-<p>The rest of the issues outlined above aren’t directly the result of the <code>meta.yaml</code> file. To resolve them I’ll need to write some scripts, and to tie that all together I’ll use my good friend <a href="https://en.wikipedia.org/wiki/Make_(software)">Make</a>.</p>
-<p>To begin I add some boilerplate to the beginning of the file to handle conda environments</p>
-<pre class="make"><code># Oneshell means I can run multiple lines in a recipe in the same shell, so I don't have to
-# chain commands together with semicolon
-.ONESHELL:
-# Need to specify bash in order for conda activate to work.
-SHELL=/bin/bash
-# Note that the extra activate is needed to ensure that the activate floats env to the front of PATH
-CONDA_ACTIVATE=source $$(conda info --base)/etc/profile.d/conda.sh ; conda activate ; conda activate
-ENV_NAME = ianlibdemo_conda_env</code></pre>
-<p>Next I create a python script that will read the version number from <code>pyproject.toml</code> and update the version in <code>meta.yaml</code> with it. I won’t reproduce that script here but it’s in the <code>scripts</code> folder of the <code>ianlibdemo</code> repository.</p>
-<p>Finally I add a target to sync the versions. I can then make that a pre-requisite of building the <code>conda</code> package.</p>
-<pre class="make"><code>.PHONY: versionsync
-
-versionsync:
-    $(CONDA_ACTIVATE) $(PROJECT_NAME)
-    python scripts/version_sync.py</code></pre>
-<p><code>.PHONY:</code> means that target should be run each time it’s called. By default <code>Make</code> won’t redo a target if an output file already exists.</p>
-<p>Now running <code>make versionsync</code> from the root of the repository will take the version from <code>pyproject.toml</code> and put it in <code>meta.yaml</code>. Eventually I’ll also want to ensure that the python package has been built by poetry before building the conda package.</p>
-<p>PS: I documented how you can activate conda environments from within makefiles and bash scripts <a href="../posts/2020-05-13-conda_envs.html">here</a>. Since I had to refer back to it when doing this I thought it would be helpful to include a pointer.</p>
-<p>The next issue I described above is that running <code>conda-build</code> generates the package in some obscure subdirectory and you have to scroll back up through the log file to find it. If I want to upload the package to a repository or install it directly that’s going to be a hassle. Fortunately <code>conda-build</code> comes with a <code>--output</code> flag that you can run to return where your package file would be saved if you actually ran <code>conda-build</code>. Knowing this I can write a small bash script which first builds the package and then uses the <code>--output</code> flag to find the generated package and copy it into my <code>dist</code> directory.</p>
-<p>The new part of the Makefile looks like this:</p>
-<div class="sourceCode" id="cb25" style="background: #f1f3f5;"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb25-1"><span class="ex" style="color: null;">conda:</span></span>
-<span id="cb25-2">    <span class="va" style="color: #111111;">$(</span><span class="ex" style="color: null;">CONDA_ACTIVATE</span><span class="va" style="color: #111111;">)</span> <span class="va" style="color: #111111;">$(</span><span class="ex" style="color: null;">ENV_NAME</span><span class="va" style="color: #111111;">)</span></span>
-<span id="cb25-3">    <span class="fu" style="color: #4758AB;">bash</span> scripts/conda_build.sh</span></code></pre></div>
-<p>And the bash script looks like this:</p>
-<div class="sourceCode" id="cb26" style="background: #f1f3f5;"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb26-1"><span class="co" style="color: #5E5E5E;">#!/bin/bash</span></span>
-<span id="cb26-2"><span class="ex" style="color: null;">conda-build</span> .</span>
-<span id="cb26-3"><span class="va" style="color: #111111;">CONDA_PACK</span><span class="op" style="color: #5E5E5E;">=</span><span class="va" style="color: #111111;">$(</span><span class="ex" style="color: null;">conda-build</span> . <span class="at" style="color: #657422;">--output</span><span class="va" style="color: #111111;">)</span></span>
-<span id="cb26-4"><span class="fu" style="color: #4758AB;">cp</span> <span class="va" style="color: #111111;">$CONDA_PACK</span> dist/</span></code></pre></div>
-<p>I’m going to make a cleanup function later to remove all build artifacts so we’ll leave that alone for now.</p>
-</section>
-</section>
-</section>
-<section id="publish-to-a-public-channel" class="level3">
-<h3 class="anchored" data-anchor-id="publish-to-a-public-channel">Publish to a public channel</h3>
-<p>To publish to an external public conda channel I have to install the <code>anaconda-client</code> package in my environment. The first time I do an upload I will need to log in with <code>anaconda login</code> and provide my username and password.</p>
-<p>After that I can add a new recipe to my makefile to publish the package:</p>
-<div class="sourceCode" id="cb27" style="background: #f1f3f5;"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb27-1"><span class="ex" style="color: null;">conda_ext_pub:</span> conda</span>
-<span id="cb27-2">    <span class="va" style="color: #111111;">$(</span><span class="ex" style="color: null;">CONDA_ACTIVATE</span><span class="va" style="color: #111111;">)</span> <span class="va" style="color: #111111;">$(</span><span class="ex" style="color: null;">ENV_NAME</span><span class="va" style="color: #111111;">)</span></span>
-<span id="cb27-3">    <span class="ex" style="color: null;">anaconda</span> upload <span class="va" style="color: #111111;">$$</span><span class="er" style="color: #AD0000;">(</span><span class="ex" style="color: null;">conda-build</span> . <span class="at" style="color: #657422;">--output</span><span class="kw" style="color: #003B4F;">)</span></span></code></pre></div>
-<p><code>conda_ext_pub</code> depends on the <code>conda</code> recipe so this will build the package first and then upload it to Anaconda.org. After running <code>make conda_ext_pub</code> I can see that the package was indeed published to Anaconda.org:</p>
-<div class="quarto-figure quarto-figure-center">
-<figure class="figure">
-<p><img src="https://blog.ianpreston.ca/posts/pypack/anaconda.PNG" class="img-fluid figure-img"></p>
-<p></p><figcaption class="figure-caption">Anaconda</figcaption><p></p>
-</figure>
-</div>
-<p>As with the previous installations I can create a new blank environment with just pytest installed, install this package into it with <code>conda install -c ian.e.preston ianlibdemo</code> and now both my tests pass, as <code>pandas</code> is installed as well.</p>
-</section>
-<section id="publish-to-a-private-channel" class="level3">
-<h3 class="anchored" data-anchor-id="publish-to-a-private-channel">Publish to a private channel</h3>
-<p>As with the other private repository, actually setting up the repository is outside the scope of this post. This will assume that you have one created and that packages are stored on some sort of file share that you can access from your build machine. There’s no fancy way to publish conda packages to a private repository. You just drop the package file in the appropriate architecture subfolder (<code>noarch</code> in this case since this is a pure python package) and then run <code>conda index</code> on the repository folder. My server has a file watcher that detects changes and auto runs that, so all we have to do to publish a package is to make sure it’s in the right place. In this example the file share from my local machine is at <code>\\r4001\finpublic\FP&amp;A\channel_test\noarch</code> and the web server is available at http://dml01:8081/.</p>
-<p>To set up publishing I add the following to my makefile:</p>
-<div class="sourceCode" id="cb28" style="background: #f1f3f5;"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb28-1"><span class="ex" style="color: null;">CONDA_LIB_DIR</span> = //r4001/finpublic/FP\&amp;A/channel_test/noarch</span>
-<span id="cb28-2"><span class="bu" style="color: null;">.</span></span>
-<span id="cb28-3"><span class="bu" style="color: null;">.</span></span>
-<span id="cb28-4"><span class="bu" style="color: null;">.</span></span>
-<span id="cb28-5"><span class="ex" style="color: null;">conda_int_pub:</span> conda</span>
-<span id="cb28-6">    <span class="va" style="color: #111111;">$(</span><span class="ex" style="color: null;">CONDA_ACTIVATE</span><span class="va" style="color: #111111;">)</span> <span class="va" style="color: #111111;">$(</span><span class="ex" style="color: null;">ENV_NAME</span><span class="va" style="color: #111111;">)</span></span>
-<span id="cb28-7">    <span class="fu" style="color: #4758AB;">cp</span> <span class="va" style="color: #111111;">$$</span><span class="er" style="color: #AD0000;">(</span><span class="ex" style="color: null;">conda-build</span> . <span class="at" style="color: #657422;">--output</span><span class="kw" style="color: #003B4F;">)</span> <span class="va" style="color: #111111;">$(</span><span class="ex" style="color: null;">CONDA_LIB_DIR</span><span class="va" style="color: #111111;">)</span></span></code></pre></div>
-<p>After that I can install the package into a library by running <code>conda install -c http://dml01:8081 ianlibdemo</code>.</p>
-<p>To see the project at this stage you can run <code>git checkout eg06</code>.</p>
-</section>
-</section>
-<section id="put-it-all-together" class="level2">
-<h2 class="anchored" data-anchor-id="put-it-all-together">Put it all together</h2>
-<p>All of the pieces are here, so the final thing to do is to put them all together. I started that process in the last section by creating a makefile, now I just have to finish it up by tying the pip packaging and publishing in with the conda packaging and publishing.</p>
-<section id="clean-slate" class="level3">
-<h3 class="anchored" data-anchor-id="clean-slate">Clean slate</h3>
-<p>After a package file is built and published we don’t really have any further need for it locally, but it’s not automatically deleted. Let’s make a <code>clean</code> task in Make that will clear out any previous builds. That way any new process can start fresh.</p>
-<p>The clean task looks like this:</p>
-<div class="sourceCode" id="cb29" style="background: #f1f3f5;"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb29-1"><span class="ex" style="color: null;">clean:</span></span>
-<span id="cb29-2">    <span class="co" style="color: #5E5E5E;"># remove pip packages</span></span>
-<span id="cb29-3">    <span class="fu" style="color: #4758AB;">rm</span> <span class="at" style="color: #657422;">-rf</span> ./dist/<span class="pp" style="color: #AD0000;">*</span></span>
-<span id="cb29-4">    <span class="co" style="color: #5E5E5E;"># remove conda packages and build artifacts</span></span>
-<span id="cb29-5">    <span class="va" style="color: #111111;">$(</span><span class="ex" style="color: null;">CONDA_ACTIVATE</span><span class="va" style="color: #111111;">)</span> <span class="va" style="color: #111111;">$(</span><span class="ex" style="color: null;">ENV_NAME</span><span class="va" style="color: #111111;">)</span></span>
-<span id="cb29-6">    <span class="fu" style="color: #4758AB;">bash</span> scripts/conda_clean.sh</span></code></pre></div>
-<p>and <code>conda_clean.sh</code> looks like this:</p>
-<div class="sourceCode" id="cb30" style="background: #f1f3f5;"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb30-1"><span class="co" style="color: #5E5E5E;">#!/bin/bash</span></span>
-<span id="cb30-2"><span class="bu" style="color: null;">export</span> <span class="va" style="color: #111111;">CONDA_BLD_PATH</span><span class="op" style="color: #5E5E5E;">=</span><span class="va" style="color: #111111;">${CONDA_PREFIX}</span>/conda-bld</span>
-<span id="cb30-3"><span class="fu" style="color: #4758AB;">rm</span> <span class="at" style="color: #657422;">-rf</span> <span class="va" style="color: #111111;">$CONDA_BLD_PATH</span></span></code></pre></div>
-</section>
-<section id="full-build-chain" class="level3">
-<h3 class="anchored" data-anchor-id="full-build-chain">Full build chain</h3>
-<p>The last step is to add make tasks to build and publish the pip packages and set them as appropriate dependencies for the conda steps.</p>
-<p>First, add a task to build the pip installable package:</p>
-<div class="sourceCode" id="cb31" style="background: #f1f3f5;"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb31-1"><span class="ex" style="color: null;">pip:</span> clean</span>
-<span id="cb31-2">    <span class="va" style="color: #111111;">$(</span><span class="ex" style="color: null;">CONDA_ACTIVATE</span><span class="va" style="color: #111111;">)</span> <span class="va" style="color: #111111;">$(</span><span class="ex" style="color: null;">ENV_NAME</span><span class="va" style="color: #111111;">)</span></span>
-<span id="cb31-3">    <span class="ex" style="color: null;">poetry</span> build</span></code></pre></div>
-<p>Next add tasks to publish to external and internal pip sources:</p>
-<div class="sourceCode" id="cb32" style="background: #f1f3f5;"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb32-1"><span class="ex" style="color: null;">pip_ext_pub:</span> pip</span>
-<span id="cb32-2">    <span class="va" style="color: #111111;">$(</span><span class="ex" style="color: null;">CONDA_ACTIVATE</span><span class="va" style="color: #111111;">)</span> <span class="va" style="color: #111111;">$(</span><span class="ex" style="color: null;">ENV_NAME</span><span class="va" style="color: #111111;">)</span></span>
-<span id="cb32-3">    <span class="ex" style="color: null;">poetry</span> publish <span class="at" style="color: #657422;">--repository</span> testpypi</span>
-<span id="cb32-4"></span>
-<span id="cb32-5"><span class="ex" style="color: null;">pip_int_pub:</span> pip</span>
-<span id="cb32-6">    <span class="va" style="color: #111111;">$(</span><span class="ex" style="color: null;">CONDA_ACTIVATE</span><span class="va" style="color: #111111;">)</span> <span class="va" style="color: #111111;">$(</span><span class="ex" style="color: null;">ENV_NAME</span><span class="va" style="color: #111111;">)</span></span>
-<span id="cb32-7">    <span class="ex" style="color: null;">poetry</span> publish <span class="at" style="color: #657422;">--repository</span> localpypi</span></code></pre></div>
-<p>Finally as an example we can make wrapper tasks that will publish pip and conda packages to external/internal sources:</p>
-<div class="sourceCode" id="cb33" style="background: #f1f3f5;"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb33-1"><span class="ex" style="color: null;">all_int_pub:</span> pip_int_pub conda_int_pub</span>
-<span id="cb33-2">    <span class="bu" style="color: null;">echo</span> <span class="st" style="color: #20794D;">"publishing to internal conda and pip repository"</span></span>
-<span id="cb33-3"></span>
-<span id="cb33-4"><span class="ex" style="color: null;">all_ext_pub:</span> pip_ext_pub conda_ext_pub</span>
-<span id="cb33-5">    <span class="bu" style="color: null;">echo</span> <span class="st" style="color: #20794D;">"publishing to external conda and pip repository"</span></span></code></pre></div>
-<p>At this point if you want to build and publish your package you can just run <code>make all_int_pub</code> and it will clear out old build artifacts, build a new pip installable package, upload it to the internal pip package repository, sync the version number with conda, build a conda package and publish that to the internal conda package repository. Not bad!</p>
-<p>This is concludes the changes I’m planning to make in this repository. If you just clone the repository as is you should see it in this state, or you can run <code>git checkout eg07</code>.</p>
-</section>
-</section>
-</section>
-<section id="conclusion-and-next-steps." class="level1">
-<h1>Conclusion and next steps.</h1>
-<p>This guide demonstrated how to turn some python code into an installable package, and distribute that package to internal and external users via pip or conda. At the end of this you should be able to reproduce this process for your own project. But there’s always more to do, so what are some next steps to think about?</p>
-<p>First of all, a lot of what we’ve done to set this project up would be broadly applicable to any library built under similar circumstances. It’d be a shame to have to rewrite or copy paste that Makefile into every library you build with minor alterations for example. It would be a good idea to use a templating tool like <a href="https://cookiecutter.readthedocs.io/en/latest/">cookiecutter</a> to automate the files and folder structure that will be consistent across projects. Stay tuned, I’m working on putting that together next.</p>
-<p>Next, there’s still lots of aspects of developing and maintaining a library that we haven’t touched. Things like linting, testing, coverage reporting… Take a look at the rest of the <a href="https://cjolowicz.github.io/posts/hypermodern-python-01-setup/">Hypermodern Python</a> series for some ideas there.</p>
-<p>Finally, I haven’t described how you actually set up an internal package repository for conda or pip packages. I’ll have a follow up post on that coming soon too.</p>
-</section>
-<section id="resources-ive-consulted" class="level1">
-<h1>Resources I’ve consulted</h1>
-<p>This section will serve as a link dump for things I’ve referenced while going through this process. In no particular order they are:</p>
-<ul>
-<li><a href="https://www.youtube.com/watch?v=xiI1i525ljE">SciPy 2018 talk - the sheer joy of packaging</a></li>
-<li><a href="https://snarky.ca/what-the-heck-is-pyproject-toml/">What the heck is pyproject.toml?</a></li>
-<li><a href="https://snarky.ca/a-tutorial-on-python-package-building/">A tutorial on packaging up your python code for pypi</a></li>
-<li><a href="https://docs.conda.io/projects/conda-build/en/latest/index.html">conda build docs</a></li>
-<li><a href="https://dx13.co.uk/articles/2020/01/02/python-packaging-in-2020/">Python packaging in 2020</a></li>
-<li><a href="https://hackersandslackers.com/python-poetry-package-manager/">Package python projects the proper way with poetry</a></li>
-<li><a href="https://github.com/dojeda/poetry2conda">poetry2conda</a></li>
-<li><a href="https://cjolowicz.github.io/posts/hypermodern-python-01-setup/">Hypermodern Python</a></li>
-<li><a href="https://packaging.python.org/guides/hosting-your-own-index/">Host your own index</a></li>
-</ul>
-
-
-</section>
-
- ]]></description>
-  <category>python</category>
-  <category>poetry</category>
-  <category>conda</category>
-  <guid>https://blog.ianpreston.ca/posts/2020-07-09-pypack.html</guid>
-  <pubDate>Thu, 09 Jul 2020 00:00:00 GMT</pubDate>
-  <media:content url="https://blog.ianpreston.ca/posts/pypack/testpypi.PNG " medium="image"/>
 </item>
 </channel>
 </rss>

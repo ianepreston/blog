@@ -1,115 +1,119 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://blog.ianpreston.ca/posts/2020-11-25-dotfiles.html</loc>
-    <lastmod>2023-02-25T03:38:40.434Z</lastmod>
+    <loc>https://blog.ianpreston.ca/about.html</loc>
+    <lastmod>2023-03-22T21:43:03.401Z</lastmod>
   </url>
   <url>
     <loc>https://blog.ianpreston.ca/posts/2023-01-21-proxmox3.html</loc>
-    <lastmod>2023-02-25T03:38:41.926Z</lastmod>
-  </url>
-  <url>
-    <loc>https://blog.ianpreston.ca/posts/2020-07-20-pi-bluetooth.html</loc>
-    <lastmod>2023-02-25T03:38:42.242Z</lastmod>
-  </url>
-  <url>
-    <loc>https://blog.ianpreston.ca/posts/2020-05-09-samba.html</loc>
-    <lastmod>2023-02-25T03:38:42.590Z</lastmod>
-  </url>
-  <url>
-    <loc>https://blog.ianpreston.ca/posts/2022-12-31-proxmox2.html</loc>
-    <lastmod>2023-02-25T03:38:43.262Z</lastmod>
-  </url>
-  <url>
-    <loc>https://blog.ianpreston.ca/posts/2020-10-06-docker-compose.html</loc>
-    <lastmod>2023-02-25T03:38:43.542Z</lastmod>
-  </url>
-  <url>
-    <loc>https://blog.ianpreston.ca/posts/2021-12-30-wheretolive.html</loc>
-    <lastmod>2023-02-25T03:38:44.018Z</lastmod>
-  </url>
-  <url>
-    <loc>https://blog.ianpreston.ca/posts/2020-05-13-conda_envs.html</loc>
-    <lastmod>2023-02-25T03:38:44.698Z</lastmod>
-  </url>
-  <url>
-    <loc>https://blog.ianpreston.ca/posts/2022-08-01-dunning.html</loc>
-    <lastmod>2023-02-25T03:38:45.078Z</lastmod>
-  </url>
-  <url>
-    <loc>https://blog.ianpreston.ca/posts/2020-10-14-arch-bootstrap.html</loc>
-    <lastmod>2023-02-25T03:38:45.862Z</lastmod>
-  </url>
-  <url>
-    <loc>https://blog.ianpreston.ca/posts/2020-07-09-pypack.html</loc>
-    <lastmod>2023-02-25T03:38:46.906Z</lastmod>
-  </url>
-  <url>
-    <loc>https://blog.ianpreston.ca/posts/2023-02-03-migration.html</loc>
-    <lastmod>2023-02-25T03:38:47.174Z</lastmod>
-  </url>
-  <url>
-    <loc>https://blog.ianpreston.ca/posts/2021-01-09-traefik-lan.html</loc>
-    <lastmod>2023-02-25T03:38:47.494Z</lastmod>
-  </url>
-  <url>
-    <loc>https://blog.ianpreston.ca/posts/2020-05-06-pfsense.html</loc>
-    <lastmod>2023-02-25T03:38:48.142Z</lastmod>
-  </url>
-  <url>
-    <loc>https://blog.ianpreston.ca/posts/2022-03-17-mortgage.html</loc>
-    <lastmod>2023-02-25T03:38:48.774Z</lastmod>
-  </url>
-  <url>
-    <loc>https://blog.ianpreston.ca/posts/2020-02-15-windows-ds-software.html</loc>
-    <lastmod>2023-02-25T03:38:49.590Z</lastmod>
-  </url>
-  <url>
-    <loc>https://blog.ianpreston.ca/posts/2021-02-26-ferede.html</loc>
-    <lastmod>2023-02-25T03:38:50.790Z</lastmod>
-  </url>
-  <url>
-    <loc>https://blog.ianpreston.ca/posts/2020-11-21-ansible.html</loc>
-    <lastmod>2023-02-25T03:38:51.118Z</lastmod>
-  </url>
-  <url>
-    <loc>https://blog.ianpreston.ca/posts/2020-05-03-ssh.html</loc>
-    <lastmod>2023-02-25T03:38:51.562Z</lastmod>
-  </url>
-  <url>
-    <loc>https://blog.ianpreston.ca/posts/2022-12-30-rootless-docker.html</loc>
-    <lastmod>2023-02-25T03:38:52.026Z</lastmod>
-  </url>
-  <url>
-    <loc>https://blog.ianpreston.ca/posts/2022-11-21-proxmox.html</loc>
-    <lastmod>2023-02-25T03:38:52.414Z</lastmod>
+    <lastmod>2023-03-22T21:43:05.621Z</lastmod>
   </url>
   <url>
     <loc>https://blog.ianpreston.ca/posts/2021-04-10-portfolio.html</loc>
-    <lastmod>2023-02-25T03:38:52.782Z</lastmod>
-  </url>
-  <url>
-    <loc>https://blog.ianpreston.ca/posts/2020-11-26-arch-tldr.html</loc>
-    <lastmod>2023-02-25T03:38:53.110Z</lastmod>
+    <lastmod>2023-03-22T21:43:06.257Z</lastmod>
   </url>
   <url>
     <loc>https://blog.ianpreston.ca/posts/2020-05-17-conda.html</loc>
-    <lastmod>2023-02-25T03:38:53.634Z</lastmod>
+    <lastmod>2023-03-22T21:43:07.013Z</lastmod>
   </url>
   <url>
     <loc>https://blog.ianpreston.ca/posts/2023-02-05-proxmox-ceph.html</loc>
-    <lastmod>2023-02-25T03:38:54.646Z</lastmod>
+    <lastmod>2023-03-22T21:43:08.481Z</lastmod>
+  </url>
+  <url>
+    <loc>https://blog.ianpreston.ca/posts/2020-02-15-windows-ds-software.html</loc>
+    <lastmod>2023-03-22T21:43:09.589Z</lastmod>
+  </url>
+  <url>
+    <loc>https://blog.ianpreston.ca/posts/2020-05-09-samba.html</loc>
+    <lastmod>2023-03-22T21:43:10.045Z</lastmod>
+  </url>
+  <url>
+    <loc>https://blog.ianpreston.ca/posts/2022-03-17-mortgage.html</loc>
+    <lastmod>2023-03-22T21:43:11.009Z</lastmod>
+  </url>
+  <url>
+    <loc>https://blog.ianpreston.ca/posts/2023-02-03-migration.html</loc>
+    <lastmod>2023-03-22T21:43:11.381Z</lastmod>
+  </url>
+  <url>
+    <loc>https://blog.ianpreston.ca/posts/2022-11-21-proxmox.html</loc>
+    <lastmod>2023-03-22T21:43:12.005Z</lastmod>
+  </url>
+  <url>
+    <loc>https://blog.ianpreston.ca/posts/2020-05-03-ssh.html</loc>
+    <lastmod>2023-03-22T21:43:12.657Z</lastmod>
+  </url>
+  <url>
+    <loc>https://blog.ianpreston.ca/posts/2022-08-01-dunning.html</loc>
+    <lastmod>2023-03-22T21:43:13.217Z</lastmod>
+  </url>
+  <url>
+    <loc>https://blog.ianpreston.ca/posts/2022-12-30-rootless-docker.html</loc>
+    <lastmod>2023-03-22T21:43:13.893Z</lastmod>
+  </url>
+  <url>
+    <loc>https://blog.ianpreston.ca/posts/2020-11-26-arch-tldr.html</loc>
+    <lastmod>2023-03-22T21:43:14.369Z</lastmod>
+  </url>
+  <url>
+    <loc>https://blog.ianpreston.ca/posts/2023-02-24-k8s-the-hard-way.html</loc>
+    <lastmod>2023-03-22T21:43:15.741Z</lastmod>
+  </url>
+  <url>
+    <loc>https://blog.ianpreston.ca/posts/2021-02-26-ferede.html</loc>
+    <lastmod>2023-03-22T21:43:17.389Z</lastmod>
+  </url>
+  <url>
+    <loc>https://blog.ianpreston.ca/posts/2022-12-31-proxmox2.html</loc>
+    <lastmod>2023-03-22T21:43:18.401Z</lastmod>
+  </url>
+  <url>
+    <loc>https://blog.ianpreston.ca/posts/2020-11-25-dotfiles.html</loc>
+    <lastmod>2023-03-22T21:43:19.001Z</lastmod>
+  </url>
+  <url>
+    <loc>https://blog.ianpreston.ca/posts/2020-10-14-arch-bootstrap.html</loc>
+    <lastmod>2023-03-22T21:43:20.106Z</lastmod>
+  </url>
+  <url>
+    <loc>https://blog.ianpreston.ca/posts/2020-07-09-pypack.html</loc>
+    <lastmod>2023-03-22T21:43:21.590Z</lastmod>
+  </url>
+  <url>
+    <loc>https://blog.ianpreston.ca/posts/2021-01-09-traefik-lan.html</loc>
+    <lastmod>2023-03-22T21:43:22.030Z</lastmod>
+  </url>
+  <url>
+    <loc>https://blog.ianpreston.ca/posts/2020-10-06-docker-compose.html</loc>
+    <lastmod>2023-03-22T21:43:22.422Z</lastmod>
+  </url>
+  <url>
+    <loc>https://blog.ianpreston.ca/posts/2020-11-21-ansible.html</loc>
+    <lastmod>2023-03-22T21:43:22.838Z</lastmod>
+  </url>
+  <url>
+    <loc>https://blog.ianpreston.ca/posts/2020-05-13-conda_envs.html</loc>
+    <lastmod>2023-03-22T21:43:23.718Z</lastmod>
+  </url>
+  <url>
+    <loc>https://blog.ianpreston.ca/posts/2021-12-30-wheretolive.html</loc>
+    <lastmod>2023-03-22T21:43:24.390Z</lastmod>
+  </url>
+  <url>
+    <loc>https://blog.ianpreston.ca/posts/2020-07-20-pi-bluetooth.html</loc>
+    <lastmod>2023-03-22T21:43:24.786Z</lastmod>
   </url>
   <url>
     <loc>https://blog.ianpreston.ca/posts/2022-12-30-devcontainers.html</loc>
-    <lastmod>2023-02-25T03:38:54.986Z</lastmod>
+    <lastmod>2023-03-22T21:43:25.262Z</lastmod>
   </url>
   <url>
-    <loc>https://blog.ianpreston.ca/about.html</loc>
-    <lastmod>2023-02-25T03:38:55.242Z</lastmod>
+    <loc>https://blog.ianpreston.ca/posts/2020-05-06-pfsense.html</loc>
+    <lastmod>2023-03-22T21:43:26.286Z</lastmod>
   </url>
   <url>
     <loc>https://blog.ianpreston.ca/index.html</loc>
-    <lastmod>2023-02-25T03:38:55.806Z</lastmod>
+    <lastmod>2023-03-22T21:43:27.162Z</lastmod>
   </url>
 </urlset>
