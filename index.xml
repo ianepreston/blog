@@ -2715,6 +2715,14 @@ resource "proxmox_vm_qemu" "ubuntu-vm" {
 <section id="bigger-posts" class="level1">
 <h1>Bigger posts</h1>
 <p>This section will include links to the larger and more involved blog posts I’ve made.</p>
+<section id="homelab-cluster" class="level2">
+<h2 class="anchored" data-anchor-id="homelab-cluster">Homelab cluster</h2>
+<p>I’ve been learning about proxmox, virtualization, and kubernetes in my homelab. The first in the series on configuring proxmox is <a href="../posts/2022-11-21-proxmox.html">here</a>. I also took a stab at getting <a href="https://github.com/kelseyhightower/kubernetes-the-hard-way">kubernetes the hard way</a> going on my local setup, and got most of the way through it before realizing there were a lot of differences between my home setup and the cloud and that there was some more fundamental learning I’d have to do before that exercise was super helpful. I did learn a decent amount though, some about kubernetes, more about terraform.</p>
+</section>
+<section id="mortgage-modeling" class="level2">
+<h2 class="anchored" data-anchor-id="mortgage-modeling">Mortgage modeling</h2>
+<p>When I was in the process of planning to buy my house, I wanted to understand whether it made sense to go with a variable or fixed rate mortgage. As part of that analysis I pulled some historical data in and did some analysis of how that decision would have worked out for me over the last few decades. The post is <a href="../posts/2022-03-17-mortgage.html">here</a>.</p>
+</section>
 <section id="where-to-live-app" class="level2">
 <h2 class="anchored" data-anchor-id="where-to-live-app">Where to live app</h2>
 <p>This post documents the process I went through to build a where to live app. It scrapes listings from rental and sales sites daily, and then combines them with other data sets like commute times, grocery store locations, and flood risk to produce personalized lists of candidate listings. The blog describes the implementation in more detail, along with some important lessons I learned and links to the code. The blog post is <a href="../posts/2021-12-30-wheretolive.html">here</a>.</p>
