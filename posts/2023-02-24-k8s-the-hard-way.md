@@ -7,10 +7,6 @@ toc: true
 categories: [kubernetes, proxmox, Linux]
 ---
 
-# TODO
-
-Add links to all the code once I've merged this into main on the scratch repo
-
 # Introduction
 
 In this post I'll be recording notes related to working through
@@ -21,6 +17,8 @@ Before I try and get a "proper" k8s cluster going on my proxmox setup I'm going 
 and work through this guide in the hope that it will improve my understanding of the setup.
 
 # Provisioning compute
+
+All the terraform code for the provisioning can be found [here](https://github.com/ianepreston/scratch/tree/main/k8s-the-hard-way/pve-terraform).
 
 Almost immediately I'm deviating from the guide because it expects me to deploy things
 in google cloud, and instead I'm going to do it on my local network. I don't expect this
@@ -343,7 +341,12 @@ gone for some better error messages.
 
 # Generating config
 
+All the ansible playbooks and configs for the sections below can be found
+[here](https://github.com/ianepreston/scratch/tree/main/k8s-the-hard-way/ansible).
+
 ## Provisioning a CA and Generating TLS certificates
+
+[Ansible playbook](https://github.com/ianepreston/scratch/blob/main/k8s-the-hard-way/ansible/01_ca_certs.yml)
 
 On to [chapter 4](https://github.com/kelseyhightower/kubernetes-the-hard-way/blob/master/docs/04-certificate-authority.md) in the guide!
 
@@ -361,6 +364,8 @@ ansible. I'll have to wait until later to see if anything broke, but for now it 
 
 ## Generating Kubernetes configuration files for authentication
 
+[Ansible playbook](https://github.com/ianepreston/scratch/blob/main/k8s-the-hard-way/ansible/02_kube_config.yml)
+
 On to the next thing! This section uses `kubectl`, which I fortunately already have
 available in my devcontainer, so no config required there. I'll keep going with my pattern
 of using ansible to manage the scripting. No issues with any of these steps, at least
@@ -368,12 +373,16 @@ not at this point. I might have to come back to some of it for troubleshooting.
 
 ## Generating the data encryption config and key
 
+[Ansible playbook](https://github.com/ianepreston/scratch/blob/main/k8s-the-hard-way/ansible/03_encryption.yml)
+
 Same as the above. I did a slightly different workflow for the ansible playbook. Since
 this called for generating a random number as part of the config, rather than doing
 something fancy like registering the output of a command to generate the random number
 and then inserting that into a template I just wrapped the whole thing in a shell command.
 
 # Bootstrap the etcd cluster
+
+[Ansible playbook](https://github.com/ianepreston/scratch/blob/main/k8s-the-hard-way/ansible/04_bootstrap_etcd.yml)
 
 On to [chapter 7](https://github.com/kelseyhightower/kubernetes-the-hard-way/blob/master/docs/07-bootstrapping-etcd.md)
 Now we're getting into interesting stuff where I'm actually starting services on the nodes.
@@ -497,6 +506,8 @@ about not being able to talk. I think I'm good!
 
 # Bootstrap the kubernetes control plane
 
+[Ansible playbook](https://github.com/ianepreston/scratch/blob/main/k8s-the-hard-way/ansible/05_bootstrap_control_plane.yml)
+
 A lot of the activity in this section is similar to bootstrapping the etcd cluster from
 an ansible perspective. Download some files, copy some others over into various locations,
 start up some systemd units and off you go. I had very few issues getting this initially
@@ -566,6 +577,8 @@ Again, I don't actually have a load balancer (maybe that will be what I do in my
 post). So I'll skip this part.
 
 # Bootstrapping the kubernetes worker nodes
+
+[Ansible playbook](https://github.com/ianepreston/scratch/blob/main/k8s-the-hard-way/ansible/06_bootstrap_workers.yml)
 
 This is the last major step in having a working cluster as far as I can tell.
 The first step is installing some system dependencies, which is no problem. The next
@@ -676,3 +689,149 @@ running:
 ❯ kubectl run busybox --image=busybox:1.28 --command -- sleep 3600
 Error from server (Forbidden): pods "busybox" is forbidden: error looking up service account default/default: serviceaccount "default" not found
 ```
+
+Ok, do I have any service accounts?
+
+```bash
+❯ kubectl get serviceAccounts
+No resources found in default namespace
+```
+
+Guess not. What step did I miss? From [this post](https://stackoverflow.com/questions/33528398/why-dont-i-have-a-default-serviceaccount-on-kubernetes) I should get this from the
+`kube-controller-manager` binary. Looking back I can see that I did at least attemp
+to install that program and set up a service for it. Let's see check its status on
+one of my controller nodes:
+
+```bash
+ipreston@ubuntu-controller-1:~$ systemctl status kube-controller-manager
+● kube-controller-manager.service - Kubernetes Controller Manager
+     Loaded: loaded (/etc/systemd/system/kube-controller-manager.service; enabled; vendor preset: enabled)
+     Active: activating (auto-restart) (Result: exit-code) since Fri 2023-03-17 17:20:35 UTC; 127ms ago
+       Docs: https://github.com/kubernetes/kubernetes
+    Process: 589315 ExecStart=/usr/local/bin/kube-controller-manager --bind-address=0.0.0.0 --cluster-cidr=192.168.85.0>
+   Main PID: 589315 (code=exited, status=1/FAILURE)
+        CPU: 651ms
+```
+
+Cool, that would explain it. Looking through `journalctl -xeu kube-controller-manager`
+I see `/var/lib/kubernetes/kube-controller-manager.kubeconfig: no such file or directory`.
+Let's see where I was supposed to generate that and figure out what went wrong. Going
+back into my code I see I generated the file but didn't copy it into `/var/lib/kubernetes`
+in my control plane playbook when I copied the rest of the configs in. Let's try again.
+
+Ok, after re-running the playbook with that file added the service is up and running.
+
+Let's try that command again.
+
+```bash
+❯ kubectl get serviceAccounts
+NAME      SECRETS   AGE
+default   1         43s
+```
+
+Nice! Ok, back to the DNS and busybox stuff.
+
+```bash
+❯ kubectl get pods -l k8s-app=kube-dns -n kube-system
+NAME                       READY   STATUS              RESTARTS   AGE
+coredns-8494f9c688-2bz8x   0/1     ContainerCreating   0          88s
+coredns-8494f9c688-pxw6f   0/1     ContainerCreating   0          88s
+```
+
+Without re-running anything it looks like the controller manager has picked up what
+I ran before. Now I just have to wait a bit for it to create the container, I hope...
+
+```bash
+❯ kubectl get pods -l k8s-app=kube-dns -n kube-system
+NAME                       READY   STATUS              RESTARTS   AGE
+coredns-8494f9c688-2bz8x   0/1     ContainerCreating   0          60m
+coredns-8494f9c688-pxw6f   0/1     ContainerCreating   0          60m
+```
+
+I took the dog for a walk and came back to this. There's no way these containers should
+take an hour to create, so something else is broken. Time for more learning!
+
+Running `kubectl describe pods -l k8s-app=kube-dns -n kube-system` I get so much information
+about what's not working, neat! I think the relevant part is:
+
+`Warning  FailedCreatePodSandBox  58s (x369 over 86m)  kubelet  Failed to create pod sandbox: rpc error: code = Unknown desc = failed to create containerd task: cgroups: cgroup mountpoint does not exist: unknown`
+
+searching isn't giving me a silver bullet solution to this, but it suggests there's something
+wrong with my container runtime, so let's take a look at my worker node.
+
+First thing to do is check the status of the services I was supposed to start.
+`containerd`, `kubelet` and `kube-proxy` services all appear to be up and running.
+I can see the same error about cgroup mountpoint not existing in `journalctl -xeu containerd`
+so the problem is in there, but I'm still not sure what's actually broken.
+
+Ok, with a little more context that I should be searching for that error in association
+with containerd I find [this issue](https://github.com/kubernetes/minikube/issues/11310).
+
+Now I have to figure out how to apply that to this guide. First let's check if there are
+open issues in the repository to resolve it. There's a [PR](https://github.com/kelseyhightower/kubernetes-the-hard-way/pull/728/commits/2adb5c0f5cae7e9d3129a4d8ab9f2ff8daf8ffaf#diff-387650bdd066d5645818d0579c5d3d562ceac2c9c94bd176a9e3162bc9917e94)
+to upgrade to a newer kubernetes, that includes a different way of generating the
+containerd config file. I'm not sure how exactly to apply that in my example though.
+
+I found a nice [PR](https://github.com/kubernetes/minikube/pull/11325/commits/813138734d347b3d84c527ed135fb37e509983f0)
+in the minikube project that showed how to do the upgrade. After running it I got a little
+better, but was still having some resolution errors and backoffs. I'd noticed some other
+weird behaviour with my worker nodes so I decided to give them a reboot to see how that
+worked.
+
+After a reboot here's where I am:
+
+```bash
+❯ kubectl get pods -l k8s-app=kube-dns -n kube-system
+NAME                       READY   STATUS             RESTARTS   AGE
+coredns-8494f9c688-2bz8x   0/1     ImagePullBackOff   0          3h30m
+coredns-8494f9c688-pxw6f   0/1     ImagePullBackOff   0          3h30m
+```
+
+I ssh into a worker node and find that DNS no longer works on it. Controller nodes
+still resolve hosts fine, and if I put in the IP of a local or external site I can ping
+it. So something about how I configured that DNS service has broken things for my
+workers. Hmmmm. Even more fun, after a bit of this, DNS on my entire home network broke.
+I shut down all the nodes, rebooted my router and got DNS back.
+
+After being afraid to touch this for a while I decided to start the nodes back up and see
+what happened. Right now DNS is ok on my host machine at least. Connecting into my worker
+nodes I can see that DNS doesn't work on two of them, and a whole bunch of extra network
+interfaces have been created. That would definitely explain why I can't pull images. I
+wonder if my earlier attempt to apply that manifest left something in a failed state that
+they can't recover from. I give `kubectl delete -f coredns-1.8.yaml` a run to reverse the
+playbook. I can't immediately resolve names on those nodes after running that, but let's
+give them a reboot and see what happens. Ok, after a reboot DNS is back up. Let's try
+applying that playbook again and see what happens:
+
+```bash
+❯ kubectl get pods -l k8s-app=kube-dns -n kube-system
+NAME                       READY   STATUS         RESTARTS   AGE
+coredns-8494f9c688-jn25z   0/1     ErrImagePull   0          3s
+coredns-8494f9c688-lhhg5   0/1     ErrImagePull   0          3s
+```
+
+So we're back to not working. At least the rest of my network is still ok for now.
+Looking at the workers that are coming back up, I think I see something confusing.
+The nodes that are running the coredns pods have a new network interface with an IP
+that matches my router: `cnio0:`. I can still ping my router by its IP, and I can still
+ping external sites if I know their IP, so routing isn't completely broken, but name resolution
+seems to be. At this point I decided to confirm whether the weird network wide DNS failure
+I had previously was indeed a result of this configuration. I rebooted my phone and when
+it came back up DNS no longer worked. I deleted the manifest, rebooted my router, and
+all was right with the world again. I don't even have my head around how this could happen,
+let alone what it means. I guess that `cnio0` device is broadcasting that it has my router's
+IP or something?
+
+Reading through [this guide](https://github.com/ehlesp/smallab-k8s-pve-guide/blob/main/G017%20-%20Virtual%20Networking%20~%20Network%20configuration.md#g017-virtual-networking-network-configuration)
+a bit, which is more focused on a homelab k8s deployment I can see that they had two
+virtual network interfaces for the cluster, one for external facing connectivity, and one
+for internal facing cluster communication. I think probably trying to do everything on
+one network is part of what's causing me problems.
+
+# Call it quits
+
+At this point I feel like I'm hitting pretty serious diminishing returns in terms of
+how much I'm learning vs how weird the edge cases I'm encountering are. I'm definitely
+not done learning kubernetes, and I might even come back to this later, but I think there
+are clearly some other aspects of my setup and kubernetes that I have to learn about more
+before working through this will provide additional value.
