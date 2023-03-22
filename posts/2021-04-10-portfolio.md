@@ -103,6 +103,23 @@ I like to do the [Advent of Code](https://adventofcode.com/) challenges every ye
 
 This section will include links to the larger and more involved blog posts I've made.
 
+## Homelab cluster
+
+I've been learning about proxmox, virtualization, and kubernetes in my homelab. The
+first in the series on configuring proxmox is [here](2022-11-21-proxmox.md). I also took
+a stab at getting [kubernetes the hard way](https://github.com/kelseyhightower/kubernetes-the-hard-way)
+going on my local setup, and got most of the way through it before realizing there were a
+lot of differences between my home setup and the cloud and that there was some more
+fundamental learning I'd have to do before that exercise was super helpful. I did learn
+a decent amount though, some about kubernetes, more about terraform.
+
+## Mortgage modeling
+
+When I was in the process of planning to buy my house, I wanted to understand whether
+it made sense to go with a variable or fixed rate mortgage. As part of that analysis
+I pulled some historical data in and did some analysis of how that decision would have
+worked out for me over the last few decades. The post is [here](2022-03-17-mortgage.ipynb).
+
 ## Where to live app
 
 This post documents the process I went through to build a where to live app. It scrapes
