@@ -10,7 +10,155 @@
 <atom:link href="https://blog.ianpreston.ca/index.xml" rel="self" type="application/rss+xml"/>
 <description></description>
 <generator>quarto-1.2.475</generator>
-<lastBuildDate>Fri, 24 Feb 2023 00:00:00 GMT</lastBuildDate>
+<lastBuildDate>Sat, 08 Apr 2023 00:00:00 GMT</lastBuildDate>
+<item>
+  <title>Setting up my first managed switch</title>
+  <link>https://blog.ianpreston.ca/posts/2023-04-08-managed-switch.html</link>
+  <description><![CDATA[ 
+
+
+
+
+<section id="introduction" class="level1">
+<h1>Introduction</h1>
+<p>After some <a href="../posts/2023-02-24-k8s-the-hard-way.html">recent challenges</a> where experiments in my lab took down DNS for my entire network, I decided it was time to stop putting off cleaning up my network from the giant flat architecture it’s currently using.</p>
+<p>To accomplish this goal I first needed to acquire a managed switch. Following a great deal of searching and talking myself into and out of getting some super fancy 10gb switch with PoE I found <a href="https://www.hpe.com/psnow/doc/c04140686?jumpid=in_lit-psnow-red">an hp 2810-48g</a> for $15 from a local reseller and decided it made more sense to pick that up and learn before committing to anything super fancy and expensive. As with most of my recent posts, this is going to be a log of the things I tried and issues I encountered, as opposed to a polished how-to guide for others to follow. Although, if you’re in a similar position to me at the start of this post, then maybe reading through will save you some pain on your own journey.</p>
+</section>
+<section id="connecting-to-the-switch" class="level1">
+<h1>Connecting to the switch</h1>
+<p>If I’m going to manage this switch, I need some way to connect with it. Right now it’s not even assigned an IP, and from my reading these types of switches don’t just pick one up by default. Instead I have to connect in over the management interface, which is a port that looks like ethernet on the switch, but is actually a serial console. I ordered in a RJ-45 to USB cable to handle this connection and hooked it up to one of the boxes I had down by the switch. I also ran a regular ethernet cable from the first port on the switch to one of the unused interface ports on my pfsense router. I’ll set up a separate network on that and slowly migrate devices onto this switch as I get it working.</p>
+<p>Anyway, with the connection established physically, I have to figure out how to connect in from the machine. I ssh into the box the switch is connected to and run <code>lsusb</code>. <code>Bus 003 Device 002: ID 0403:6001 Future Technology Devices International, Ltd FT232 Serial (UART) I</code> looks like the right device. How do I connect to it? Well first I reboot because I realize I haven’t rebooted since I upgraded the kernel on this machine and I think that’s giving me problems accessing kernel modules <a href="https://bbs.archlinux.org/viewtopic.php?id=211536">as seen here</a>. The reboot also leads to <code>/dev/ttyUSB0</code> showing up, which was what I was looking for when I started poking around with <code>lsusb</code> and <code>dmesg</code>. Following the console connection <a href="https://docs.netgate.com/pfsense/en/latest/hardware/connect-to-console.html">docs from pfsense</a> I run <code>sudo screen /dev/ttyUSB0 115200</code> and just get a blank screen. After waiting a fair while and almost giving up I’m greeted with the procurve screen!</p>
+<pre><code>ProCurve J9022A Switch 2810-48G
+Software revision N.10.02
+
+Copyright (C) 1991-2006 Hewlett-Packard Co.  All Rights Reserved.
+
+                           RESTRICTED RIGHTS LEGEND
+
+ Use, duplication, or disclosure by the Government is subject to restrictions
+ as set forth in subdivision (b) (3) (ii) of the Rights in Technical Data and
+ Computer Software clause at 52.227-7013.
+
+         HEWLETT-PACKARD COMPANY, 3000 Hanover St., Palo Alto, CA 94303
+
+We'd like to keep you up to date about:
+  * Software feature updates
+  * New product announcements
+  * Special events
+
+Please register your products now at:  www.ProCurve.com
+
+
+
+
+Press any key to continue</code></pre>
+</section>
+<section id="connect-in-and-bring-up-setup" class="level1">
+<h1>Connect in and bring up setup</h1>
+<p>Now I’ve got a nice prompt saying <code>ProCurve Switch 2810-48G#</code>. So now what? According to the manual I can just type <code>setup</code>, that’s handy, let’s give that a shot.</p>
+<pre><code>ProCurve Switch 2810-48G                                    7-Jan-1990  18:21:16
+==========================- CONSOLE - MANAGER MODE -============================
+                                  Switch Setup
+
+  System Name : ProCurve Switch 2810-48G
+  System Contact :
+  Manager Password :                    Confirm Password :
+  Logon Default : CLI                   Time Zone [0] : 0
+  Community Name : public               Spanning Tree Enabled [No] : No
+
+  Default Gateway :
+  Time Sync Method [None] : TIMEP
+  TimeP Mode [Disabled] : Disabled
+
+  IP Config [DHCP/Bootp] : DHCP/Bootp
+  IP Address  :
+  Subnet Mask :
+
+
+ Actions-&gt;   Cancel     Edit     Save     Help</code></pre>
+<p>That’s pretty neat. At this point I guess I better set up the router to actually operate on that port. Over in pfsense I go to <code>Interfaces -&gt; Interface Assignments</code>. I’ve got <code>igb0</code> set as my WAN, <code>igb1</code> as my (currently only) LAN, and nothing on <code>igb2</code>, which I assume is the port my switch is plugged into since I plugged it in beside the other two. Let’s create an interface there and call it <code>LABLan</code> for now. After adding the interface I head into the options, mark it enabled, rename it from the default <code>Opt1</code> and give it an IP address of <code>192.168.10.1/24</code>. Eventually I’m going to have to refigure my addressing scheme, but for now that space isn’t in use so let’s go with it.</p>
+</section>
+<section id="test-basic-connectivity" class="level1">
+<h1>Test basic connectivity</h1>
+<p>I think at this point I can give my switch an IP address and connect into it that way. Let’s try. I change the IP Config to manual and then enter an IP address of <code>192.168.85.2</code> and a subnet mask of <code>255.255.255.0</code>. Let’s test this. To avoid potential routing or firewall problems as an issue I’ll first start by just trying to ping it from a shell on pfsense. I get a response! Good start. Let’s see if I can ping it from my LAN on another machine, probably not. Yeah, I can’t. Eventually I’m going to lock these different networks down, but for now while I’m testing let’s see if I can open things up. Again, I’ll clean this up later, but for now I’m just adding a rule that passes any traffic from <code>LAN</code> net to <code>LABLan</code> net. But ping still doesn’t work. Why would that be? Probably because I didn’t add a rule that allowed outbound traffic from <code>LABLan</code>. Getting closer, at least now my switch can ping the default gateway where it couldn’t before. But I still can’t seem to ping it from my other network. Let’s take a step back and see if I can ping that gateway from my network. I can, so that suggests the network rules are working. But then why can’t I ping the switch? Running <code>traceroute</code> from another machine shows it reaching the gateway at <code>192.168.10.1</code> but not making it through to the switch.</p>
+<p>I’ve simplified my firewall rule for that interface even further with just allowing pass everywhere, but it’s still not working.</p>
+<p>I want to try pinging out from the switch, but for whatever reason connecting in again using the same <code>sudo screen /dev/ttyUSB0 115200</code> that was working before is not rendering well anymore. Guess I’ll get sidetracked and work on that.</p>
+</section>
+<section id="get-sidetracked-on-the-serial-interface" class="level1">
+<h1>Get sidetracked on the serial interface</h1>
+<section id="try-some-other-consoles-and-commands" class="level2">
+<h2 class="anchored" data-anchor-id="try-some-other-consoles-and-commands">Try some other consoles and commands</h2>
+<p>For whatever reason upon trying to reconnect I’m getting either nothing from the terminal or some random gibberish characters, or parts of what seem to be the prompt or menu screen, but not rendered correctly to actually read. I assume there’s something wrong with how my serial connection is configured. I tried connecting with <code>minicom</code> instead, and got similar results. I tried connecting at different baud rates, but that also didn’t imporve things. I read that the switch would auto-negotiate based on whatever rate I first connected to it with, so I reset the switch and tried connecting at <code>38400</code> since I’d seen that in some guides, but it was still basically the same. At least I learned the proper way to end a <code>screen</code> session with <code>ctrl+a</code> and then <code>k</code>.</p>
+</section>
+<section id="realize-i-can-telnet-in" class="level2">
+<h2 class="anchored" data-anchor-id="realize-i-can-telnet-in">Realize I can telnet in</h2>
+<p>Now that I have an IP address assigned, it looks like I can <code>telnet</code> in from pfsense with <code>telnet 192.168.10.2</code>. I’d still like to get the serial interface figured out as a fallback, but at least this lets me work through the menus while I’m figuring that out.</p>
+<p>Just as a quick first test I see if I can ping out from the switch, and I cannot. I can ping my default gateway, but I can’t ping anything on the LAN or internet. That’s weird, but I’m coming back to that later, right now we’re getting the serial console working properly.</p>
+<p>From the telnet session I run <code>show console</code> to get my serial config:</p>
+<pre><code> Console/Serial Link
+
+  Inbound Telnet Enabled [Yes] : Yes
+  Web Agent Enabled [Yes] : Yes
+  Terminal Type [VT100] : VT100
+  Screen Refresh Interval (sec) [3] : 3
+  Displayed Events [All] : All
+
+  Baud Rate [Speed Sense] : speed-sense
+  Flow Control [XON/XOFF] : XON/XOFF
+  Session Inactivity Time (min) [0] : 0</code></pre>
+</section>
+<section id="try-with-hard-coded-baud-rates-and-putty-finally-figure-it-out-sort-of" class="level2">
+<h2 class="anchored" data-anchor-id="try-with-hard-coded-baud-rates-and-putty-finally-figure-it-out-sort-of">Try with hard coded baud rates and putty, finally figure it out (sort of)</h2>
+<p>Let’s try hard coding the baud rate to what I’m using. First I run <code>config</code> to get into config mode, then <code>console baud-rate 115200</code> to set the rate, then <code>write memory</code> to save the setting, and <code>reload</code> to reboot the switch. After giving it a minute to come back up I re-run my screen command. Still doesn’t work. I wonder if this is some weird quirk of trying to do things over ssh. Let’s connect my laptop directly and try it out. That will introduce the added factor of using putty into the mix, but oh well.</p>
+<p>Working with putty seemed to work a bit better. I still ended up with blank screens but with a bit of fussing around I was able to get it started up again. I wonder if I just left it in a weird state before and if I can get back in cleanly remotely now.</p>
+<p>Ok yeah, that seems to be it. I guess I’ll have to remember to leave the session in a clean state. Let’s see if I can quit out and come back in. I can, ok, must have just been something about the state I left it in. Back to actually setting up this switch.</p>
+<p>Actually, one more thing. Let’s set the baud-rate back to auto. Again from the switch I run <code>config</code> to get into config mode, then <code>console baud-rate speed-sense</code> then <code>write memory</code> then <code>reload</code>. After rebooting the switch I reconnect with <code>sudo screen /dev/ttyUSB0</code> without specifying a speed. It auto connects at 9600 baud, which seems to work fine.</p>
+</section>
+</section>
+<section id="set-up-routing" class="level1">
+<h1>Set up routing</h1>
+<p>Back to actually making this thing work for networking. I have an IP address for the switch, and I can reach that from my router, and I can reach the router from my switch, but I can’t get out to the internet or my other networks from the switch, or into the switch from my other networks. What gives?</p>
+<p>As part of the test I decide to see if I can connect my NAS into this network on one of its other ports. I go in, give it a static IP on that port (since I haven’t enabled DHCP on this interface yet) and… get locked out of my NAS on the LAN interface. I’m able to confirm that I can ping the NAS from my switch now, but I’ve taken down my NAS from my main network, which is definitely not good. I’ll go unplug that cable and hope my NAS comes back. Oh good, it did. Still have to figure out what’s up with my routing though.</p>
+<p>I guess this is a good point to do a manual backup of my pfsense setup. I should have backups going automatically, but this seems like a time to have a little extra insurance.</p>
+<p>Oh wait, I think my LAN firewall rules only allow outgoing traffic from other networks. I probably have to add an allow rule to receive traffic from LabLAN. Nope, still can’t ping.</p>
+<p>Just to restate where I’m at, from my LAN connected computer at <code>192.168.85.2</code> I can ping the <code>LabLAN</code> gateway at <code>192.168.10.1</code>, but not the switch at <code>192.168.10.2</code>. From the pfsense router I can ping the switch at <code>192.168.10.2</code> and from the switch I can ping the <code>LabLAN</code> gateway at <code>192.168.10.1</code> but not the <code>LAN</code> gateway at <code>192.168.85.1</code>. For the brief period when I had my NAS connected on that interface I could ping it from the switch, although that also messed up my connectivity on <code>LAN</code> for the NAS, so I turned that off while I’m testing.</p>
+<p>After some poking around I decide to check the output of the <code>show ip</code> command on the switch:</p>
+<pre><code>ProCurve Switch 2810-48G# show ip
+
+ Internet (IP) Service
+
+
+  Default Gateway :
+  Default TTL     : 64
+  Arp Age         : 20
+
+  VLAN         | IP Config  IP Address      Subnet Mask     Proxy ARP
+  ------------ + ---------- --------------- --------------- ---------
+  DEFAULT_VLAN | Manual     192.168.10.2    255.255.255.0   No</code></pre>
+<p>So I don’t have a default gateway set. That would do it. Looking back I didn’t write down anything about setting that. Oops.</p>
+<p>I run setup again, I set the default gateway to <code>192.168.10.1</code> and everything works. I can see how I missed that now, the default gateway setting is well above where you set the IP of the switch. Well that was a waste of a fair bit of time.</p>
+</section>
+<section id="try-the-web-interface" class="level1">
+<h1>Try the web interface</h1>
+<p>I know all the hardcore network people use the shell, and maybe at some point I’ll do that too, but I’d at least like the option of a network interface. Let’s see if I can get my hands on that.</p>
+<p>Opening up a browser and loading the IP of the switch I get:</p>
+<p><code>This product requires the Java language, which is either disabled or not available on this browser.</code></p>
+<p><code>To use this product you must either upgrade your browser to one that is Java compliant, or enable the Java language on your current browser.</code></p>
+<p>From checking out <a href="https://community.spiceworks.com/topic/1146093-hp-procurve-java-application-blocked">this post</a> it seems like I’d have to have a very old browser to use this web interface. Fine, guess it’s menus and CLIs for me.</p>
+</section>
+<section id="conclusion" class="level1">
+<h1>Conclusion</h1>
+<p>In this post I demonstrated that I don’t really know a lot about networking and that this is going to be quite the learning experience. I also got the basic connectivity working on my managed switch. In the next post I’ll do some actual planning for my network and start configuring things and moving services over.</p>
+
+
+</section>
+
+ ]]></description>
+  <category>networking</category>
+  <category>Linux</category>
+  <guid>https://blog.ianpreston.ca/posts/2023-04-08-managed-switch.html</guid>
+  <pubDate>Sat, 08 Apr 2023 00:00:00 GMT</pubDate>
+</item>
 <item>
   <title>Notes on Kubernetes the hard way</title>
   <link>https://blog.ianpreston.ca/posts/2023-02-24-k8s-the-hard-way.html</link>
@@ -10104,48 +10252,6 @@ local-data: "ian.ca A &lt;my server IP&gt;"</code></pre>
   <category>tips</category>
   <guid>https://blog.ianpreston.ca/posts/2020-10-06-docker-compose.html</guid>
   <pubDate>Tue, 06 Oct 2020 00:00:00 GMT</pubDate>
-</item>
-<item>
-  <title>Connecting a Harmony remote to a raspberry pi</title>
-  <link>https://blog.ianpreston.ca/posts/2020-07-20-pi-bluetooth.html</link>
-  <description><![CDATA[ 
-
-
-
-
-<section id="introduction" class="level1">
-<h1>Introduction</h1>
-<p>This is a little stub post for me. I have a Logitech Harmony remote that I use to control a raspberry pi running Kodi for my media center. Occasionally I have to reinstall it and I always have to google a few things to remember how to do it, so this is just to consolidate that info.</p>
-</section>
-<section id="get-the-harmony-bluetooth-id" class="level1">
-<h1>Get the Harmony Bluetooth ID</h1>
-<p>Since I don’t have a GUI on my pi beyond Kodi, I have to do all the connecting over the command line. Which means it will be much easier if I have the device ID for the remote available. To find it I pair the remote with a Windows machine, and then from <code>Control Panel\Hardware and Sound\Devices and Printers</code> I can right click on the device, bring up its properties, and from the bluetooth tab get the unique identifier. For my remote that’s <code>00:04:20:f8:65:d1</code>.</p>
-</section>
-<section id="create-a-device-in-harmony" class="level1">
-<h1>Create a device in Harmony</h1>
-<p>From the Harmony app go to create a new device. Under the manufacturer choose Microsoft and for the device choose Kodi. I always forget this part and just try and set it up as a generic PC, which doesn’t work. When it gets to the pairing part of the setup we can connect from the pi</p>
-</section>
-<section id="connect-from-the-pi" class="level1">
-<h1>Connect from the pi</h1>
-<p>SSH into the pi:</p>
-<div class="sourceCode" id="cb1" style="background: #f1f3f5;"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb1-1"><span class="fu" style="color: #4758AB;">sudo</span> bluetoothctl</span>
-<span id="cb1-2"><span class="ex" style="color: null;">agent</span> on</span>
-<span id="cb1-3"><span class="ex" style="color: null;">default-agent</span></span>
-<span id="cb1-4"><span class="ex" style="color: null;">pair</span> 00:04:20:f8:65:d1</span>
-<span id="cb1-5"><span class="ex" style="color: null;">connect</span> 00:04:20:f8:65:d1</span>
-<span id="cb1-6"><span class="ex" style="color: null;">trust</span> 00:04:20:f8:65:d1</span></code></pre></div>
-<p>That should do it. Harmony will say it’s connected, you can also check with <code>sudo bluetoothctl paired-devices</code>.</p>
-
-
-</section>
-
- ]]></description>
-  <category>tips</category>
-  <category>linux</category>
-  <category>bluetooth</category>
-  <category>pi</category>
-  <guid>https://blog.ianpreston.ca/posts/2020-07-20-pi-bluetooth.html</guid>
-  <pubDate>Mon, 20 Jul 2020 00:00:00 GMT</pubDate>
 </item>
 </channel>
 </rss>

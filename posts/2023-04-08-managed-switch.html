@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.2.475">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="dcterms.date" content="2023-04-08">
+<meta name="description" content="I picked up a cheap HP procurve 2810, let’s get it working">
+
+<title>Ian’s blog - Setting up my first managed switch</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1.6em;
+  vertical-align: middle;
+}
+</style>
+
+
+<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../">
+<script src="../site_libs/quarto-html/quarto.js"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../site_libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 20,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit"
+  }
+}</script>
+
+
+<link rel="stylesheet" href="../styles.css">
+</head>
+
+<body class="nav-fixed">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg navbar-dark ">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container">
+    <a class="navbar-brand" href="../index.html">
+    <span class="navbar-title">Ian’s blog</span>
+    </a>
+  </div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll ms-auto">
+  <li class="nav-item">
+    <a class="nav-link" href="../about.html">
+ <span class="menu-text">about</span></a>
+  </li>  
+  <li class="nav-item compact">
+    <a class="nav-link" href="https://github.com/ianepreston"><i class="bi bi-github" role="img">
+</i> 
+ <span class="menu-text"></span></a>
+  </li>  
+</ul>
+              <div id="quarto-search" class="" title="Search"></div>
+          </div> <!-- /navcollapse -->
+      </div> <!-- /container-fluid -->
+    </nav>
+</header>
+<!-- content -->
+<header id="title-block-header" class="quarto-title-block default page-columns page-full">
+  <div class="quarto-title-banner page-columns page-full">
+    <div class="quarto-title column-body">
+      <h1 class="title">Setting up my first managed switch</h1>
+                  <div>
+        <div class="description">
+          I picked up a cheap HP procurve 2810, let’s get it working
+        </div>
+      </div>
+                          <div class="quarto-categories">
+                <div class="quarto-category">networking</div>
+                <div class="quarto-category">Linux</div>
+              </div>
+                  </div>
+  </div>
+    
+  
+  <div class="quarto-title-meta">
+
+      
+      <div>
+      <div class="quarto-title-meta-heading">Published</div>
+      <div class="quarto-title-meta-contents">
+        <p class="date">April 8, 2023</p>
+      </div>
+    </div>
+    
+      
+    </div>
+    
+  
+  </header><div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#introduction" id="toc-introduction" class="nav-link active" data-scroll-target="#introduction">Introduction</a></li>
+  <li><a href="#connecting-to-the-switch" id="toc-connecting-to-the-switch" class="nav-link" data-scroll-target="#connecting-to-the-switch">Connecting to the switch</a></li>
+  <li><a href="#connect-in-and-bring-up-setup" id="toc-connect-in-and-bring-up-setup" class="nav-link" data-scroll-target="#connect-in-and-bring-up-setup">Connect in and bring up setup</a></li>
+  <li><a href="#test-basic-connectivity" id="toc-test-basic-connectivity" class="nav-link" data-scroll-target="#test-basic-connectivity">Test basic connectivity</a></li>
+  <li><a href="#get-sidetracked-on-the-serial-interface" id="toc-get-sidetracked-on-the-serial-interface" class="nav-link" data-scroll-target="#get-sidetracked-on-the-serial-interface">Get sidetracked on the serial interface</a>
+  <ul class="collapse">
+  <li><a href="#try-some-other-consoles-and-commands" id="toc-try-some-other-consoles-and-commands" class="nav-link" data-scroll-target="#try-some-other-consoles-and-commands">Try some other consoles and commands</a></li>
+  <li><a href="#realize-i-can-telnet-in" id="toc-realize-i-can-telnet-in" class="nav-link" data-scroll-target="#realize-i-can-telnet-in">Realize I can telnet in</a></li>
+  <li><a href="#try-with-hard-coded-baud-rates-and-putty-finally-figure-it-out-sort-of" id="toc-try-with-hard-coded-baud-rates-and-putty-finally-figure-it-out-sort-of" class="nav-link" data-scroll-target="#try-with-hard-coded-baud-rates-and-putty-finally-figure-it-out-sort-of">Try with hard coded baud rates and putty, finally figure it out (sort of)</a></li>
+  </ul></li>
+  <li><a href="#set-up-routing" id="toc-set-up-routing" class="nav-link" data-scroll-target="#set-up-routing">Set up routing</a></li>
+  <li><a href="#try-the-web-interface" id="toc-try-the-web-interface" class="nav-link" data-scroll-target="#try-the-web-interface">Try the web interface</a></li>
+  <li><a href="#conclusion" id="toc-conclusion" class="nav-link" data-scroll-target="#conclusion">Conclusion</a></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content quarto-banner-title-block" id="quarto-document-content">
+
+
+
+
+<section id="introduction" class="level1">
+<h1>Introduction</h1>
+<p>After some <a href="../posts/2023-02-24-k8s-the-hard-way.html">recent challenges</a> where experiments in my lab took down DNS for my entire network, I decided it was time to stop putting off cleaning up my network from the giant flat architecture it’s currently using.</p>
+<p>To accomplish this goal I first needed to acquire a managed switch. Following a great deal of searching and talking myself into and out of getting some super fancy 10gb switch with PoE I found <a href="https://www.hpe.com/psnow/doc/c04140686?jumpid=in_lit-psnow-red">an hp 2810-48g</a> for $15 from a local reseller and decided it made more sense to pick that up and learn before committing to anything super fancy and expensive. As with most of my recent posts, this is going to be a log of the things I tried and issues I encountered, as opposed to a polished how-to guide for others to follow. Although, if you’re in a similar position to me at the start of this post, then maybe reading through will save you some pain on your own journey.</p>
+</section>
+<section id="connecting-to-the-switch" class="level1">
+<h1>Connecting to the switch</h1>
+<p>If I’m going to manage this switch, I need some way to connect with it. Right now it’s not even assigned an IP, and from my reading these types of switches don’t just pick one up by default. Instead I have to connect in over the management interface, which is a port that looks like ethernet on the switch, but is actually a serial console. I ordered in a RJ-45 to USB cable to handle this connection and hooked it up to one of the boxes I had down by the switch. I also ran a regular ethernet cable from the first port on the switch to one of the unused interface ports on my pfsense router. I’ll set up a separate network on that and slowly migrate devices onto this switch as I get it working.</p>
+<p>Anyway, with the connection established physically, I have to figure out how to connect in from the machine. I ssh into the box the switch is connected to and run <code>lsusb</code>. <code>Bus 003 Device 002: ID 0403:6001 Future Technology Devices International, Ltd FT232 Serial (UART) I</code> looks like the right device. How do I connect to it? Well first I reboot because I realize I haven’t rebooted since I upgraded the kernel on this machine and I think that’s giving me problems accessing kernel modules <a href="https://bbs.archlinux.org/viewtopic.php?id=211536">as seen here</a>. The reboot also leads to <code>/dev/ttyUSB0</code> showing up, which was what I was looking for when I started poking around with <code>lsusb</code> and <code>dmesg</code>. Following the console connection <a href="https://docs.netgate.com/pfsense/en/latest/hardware/connect-to-console.html">docs from pfsense</a> I run <code>sudo screen /dev/ttyUSB0 115200</code> and just get a blank screen. After waiting a fair while and almost giving up I’m greeted with the procurve screen!</p>
+<pre><code>ProCurve J9022A Switch 2810-48G
+Software revision N.10.02
+
+Copyright (C) 1991-2006 Hewlett-Packard Co.  All Rights Reserved.
+
+                           RESTRICTED RIGHTS LEGEND
+
+ Use, duplication, or disclosure by the Government is subject to restrictions
+ as set forth in subdivision (b) (3) (ii) of the Rights in Technical Data and
+ Computer Software clause at 52.227-7013.
+
+         HEWLETT-PACKARD COMPANY, 3000 Hanover St., Palo Alto, CA 94303
+
+We'd like to keep you up to date about:
+  * Software feature updates
+  * New product announcements
+  * Special events
+
+Please register your products now at:  www.ProCurve.com
+
+
+
+
+Press any key to continue</code></pre>
+</section>
+<section id="connect-in-and-bring-up-setup" class="level1">
+<h1>Connect in and bring up setup</h1>
+<p>Now I’ve got a nice prompt saying <code>ProCurve Switch 2810-48G#</code>. So now what? According to the manual I can just type <code>setup</code>, that’s handy, let’s give that a shot.</p>
+<pre><code>ProCurve Switch 2810-48G                                    7-Jan-1990  18:21:16
+==========================- CONSOLE - MANAGER MODE -============================
+                                  Switch Setup
+
+  System Name : ProCurve Switch 2810-48G
+  System Contact :
+  Manager Password :                    Confirm Password :
+  Logon Default : CLI                   Time Zone [0] : 0
+  Community Name : public               Spanning Tree Enabled [No] : No
+
+  Default Gateway :
+  Time Sync Method [None] : TIMEP
+  TimeP Mode [Disabled] : Disabled
+
+  IP Config [DHCP/Bootp] : DHCP/Bootp
+  IP Address  :
+  Subnet Mask :
+
+
+ Actions-&gt;   Cancel     Edit     Save     Help</code></pre>
+<p>That’s pretty neat. At this point I guess I better set up the router to actually operate on that port. Over in pfsense I go to <code>Interfaces -&gt; Interface Assignments</code>. I’ve got <code>igb0</code> set as my WAN, <code>igb1</code> as my (currently only) LAN, and nothing on <code>igb2</code>, which I assume is the port my switch is plugged into since I plugged it in beside the other two. Let’s create an interface there and call it <code>LABLan</code> for now. After adding the interface I head into the options, mark it enabled, rename it from the default <code>Opt1</code> and give it an IP address of <code>192.168.10.1/24</code>. Eventually I’m going to have to refigure my addressing scheme, but for now that space isn’t in use so let’s go with it.</p>
+</section>
+<section id="test-basic-connectivity" class="level1">
+<h1>Test basic connectivity</h1>
+<p>I think at this point I can give my switch an IP address and connect into it that way. Let’s try. I change the IP Config to manual and then enter an IP address of <code>192.168.85.2</code> and a subnet mask of <code>255.255.255.0</code>. Let’s test this. To avoid potential routing or firewall problems as an issue I’ll first start by just trying to ping it from a shell on pfsense. I get a response! Good start. Let’s see if I can ping it from my LAN on another machine, probably not. Yeah, I can’t. Eventually I’m going to lock these different networks down, but for now while I’m testing let’s see if I can open things up. Again, I’ll clean this up later, but for now I’m just adding a rule that passes any traffic from <code>LAN</code> net to <code>LABLan</code> net. But ping still doesn’t work. Why would that be? Probably because I didn’t add a rule that allowed outbound traffic from <code>LABLan</code>. Getting closer, at least now my switch can ping the default gateway where it couldn’t before. But I still can’t seem to ping it from my other network. Let’s take a step back and see if I can ping that gateway from my network. I can, so that suggests the network rules are working. But then why can’t I ping the switch? Running <code>traceroute</code> from another machine shows it reaching the gateway at <code>192.168.10.1</code> but not making it through to the switch.</p>
+<p>I’ve simplified my firewall rule for that interface even further with just allowing pass everywhere, but it’s still not working.</p>
+<p>I want to try pinging out from the switch, but for whatever reason connecting in again using the same <code>sudo screen /dev/ttyUSB0 115200</code> that was working before is not rendering well anymore. Guess I’ll get sidetracked and work on that.</p>
+</section>
+<section id="get-sidetracked-on-the-serial-interface" class="level1">
+<h1>Get sidetracked on the serial interface</h1>
+<section id="try-some-other-consoles-and-commands" class="level2">
+<h2 class="anchored" data-anchor-id="try-some-other-consoles-and-commands">Try some other consoles and commands</h2>
+<p>For whatever reason upon trying to reconnect I’m getting either nothing from the terminal or some random gibberish characters, or parts of what seem to be the prompt or menu screen, but not rendered correctly to actually read. I assume there’s something wrong with how my serial connection is configured. I tried connecting with <code>minicom</code> instead, and got similar results. I tried connecting at different baud rates, but that also didn’t imporve things. I read that the switch would auto-negotiate based on whatever rate I first connected to it with, so I reset the switch and tried connecting at <code>38400</code> since I’d seen that in some guides, but it was still basically the same. At least I learned the proper way to end a <code>screen</code> session with <code>ctrl+a</code> and then <code>k</code>.</p>
+</section>
+<section id="realize-i-can-telnet-in" class="level2">
+<h2 class="anchored" data-anchor-id="realize-i-can-telnet-in">Realize I can telnet in</h2>
+<p>Now that I have an IP address assigned, it looks like I can <code>telnet</code> in from pfsense with <code>telnet 192.168.10.2</code>. I’d still like to get the serial interface figured out as a fallback, but at least this lets me work through the menus while I’m figuring that out.</p>
+<p>Just as a quick first test I see if I can ping out from the switch, and I cannot. I can ping my default gateway, but I can’t ping anything on the LAN or internet. That’s weird, but I’m coming back to that later, right now we’re getting the serial console working properly.</p>
+<p>From the telnet session I run <code>show console</code> to get my serial config:</p>
+<pre><code> Console/Serial Link
+
+  Inbound Telnet Enabled [Yes] : Yes
+  Web Agent Enabled [Yes] : Yes
+  Terminal Type [VT100] : VT100
+  Screen Refresh Interval (sec) [3] : 3
+  Displayed Events [All] : All
+
+  Baud Rate [Speed Sense] : speed-sense
+  Flow Control [XON/XOFF] : XON/XOFF
+  Session Inactivity Time (min) [0] : 0</code></pre>
+</section>
+<section id="try-with-hard-coded-baud-rates-and-putty-finally-figure-it-out-sort-of" class="level2">
+<h2 class="anchored" data-anchor-id="try-with-hard-coded-baud-rates-and-putty-finally-figure-it-out-sort-of">Try with hard coded baud rates and putty, finally figure it out (sort of)</h2>
+<p>Let’s try hard coding the baud rate to what I’m using. First I run <code>config</code> to get into config mode, then <code>console baud-rate 115200</code> to set the rate, then <code>write memory</code> to save the setting, and <code>reload</code> to reboot the switch. After giving it a minute to come back up I re-run my screen command. Still doesn’t work. I wonder if this is some weird quirk of trying to do things over ssh. Let’s connect my laptop directly and try it out. That will introduce the added factor of using putty into the mix, but oh well.</p>
+<p>Working with putty seemed to work a bit better. I still ended up with blank screens but with a bit of fussing around I was able to get it started up again. I wonder if I just left it in a weird state before and if I can get back in cleanly remotely now.</p>
+<p>Ok yeah, that seems to be it. I guess I’ll have to remember to leave the session in a clean state. Let’s see if I can quit out and come back in. I can, ok, must have just been something about the state I left it in. Back to actually setting up this switch.</p>
+<p>Actually, one more thing. Let’s set the baud-rate back to auto. Again from the switch I run <code>config</code> to get into config mode, then <code>console baud-rate speed-sense</code> then <code>write memory</code> then <code>reload</code>. After rebooting the switch I reconnect with <code>sudo screen /dev/ttyUSB0</code> without specifying a speed. It auto connects at 9600 baud, which seems to work fine.</p>
+</section>
+</section>
+<section id="set-up-routing" class="level1">
+<h1>Set up routing</h1>
+<p>Back to actually making this thing work for networking. I have an IP address for the switch, and I can reach that from my router, and I can reach the router from my switch, but I can’t get out to the internet or my other networks from the switch, or into the switch from my other networks. What gives?</p>
+<p>As part of the test I decide to see if I can connect my NAS into this network on one of its other ports. I go in, give it a static IP on that port (since I haven’t enabled DHCP on this interface yet) and… get locked out of my NAS on the LAN interface. I’m able to confirm that I can ping the NAS from my switch now, but I’ve taken down my NAS from my main network, which is definitely not good. I’ll go unplug that cable and hope my NAS comes back. Oh good, it did. Still have to figure out what’s up with my routing though.</p>
+<p>I guess this is a good point to do a manual backup of my pfsense setup. I should have backups going automatically, but this seems like a time to have a little extra insurance.</p>
+<p>Oh wait, I think my LAN firewall rules only allow outgoing traffic from other networks. I probably have to add an allow rule to receive traffic from LabLAN. Nope, still can’t ping.</p>
+<p>Just to restate where I’m at, from my LAN connected computer at <code>192.168.85.2</code> I can ping the <code>LabLAN</code> gateway at <code>192.168.10.1</code>, but not the switch at <code>192.168.10.2</code>. From the pfsense router I can ping the switch at <code>192.168.10.2</code> and from the switch I can ping the <code>LabLAN</code> gateway at <code>192.168.10.1</code> but not the <code>LAN</code> gateway at <code>192.168.85.1</code>. For the brief period when I had my NAS connected on that interface I could ping it from the switch, although that also messed up my connectivity on <code>LAN</code> for the NAS, so I turned that off while I’m testing.</p>
+<p>After some poking around I decide to check the output of the <code>show ip</code> command on the switch:</p>
+<pre><code>ProCurve Switch 2810-48G# show ip
+
+ Internet (IP) Service
+
+
+  Default Gateway :
+  Default TTL     : 64
+  Arp Age         : 20
+
+  VLAN         | IP Config  IP Address      Subnet Mask     Proxy ARP
+  ------------ + ---------- --------------- --------------- ---------
+  DEFAULT_VLAN | Manual     192.168.10.2    255.255.255.0   No</code></pre>
+<p>So I don’t have a default gateway set. That would do it. Looking back I didn’t write down anything about setting that. Oops.</p>
+<p>I run setup again, I set the default gateway to <code>192.168.10.1</code> and everything works. I can see how I missed that now, the default gateway setting is well above where you set the IP of the switch. Well that was a waste of a fair bit of time.</p>
+</section>
+<section id="try-the-web-interface" class="level1">
+<h1>Try the web interface</h1>
+<p>I know all the hardcore network people use the shell, and maybe at some point I’ll do that too, but I’d at least like the option of a network interface. Let’s see if I can get my hands on that.</p>
+<p>Opening up a browser and loading the IP of the switch I get:</p>
+<p><code>This product requires the Java language, which is either disabled or not available on this browser.</code></p>
+<p><code>To use this product you must either upgrade your browser to one that is Java compliant, or enable the Java language on your current browser.</code></p>
+<p>From checking out <a href="https://community.spiceworks.com/topic/1146093-hp-procurve-java-application-blocked">this post</a> it seems like I’d have to have a very old browser to use this web interface. Fine, guess it’s menus and CLIs for me.</p>
+</section>
+<section id="conclusion" class="level1">
+<h1>Conclusion</h1>
+<p>In this post I demonstrated that I don’t really know a lot about networking and that this is going to be quite the learning experience. I also got the basic connectivity working on my managed switch. In the next post I’ll do some actual planning for my network and start configuring things and moving services over.</p>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    target: function(trigger) {
+      return trigger.previousElementSibling;
+    }
+  });
+  clipboard.on('success', function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  });
+  function tippyHover(el, contentFn) {
+    const config = {
+      allowHTML: true,
+      content: contentFn,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start'
+    };
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      return note.innerHTML;
+    });
+  }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+</body></html>
