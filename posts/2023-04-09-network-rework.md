@@ -361,11 +361,57 @@ Last thing to check is that the other ports are now working regularly on the def
 ping out to the internet and `LegacyLAN`. Looks like we're all good there, as would be
 expected.
 
+# Figure out actual address space for each network described
+
+Before I go and create a ton of VLANs let's write out the planned networks I want and
+their subnets.
+
+* Infrastructure: This is called `LAN` right now and corresponds to the default VLAN on
+  my switch. It's in the `192.168.10.0/24` range and unless I have to add my laptop into
+  it because I can't get Wireguard to work the way I want then it doesn't need a VLAN tag
+  because everything on it will be wired. Devices on this networks should be able to
+  talk to devices on any other network as this is the main administrative network.
+* Trust: For devices I know that I want to be able to access services. I'll open up
+  access to servers within Infrastructure to this group, but not to the management interfaces
+  for things like my firewall or switch. This will be on the `192.168.15.0/24` range, will
+  use VLAN tag `15` I'm going to make them match to the third octet of the IP to make it
+  easier to reason about. There will be wireless devices on this network so I'll have to
+  create an additional `-trust` SSID beyond my regular one with the appropriate VLAN tag.
+* Guest: For devices that just need internet access. My work machine, IoT devices, and
+  whatever devices friends and family connect with will go on here by default. I'll keep
+  this with the old SSID I was using to reduce the migration headache. This network will
+  not be able to connect to anything but WAN, although I think I'll have to enable avahi
+  for things like Chromecasts to work. This will be on the `192.168.30.0/24` range and
+  VLAN tag `30`.
+* Infrastructure Wireguard tunnel: For me to be able to administer the network from my
+  laptop. Hopefully this will work both on site and remotely. That's the design plan for
+  now at least. It will use the `192.168.20.0/24` range through a wireguard tunnel interface.
+* Trust Wireguard tunnel: Similar to the trust internal network, but for remote access, either
+  for myself or trusted friends and family. It will use the `192.168.25.0/24` range.
+* OpenVPN tunnel: For connection to my offsite Synology. Synology only natively supports
+  OpenVPN and I don't want to add complexity by either hacking in Wireguard or adding a
+  device over there for routing. This will stay on the `192.168.90.0/24` range but I'll
+  have to modify the firewall rules so it can talk to my NAS when I move it over to the
+  Infrastructure network.
+* LAB: This will be for VMs or other devices that I want to experiment with and don't
+  want potentially impacting the rest of my network. I don't want to just put them on
+  guest because I'm hoping to block traffic within that network as well, plus the IP
+  address space will just be crowded. This will pretty much only be used by VMs in my
+  proxmox cluster. It will be in the range `192.168.40.0/24` with the VLAN tag `40`. If
+  for some weird reason I find the need to segment this further I'll use `41`, `42`, etc.
+
+In addition to these intended networks I'll have a couple legacy networks around at least
+for now. Legacy LAN is where everything will live until I migrate it over, and I'll probably
+keep it around for quite a while (or maybe forever) just to be safe even after nothing is
+connected to it. It's in the `192.168.85.0/24` range. I've also got my legacy wireguard
+tunnel at `192.168.105.0/24`. I'll see if I can just turn that into the Trust Wireguard
+tunnel since that's what everyone who's not me is using it for. I'll have to change
+the address range and update the firewall rules but that should be ok.
+
 # Test VLANs
 
-Next up we have to see if I can get VLANs working. 
+Next up we have to see if I can get VLANs working.
 
-# Figure out actual address space for each network described
 
 # Create VLANs
 
