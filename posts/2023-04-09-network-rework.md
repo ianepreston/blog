@@ -156,3 +156,58 @@ an OpenVPN tunnel.
 Compared to my current network of one LAN with one associated SSID, one wireguard tunnel,
 and one OpenVPN tunnel. Definitely more complex, but at least right at this moment this
 doesn't feel like complete hubris.
+
+# Clean up pfsense
+
+Before I start moving things around there are a couple of small tweaks I want to make
+to my pfsense setup after reviewing [this guide from Lawrence Systems](https://www.youtube.com/watch?v=fsdm5uc_LsU)
+in preparation for this move. I'll document them here, but they're not really directly
+relevant to what I'm doing, I just want to have them done before I create a bunch of
+new networks, as some of them will interact with that.
+
+The first tip I'm going to follow is just to add a third column to my dashboard. This
+obviously doesn't relate to the network setup, but it was a great tip and now I can
+see more of what's going on at a glance in my pfsense dashboard on my nice wide monitor.
+
+The next one is the thing that made me want to take care of this stuff prior to messing
+with my network, and that's to change the default port for the management portal on pfsense.
+The guide makes the very good point that if you want your gateway to handle reverse proxy
+tasks (which I eventually will for things like load balancing entrypoints to my kubernetes
+or proxmox cluster) then having your management interface on the default https port 443
+will lead to conflicts. There's a minor security through obscurity advantage to moving it
+too, but for me it's about removing conflicts with reverse proxies. Since I'm going to
+put firewall rules in place that allow or block access to this management interface on
+various networks it will be nice to have the port updated and defined in advance. In the
+system, advanced, admin access section I'll set the webConfigurator to use HTTPS on port
+`10443`. The redirect works although I'm getting errors about self-signed certs. I've got
+a plan for that but it's happening after I get this other stuff sorted.
+
+The one other thing I'm going to do at this point before I get started doesn't come from
+the guide, but I'm going to rename a couple of my interfaces. Specifically I'm going to
+rename my old LAN interface from `LAN` to `LegacyLAN` and `LabLAN` to just `LAN`. I might
+eventually get rid of the LAN interface altogether and add it as another aggregation line
+for my new LAN, but for the foreseeable future it's just going to kick around as a fallback
+network in case things go bad and I want to go back to a flat network while I figure them
+out.
+
+# Look up switch commands
+
+Figure out menu or CLI ways to check status of each port and assign LACP and VLAN tags
+
+# Set up LACP for uplink
+
+# Test VLANs
+
+# Figure out actual address space for each network described
+
+# Create VLANs
+
+# Create Wireguard Tunnels
+
+# Create firewall rules
+
+# Test with Laptop
+
+# Move over services
+
+See if you can move proxmox to DHCP and statically assign leases.
