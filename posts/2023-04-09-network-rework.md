@@ -192,7 +192,120 @@ out.
 
 # Look up switch commands
 
-Figure out menu or CLI ways to check status of each port and assign LACP and VLAN tags
+At this point I'm almost ready to actually start setting up the network. The last thing
+I want to do is make sure I'm familiar with the commands or processes of configuring this
+stuff on pfsense and my switch. For pfsense I'm as comfortable as I can be without having
+actually implemented anything. I've watched some guides and read the docs on link aggregation
+and VLANs. The switch (as my [last post](2023-04-08-managed-switch.md) demonstrated) is
+a lot more of a black box for me at this point. For what I'm trying to do I could probably
+use either the menu or cli interface. I know hardcore network folks would be all about
+the CLI, but I think I've established that's not who I am, and for this level of complexity
+the menu is probably easier. I'd like to know what the commands are as well though just
+to have some options. I'll be doing all of this config from a connection on the serial
+port of the switch to reduce the odds of locking myself out while I test something.
+
+## Figure out the menu
+
+Getting into the menu interface is easy from the cli, just enter `menu` from the command
+prompt. From the menu interface option 5 takes me back to the CLI.
+Let's take a look around at the things I'll want to use.
+
+### Status and Counters
+
+Under `Status and Counters` and then `General System information` I get some traffic info,
+the MAC address, and the firmware version of the switch (which looks like it's at the
+latest version). Under `Switch Management Address Information` I see the management IP
+and gateway info I set. I also notice that the time server address isn't set. I should
+probably change that since right now the switch thinks it's January 1990. Add that to the
+todo list. Under `Port Status` I can see that only the port I've connected to pfsense
+is up. All the ports look basically the same except they're a mixture of `MDI` and `MDIX`
+for `MDI Mode`. I have no idea what that means. Based on [this post](https://community.fs.com/blog/mdi-vs-mdix-and-auto-mdimdix-basis.html)
+it's related to the type of cable wiring you're using. There's also apparently an option
+to have it automatically configured. I'll keep this in mind but for now let's assume my
+switch defaults to auto configure that and it'll just work, but keep this in mind for
+troubleshooting later. `VLAN Address table` is empty but has columns for `MAC address` and
+`Located on Port` so that might be handy to come back to later. `Port Address Table` lets
+me pick a port and then pulls up a table listing `MAC address`, but it's empty. Leave that
+for now.
+
+### Set time server
+
+Hopping over to switch setup I set the Time Sync method to `TIMEP`, the mode to `Manual`
+and set the server address as my gateway to use the pfsense time server. Setting that
+didn't change the time in the menu. I think maybe I need `SNTP`, which
+[according to this](https://forum.netgate.com/topic/143151/does-pfsense-support-sntp/5) is
+interoperable with the `NTP` protocol pfsense uses (I don't have an option for `NTP` on
+the switch). Setting that up still doesn't seem to be updating the time. Maybe I have
+to wait for a refresh? You'd think it would trigger one automatically when you change
+the config. How can I test this? Searching around doesn't find anything. Let's not get
+too sidetracked. I'll set a timer for 12 minutes (default polling interval is 720 seconds)
+and check back on this later.
+
+Coming back after 12 minutes the time is showing up correctly on the switch. Glad I didn't
+spend a bunch of time troubleshooting that, although it's silly it doesn't try and sync
+after a config change automatically.
+
+### Switch configuration
+
+This is the menu where most of the action will be for me. The first entry `System Information`
+is just what you get when you run the `setup` command so I've already been there. It's where
+I configure the switch IP, default gateway and time settings (or try to at least).
+
+Under `Port/Trunk Settings` I see that all my ports are set to enabled and `Mode` is set
+to `auto`, so that probably means I don't have to worry about that whole `MDI/MDX` thing.
+I can also group ports into trunks here, which is probably where I'll need to be to enable
+`LACP`. The interface is annoying, I have to hit space to toggle through 24 trunk groups
+before I can get back to the default of being empty. I can see why I'd want to use the
+CLI if I was going to do this a lot.
+
+`Network Monitoring Port` is disabled and that's probably fine for now. `IP Configuration`
+has similar settings to what I did under `System Information` so I don't need to mess
+with it.
+
+`SNMP Community Names` is a new thing for me. [Based on this](https://www.netadmintools.com/snmp-community-string)
+post I'm just going to leave it alone for now.
+
+#### VLAN Menu
+
+`VLAN Menu` seems like it will be of interest to me, let's see what I can do here.
+
+Under `VLAN Support` I can set the maximum number of VLANs to support. The default of
+8 is more than the 3 I currently think I need so let's leave that. Primary VLAN is set
+to `DEFAULT_VLAN` which from my preliminary reading should be `VLAN1`. I think that's
+all fine, just note it for now. The last piece under here is whether GVRP is enabled, and
+by default it isn't. From reading [this](https://www.techtarget.com/searchnetworking/definition/GVRP)
+that seems to be what I want so let's move on.
+
+Under `VLAN Names` I've currently only got ID `1` associated with `DEFAULT_VLAN` so
+that confirms my suspicion there. I'll come back to this and add `trust`, `guest`, and
+`lab` VLANs later. Under `VLAN Port Assignment` I can tag various ports with the VLAN
+tags I've created. Again, that will come in handy eventually.
+
+## Figure out the CLI
+
+While it seems like I could do everything I need to do from the menu, let's give me
+another option with the CLI.
+
+* Port status: `show interfaces brief` nicely pages through the port status I saw in the
+  menu. I think checking that from the menu is nicer since I can scroll up and down easily
+  but it's nice that it's there. I can also check specific ports by adding a number, a
+  comma separated list of numbers, or a dashed number range to just see a few ports. That
+  might be handier.
+* Port/Trunk settings: I can use the `show trunks` command to show configured trunks,
+  with the option to add a port range for just certain ports. I can also run `show lacp`
+  just to see `LACP` configured ports. I should also be able to use `trunk <port-list> < trk1 ... trk24 > < trunk | lacp >`
+  to configure a trunk. A nice word of caution at this point, the docs **strongly**
+  recommend not having these ports connected when you're configuring this. So I'll have
+  to do this over serial with the uplink ports disconnected until both pfsense and the
+  switch are configured.
+* VLAN stuff: VLAN stuff is apparently not included in my docs. Weird. After grabbing
+  the "Advanced traffic management guide" for the switch I'm ready to go. `show vlans`
+  lists all the VLANs I have configured, currently just the default one. `show vlan <vlan-id>`
+  does what you'd expect. For instance if I do `show vlan 1` all my ports show as
+  `untagged` which means untagged packets that they receive will be treated as part of
+  vlan1. `vlan <vlan-id> [name <name-str>]` will either create a vlan with the specified
+  ID and name, or enter me into the context of that vlan if it already exists. I think
+  that's all I actually need to do at this point.
 
 # Set up LACP for uplink
 
@@ -205,6 +318,8 @@ Figure out menu or CLI ways to check status of each port and assign LACP and VLA
 # Create Wireguard Tunnels
 
 # Create firewall rules
+
+# Set up SSIDs with VLAN tags
 
 # Test with Laptop
 
