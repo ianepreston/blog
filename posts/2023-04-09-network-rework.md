@@ -309,7 +309,61 @@ another option with the CLI.
 
 # Set up LACP for uplink
 
+Time for the first stage of implementation. I want to get link aggregation set up to
+pfsense before anything else because I have to create the aggregation interfaces in
+pfsense from scratch, I can't use an existing interface. Plus I'll have to do this
+part with a serial connection. Down in the utility room I hook my laptop up to the serial
+port and then bring up the pfsense interface. Might as well do that part first. A lot of
+this information is referenced from another guide from [Lawrence Systems](https://www.youtube.com/watch?v=VULKulpXBYU).
+
+The first thing I have to do is delete the interface I've been using for LAN on the switch,
+as I can't have any devices that are assigned to an interface as part of my link aggregation.
+In pfsense I go to Interfaces and then assignments and delete my interface on `igb2`, noting
+that I also have `igb3` available, with `igb0` being my WAN and `igb1` being my legacy
+LAN, which I'm keeping around for the time being. Still on interfaces I switch over to
+the `LAGG` tab and add an interface. I select `igb2` and `igb3` as parent interfaces,
+set the LAGG protocol to LACP. I'll leave LACP Timeout mode on the default of `Slow`
+and set the interface description to `igb2_3` because why not. After saving that I have
+a new interface labelled `LAG0`. Back to the interface assignment tab I add an interface
+on `LAGG0` and then click on its default name of `OPT1` to configure it. In the config
+screen I check the box to enable it, give it a description of `LAN` (might change this
+to Infra later since that's its intended purpose), set IPv4 Configuration type to static,
+give it an IP address of `192.168.10.1/24` and hit save.
+
+Next up I have to set some firewall rules so traffic can actually happen on this interface.
+Head over to Firewall, Rules, and the LAN interface tab. I can't seem to set the auto
+anti lockout rule for an interface other than the one I'm connected on, so I'll make a
+poor man's version with a rule that allows traffic to `This firewall` on the https port
+I set for management above. Then for now I'm just going to add an allow all style rule
+because I want to deal with firewall rules separately later.
+
+Last bit of config within pfsense I'll enable DHCP for this interface. This isn't
+technically necessary, but it sure will make testing easier from my laptop. Under
+Services, DHCP server, and then the tab for LAN I'll enable the DHCP server for this
+interface and give it a range for dynamic assignments from `192.168.10.200` to
+`192.168.10.250`. That should be more than enough since most of the devices on this
+network should be infra and therefore have static IPs.
+
+That should cover it for pfsense, so let's move over to the switch. I'm going to try
+doing this from the menu so I head to `Switch Configuration` then `Port/Trunk` settings.
+I set ports 1 and 2 to the group `Trk1` with type `LACP`, and hit save. At this point
+I think I'm ok so let's plug in the cables and see what happens.
+
+The first thing I check is if I can ping out from the switch. From the cli
+`ping 192.168.10.1`  works, so that's a good start. I can also ping the switch IP from
+my laptop which is still connected to `LegacyLAN`. This seems to be fine, but let's see
+if I actually have redundancy. To do that I'll start pinging the switch from my laptop
+(still on `LegacyLAN`) and then alternate unplugging cables from the switch. It works!
+I miss a few sequences while it fails over, but still pretty good!
+
+Last thing to check is that the other ports are now working regularly on the default
+`LAN` network on the switch. Plugging into a random port I pull `192.168.10.200` and can
+ping out to the internet and `LegacyLAN`. Looks like we're all good there, as would be
+expected.
+
 # Test VLANs
+
+Next up we have to see if I can get VLANs working. 
 
 # Figure out actual address space for each network described
 
@@ -318,6 +372,8 @@ another option with the CLI.
 # Create Wireguard Tunnels
 
 # Create firewall rules
+
+Don't forget about avahi for mdns and adding pfblocker to most everything.
 
 # Set up SSIDs with VLAN tags
 
