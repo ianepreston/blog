@@ -97,11 +97,11 @@ and trusted friends that I want to access my services. I'll have to split those 
 I'll probably end up changing this, and I'll definitely start with a subset of them
 while I'm testing, but let's get the idea down.
 
-### Infra VLAN
+### Infra LAN
 
 This will have the management interface for my switch, my proxmox nodes, my NAS, and
 any VMs or physical servers running production services. I think I'll also put my
-workstation on this VLAN to make administering things easier. I'll either have an
+workstation on this LAN to make administering things easier. I'll either have an
 SSID that's attached to this network or have a wireguard tunnel that can connect to it.
 If I can make the wireguard tunnel work internally and externally I'll go with that.
 
