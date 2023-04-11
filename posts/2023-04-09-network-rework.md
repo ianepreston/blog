@@ -442,6 +442,27 @@ how I want to assign my ports and I know I'd like my work computer to go on port
 I'll set it to "No" for the default VLAN and "tagged" for the guest. After saving it's
 time to test.
 
+On my laptop plugged into a port other than 14 I pull a LAN IP address. I'm able to acces
+the admin console of pfsense, and I can ssh in.
+
+Unplugging from that port and moving over to 14 I initially seem to have my old IP. After
+unplugging and plugging back in one more time now I'm pulling `169.254.49.68`, so something
+appears to be broken. I bet I should have set port 14 to "Untagged" for Guest VLAN. My
+laptop obviously isn't applying VLAN tags, that will make more sense for ports connected
+to proxmox where I will be adding tags on VMs. Back to port 14. I pull `192.168.30.100`!
+Great start. Ok but I can't connect to the internet or even ping my default gateway at
+`192.168.30.1`. That's less good. Let's check my firewall rules. Back over to a regular
+port so I can actually do that. Looking at the rules it looks like all the traffic is
+blocked by my private networks rule. I don't see offhand why that would be the case,
+but let's disable it and confirm that's the issue. Disabling it didn't fix things. Now
+I'm noticing that my allow all rule was actually set to just allow TCP, so maybe that's
+the problem? Ok, with that fixed I can access the internet. That's a good start. I can't
+connect to the admin interface for pfsense, which is also intended behavior. I can't
+seem to get online from within WSL though. I wonder if that's something about the connection
+not being established with that VLAN tag originally? It shouldn't be a firewall rule right
+now since I haven't turned the private networks rule back on. I do a reboot just to be safe.
+Nope, that wasn't it. I can't even ping `192.168.30.1` from WSL. That's super strange.
+
 # Create VLANs
 
 # Create Wireguard Tunnels
