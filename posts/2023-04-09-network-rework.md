@@ -410,8 +410,37 @@ the address range and update the firewall rules but that should be ok.
 
 # Test VLANs
 
-Next up we have to see if I can get VLANs working.
+Next up we have to see if I can get VLANs working. To start I'll just create one to make
+sure it works before I go wild.
 
+I'll start in pfsense under Interfaces, Assignments and then the VLAN tab. Let's do
+the guest VLAN first since it has a simple firewall rule I can test easily. I set the
+parent interface to `lagg0`, the VLAN tag to 30, leave the priority at 0, and set the
+description to "Guest VLAN". Back on the Interface Assignments tab I select VLAN 30 from
+the available network ports dropdown and click add. Then I click on the `Opt2` link to
+configure the new network. I enable the interface, give it the description "Guest VLAN",
+and set it to static IPv4 with an IP address of `192.168.30.1/24`. Save and apply and then
+it's over to services to configure its DHCP server. On the GUESTVLAN tab I enable DHCP
+and set the address pool to `192.168.30.100`-`192.168.30.250`. Even though most stuff on
+here will just grab a random IP, I'll still use static maps for a lot of devices, so I
+want to keep space free for that. Last up on the pfsense side I have to create some firewall
+rules. First I add rules to block access to "this firewall" on the ssh and admin https ports.
+For the next part there are going to be a bunch of networks that I want to block this
+from access to, so I'll create an alias first. Under firewall, aliases, I add an alias
+that includes the private networks I currently have configured, I'll extend it later.
+I give it the name `private_networks` and then add entries for my Legacy LAN, LAN, and
+OpenVPN network and hit save. Back in rules under GUESTVLAN I add a rule to block traffic
+of any protocol to the alias `private_networks`, which should mean I can't connect to
+anything outside my guest VLAN. At the bottom of the list I add an allow all rule so
+that anything that isn't blocked by my rules above is allowed through.
+
+Now over to the switch. I'm going to do this one through the menu at least, so I head
+to Switch Configuration, VLAN Menu, VLAN Names. I create a new VLAN with ID 30 and name
+Guest. Back one level to VLAN port assignments. First I set `Trk1`, my uplink aggregation
+port to "Untagged" for the default VLAN and "Tagged" for the Guest VLAN. I mapped out
+how I want to assign my ports and I know I'd like my work computer to go on port 14 so
+I'll set it to "No" for the default VLAN and "tagged" for the guest. After saving it's
+time to test.
 
 # Create VLANs
 
