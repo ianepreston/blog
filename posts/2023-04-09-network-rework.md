@@ -491,6 +491,33 @@ that says the 8021q module isn't available in WSL. That appears to be true for m
 shouldn't be relevant since I'm not trying to add my own VLAN tags, I'm just having
 the switch assign them.
 
+Well I'm running real low on ideas at this point so back at the first issue I run
+their recommended log gathering script and put it up on the issue in a gist. I also add
+the note about docker working ok in case that's a relevant clue to anyone who knows more
+about WSL and networking than me. In the meantime let's take a look through the testing
+output and see if anything jumps out.
+
+I notice that I can't even ping the internal gateway of the WSL virtual network. I check
+that on my workstation and I can't do it there either though, but it's able to get online
+and talk to other devices in my network. I also can't ping the Windows host IP, but I can't
+seem to do that from anywhere, including pfsense itself so I'm not sure what to make of that.
+
+Running `traceroute` on WSL without the VLAN I can see it hit the internal WSL gateway,
+then my `192.168.10.1` gateway, then the internet. Running it again on the WSL that's
+on the VLAN it makes it to the WSL gateway (even though I can't ping it) and then times
+out, it can't make it any further. Let's try that within docker on the machine with a
+VLAN to see if that shows anything. After loading the container with
+`docker pull ubuntu && docker run -it ubuntu /bin/bash` and installing the tools I need
+with `apt update && apt upgrade && apt install inetutils-traceroute inetutils-ping`
+I run traceroute on the machine behind a VLAN. It doesn't work? I reach the default
+docker network gateway of `172.17.0.1` ok, head on to a gateway of `192.168.65.5` which
+is super weird because I don't have that subnet configured anywhere and then time out.
+But I can still ping out to the same internet site I was trying. Same thing for an internal
+server. I can ping it and resolve the correct internal IP, but traceroute gets hung up
+at `192.168.65.5`, whatever that is. Let's try the same thing on the machine that's not
+behind a VLAN. Same behavior. What. Let's try traceroute from the WSL of the machine that's
+not behind a VLAN. Works totally fine. What is happening with these networks?
+
 # Create VLANs
 
 # Create Wireguard Tunnels
