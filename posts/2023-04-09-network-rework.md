@@ -514,9 +514,10 @@ docker network gateway of `172.17.0.1` ok, head on to a gateway of `192.168.65.5
 is super weird because I don't have that subnet configured anywhere and then time out.
 But I can still ping out to the same internet site I was trying. Same thing for an internal
 server. I can ping it and resolve the correct internal IP, but traceroute gets hung up
-at `192.168.65.5`, whatever that is. Let's try the same thing on the machine that's not
-behind a VLAN. Same behavior. What. Let's try traceroute from the WSL of the machine that's
-not behind a VLAN. Works totally fine. What is happening with these networks?
+at `192.168.65.5`, which from some searching is the docker DNS server.
+Let's try the same thing on the machine that's not behind a VLAN. Same behavior. What.
+Let's try traceroute from the WSL of the machine that's not behind a VLAN. Works totally fine.
+What is happening with these networks?
 
 # Create VLANs
 
