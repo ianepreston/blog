@@ -463,6 +463,34 @@ not being established with that VLAN tag originally? It shouldn't be a firewall 
 now since I haven't turned the private networks rule back on. I do a reboot just to be safe.
 Nope, that wasn't it. I can't even ping `192.168.30.1` from WSL. That's super strange.
 
+This requires a better setup for testing. Something very weird is going on and I don't
+want to try and solve it standing in my utility room. Fortunately I have a spare port in
+my office upstairs, so I patch that one to the `.30` VLAN port and my workstation to a
+port on the switch that doesn't have VLANs assigned. Back in the office I confirm that
+I still have the same behaviour from my laptop on the `.30` and my workstation works
+correctly on `.10`.
+
+Back on the laptop, just for kicks mostly I try and connect to the network with
+docker (which is running on top of WSL2) and it works?! Now my mind is really blown.
+
+Let's try another experiment then. I'll swap my workstation over to the VLAN port and
+see if its WSL can connect. Is it just something weird I didn't realize I did on my
+laptop? Nope, exact same behaviour. Windows works fine, docker works fine, Ubuntu WSL
+does not.
+
+Time for some searching. There's [this GitHub issue](https://github.com/microsoft/WSL/issues/6001)
+which describes similar behavior but it's a couple years old with no resolution. They
+do have a request to collect and provide logs, depending on what I find I might come back
+and contribute to this. There's [this GitHub issue](https://github.com/microsoft/WSL/issues/6410)
+but in this case they're trying to add VLAN tags on the network adapter for the Windows
+machine. The root cause might be similar, but the scenario isn't quite the same, and there's
+no resolution listed anyway. There's [this GitHub issue](https://github.com/MicrosoftDocs/WSL/issues/507)
+about applying a VLAN ID to the WSL network interface. That might work and might be worthwhile
+for testing but I'd like to see if there's a cleaner fix. There's [this GitHub issue](https://github.com/microsoft/WSL/issues/6698)
+that says the 8021q module isn't available in WSL. That appears to be true for me, but
+shouldn't be relevant since I'm not trying to add my own VLAN tags, I'm just having
+the switch assign them.
+
 # Create VLANs
 
 # Create Wireguard Tunnels
