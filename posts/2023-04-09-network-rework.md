@@ -572,11 +572,123 @@ Now over on pfsense I have to create the VLANs, add DHCP for them, and (for now)
 them a nice open "allow all" type firewall rule. The process is the same as what I described
 in the guest VLAN above so I won't write it out again.
 
+### Proxmox
+
 Changing proxmox might be tricky since it uses static IPs. Presumably if I go in and
 change my network config I will lose connectivity until I move the host over to the
 new network. This will probably also do fun things to my cluster and ceph setup. That's
 ok though, I'm not running anything production on there yet, that's part of why I wanted
 to do this network rework now.
+
+The first thing I do is remove the static leases I was using in pfsense to ensure name
+resolution of the proxmox hosts. This means I have to connect in from their IPs, but
+that's ok. I'll add in name resolution again later. Now on the proxmox hosts, I'll do
+this one at a time. On the first one under system I go to DNS and update the DNS server
+to the new gateway. I add the old one in as a secondary one for now. Next I modify the
+hosts section to identify the new IP I'm going to give this host (192.168.10.11, I'll
+leave 2-10 for more foundational infrastructure and start in the tens to match the
+PVE node number). Finally, and here's where things will break until I switch ports,
+I go to the network section and update the `vmbr0` interface to the new address range.
+I get prompted to either apply changes or reboot. A reboot seems safer so I go for that
+and while that's happening I head downstairs and move it over to the correct port on the
+switch. Backupstairs I can access it again from the new IP! It can no longer see the
+other two nodes, so maybe there's something about not clustering across broadcast ranges.
+That's fine, I'll update the other two and then work on getting ceph set back up. After
+connecting the second node back it gets the correct IP and can join, but it can't see
+the first node. Going up to the datacenter page in proxmox it looks like all the nodenames
+are still pointing to the old IP addresses, maybe name resolution isn't working in pfsense?
+
+I know I could do host overrides in the DNS server settings in pfsense, but I like assigning
+static leases to devices so I can see all the IP addresses I'm using from the DHCP page.
+There might be other things I can do with DNS to auto identify hostnames but I'm going to
+save that for later (either later in this post or another post). In pfsense I apply static
+leases for the two nodes I've moved over (glad I copied that when I deleted their leases
+on the old network). Doing this allows me to ping and correctly resolve the name for the
+other node but I still don't see them in the cluster. In the
+[proxmox docs](https://pve.proxmox.com/wiki/Cluster_Manager#_cluster_network) it looks like
+I have to edit `/etc/pve/corosync.conf`. There are also some handy docs on
+[editing corosync](https://pve.proxmox.com/wiki/Cluster_Manager#pvecm_edit_corosync_conf),
+which include incrementing the version. I can't follow them though because even as root
+the file is read only. [This post](https://forum.proxmox.com/threads/cmd-access-is-good-gui-access-is-bad.106482/)
+is from someone having the exact same issue as me, it's because my nodes don't have quorum
+because I took them down so cluster settings get locked. That's totally sensible, probably
+should have thought of that before I tried migrating. Reading [these docs](https://pve.proxmox.com/pve-docs/chapter-pvecm.html#_remove_a_cluster_node) it looks like I can remove nodes from the cluster, but then
+I'm going to have a bad time and have to reinstall them to get them back in. Let's back
+up and try doing this a bit more gracefully. I'll reset the first two nodes to their old
+address and put them back on the old switch just to make sure I can get back to a known
+good state and then more slowly move them over. Back in pfsense I remove the static
+mappings for the two nodes on the infra network and add then back in the legacy network.
+I change the host config and IP settings on the nodes and reboot them. Down to the utility
+room to plug them back into the old switch. Ok, we're back up with quorum. Now to figure
+out the smart way to do this migration.
+[Adding redundant links](https://pve.proxmox.com/pve-docs/chapter-pvecm.html#_adding_redundant_links_to_an_existing_cluster)
+feels like it should work, but the different links can't talk to each other, so I'm not
+sure if I'll get in a weird in between state partway through. I guess it should recover
+once all three nodes are on the new network. Let's give it a shot. Given that this is
+already risky let's follow the recommendations in the docs for editing corosync.
+On my first proxmox node I copy the current corosync config into a `.new` and `.bak`
+copy:
+
+```bash
+cp /etc/pve/corosync.conf /etc/pve/corosync.conf.new
+cp /etc/pve/corosync.conf /etc/pve/corosync.conf.bak
+```
+
+Then I edit the new file. For each node I add an entry for `ring1_addr:` with the IP
+I'm migrating to. In the totem I increment the `config_version:` field. Finally I duplicate
+the interface section with link number 1. Let's just check it on another node to make
+sure things are syncing properly. Yup, it's over on my other node. Move the `.new` file
+to overwrite the original config and I should be good to go. Let's try migrating again.
+
+I move the static leases over from legacy LAN to Infra. This time I'm going to change
+all three nodes over at once and power them off, move the network cables over, and then
+bring them all back up. Let's see if it works.
+
+They came back up, and I can ping all of them at their new address. I can even ssh into
+them, but the web interface isn't loading. So that's fun. Ok, even weirder. I actually
+just can't access the web interface for the first node. All three show as joined to my
+datacenter though and I can access the first node from the web interfaces of the other
+two. That's pretty close to functional, just have to figure out this first web interface.
+Maybe it just needs a reboot? Worth a shot at least. Ok, that did it. Not really sure
+why that did it, but who ever knows why rebooting fixes things?
+
+Last up, let's get rid of the old addresses from the corosync config. I make another
+`.new` copy, edit it to remove the old `ring0` address and change the updated `ring1`
+address to be `ring0`, increment the `config_version` and get rid of the second interface.
+Checking the cluster info from the datacenter page I see all three nodes using the correct
+IP on the first interface. Success!
+
+#### CEPH
+
+I'm sure all these address changes have done interesting things to my CEPH cluster. Let's
+try and get that back on track now. On one of my nodes I head over to the CEPH tab and
+check the configuration page. I can't seem to update anything from the web portal
+so let's try making changes in the terminal to `/etc/pve/ceph.conf`.
+I update `cluster_network`, `mon_host`, `public_network` and the `mon` settings for each node.
+
+Still getting timeouts from CEPH, probably because it has to reload something? Let's just
+reboot all the nodes again to be safe and see what happens. Still nothing. The config seems
+to have been applied but I don't see anything. Running `pveceph status` or `ceph -s` just
+times out. Looking back on my [previous effort](2023-02-05-proxmox-ceph.md) let's see if
+I can find some good troubleshooting steps. The first thing I did was initialize ceph
+if `pveceph status` showed "not initialized" so I'm going to skip that.
+`pgrep ceph-mon` shows no monitors running but `pgrep ceph-mgr` and `pgrep ceph-osd`
+both show processes. Interestingly in the web interface I can see all three monitors,
+just with status "unknown", but I can't see any managers or OSDs.
+
+Just as an aside here. I recognize I'm almost certainly going to spend more time
+troubleshooting this than I would just rebuilding the cluster. Especially since I went
+to all that effor to configure things with ansible. I'm treating this as a learning
+opportunity, not a productivity hack.
+
+Reviewing the docs I find [this handy warning](https://docs.ceph.com/en/latest/rados/operations/add-or-rm-mons/#changing-a-monitor-s-ip-address)
+that existing monitors are not supposed to change their IP address. From reading
+[this](https://docs.ceph.com/en/latest/rados/operations/add-or-rm-mons/#changing-a-monitor-s-ip-address-the-right-way)
+I'm basically hooped unless I move all three nodes back to the old IP address range and
+even then I'm not sure I could painstakingly migrate one node at a time without losing
+quorum on either my ceph cluster or my proxmox cluster. In summary, don't expect to
+be able to migrate a proxmox cluster over to a new address range, it's going to be a
+rebuild.
 
 # Set up SSIDs with VLAN tags
 
@@ -585,4 +697,5 @@ to do this network rework now.
 # Create firewall rules
 
 Don't forget about avahi for mdns and adding pfblocker to most everything. Figure out how
-to change default LAN for name resolution etc.
+to change default LAN for name resolution etc. Make sure traffic to synology is routing
+through the correct interface.
