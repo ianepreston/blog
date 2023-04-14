@@ -408,7 +408,7 @@ tunnel at `192.168.105.0/24`. I'll see if I can just turn that into the Trust Wi
 tunnel since that's what everyone who's not me is using it for. I'll have to change
 the address range and update the firewall rules but that should be ok.
 
-# Test VLANs
+# Setup VLANs
 
 Next up we have to see if I can get VLANs working. To start I'll just create one to make
 sure it works before I go wild.
@@ -441,6 +441,8 @@ port to "Untagged" for the default VLAN and "Tagged" for the Guest VLAN. I mappe
 how I want to assign my ports and I know I'd like my work computer to go on port 14 so
 I'll set it to "No" for the default VLAN and "tagged" for the guest. After saving it's
 time to test.
+
+## Get sidetracked on issue with WSL
 
 On my laptop plugged into a port other than 14 I pull a LAN IP address. I'm able to acces
 the admin console of pfsense, and I can ssh in.
@@ -519,18 +521,68 @@ Let's try the same thing on the machine that's not behind a VLAN. Same behavior.
 Let's try traceroute from the WSL of the machine that's not behind a VLAN. Works totally fine.
 What is happening with these networks?
 
-# Create VLANs
+At this point I have to step back from this issue. There are no resolutions on GitHub,
+and I've added my logs and comments to the issues in case anything comes up.
+I've posted on Reddit and [serverfault](https://serverfault.com/) with no helpful response.
+
+Fortunately, as long as docker works the impact of this on me is actually fairly minimal.
+I'll keep my workstation in the Infra LAN without a tag so it will be fine. My laptop
+won't be able to connect with WSL but I do almost everything Linux related on it from
+devcontainers anyway. I might have to make an Infra SSID when I get to the wireless step,
+just to have somewhere to connect from my laptop, but I don't expect to need it often.
+As inconvenient as this is I don't think it's a showstopper so I'm going to move on. Maybe
+I'll learn some more in the meantime that will be helpful.
+
+## Carry on with VLAN setup
+
+Another potentially tricky device is proxmox, since I want the host machines to be in my
+infra LAN, but the VMs hosted by that could be in a few different places. I know in the
+proxmox interface I can add VLAN tags to the bridged network devices on VMs, but as I've
+seen above that doesn't mean everything will just work cleanly.
+
+At this point I think
+it's worth setting up the basics of what I need in terms of VLANs. I'll save the firewall
+rules for later, but I'll at least create the tags and interfaces. In the switch interface
+I've already got my Infra VLAN (1, default) and Guest (30) VLAN names created so I just
+have to add Trust (15) and Lab (40). Then it's down to VLAN port assignment. I've got
+to update my trunk port to allow the new VLANs I've created, I'll do that first since
+it's at the bottom of the list and otherwise I might forget it. The next two ports I'll
+use for my wireless access points. I want the APs themselves to be on my infra network
+so I'll set the default VLAN to untagged. They're also going to be creating guest and
+trust networks when I get to that point so I turn tags 15 and 30 on. I don't see anything
+in my lab/dev environment being wireless so I'll leave that off for now. The next four
+ports I'll eventually use for my NAS. It's got four connections on it so I can have one
+for each network. I originally thought about just putting them all into infra with link
+aggregation, but after watching some more Lawrence Systems videos I realized that it
+makes more sense to have them on each network directly so I'm not putting load on my router
+whenever I'm using the NAS, as I would be if the NAS was on Infra and most of the devices
+accessing it were on trust or guest. With that in mind for the next four ports I'll set
+each one to untagged for a single VLAN (default/infra, trust, guest, lab in order) and
+`No` for the other VLANs. Next up we've got my three proxmox nodes. Those should be
+on infra by default, but I want to be able to add lab VMs, so I'll turn VLAN 40 on. I
+don't think anything in there makes sense for trust or guest, so I'll leave that off.
+Just a handy reminder for myself here, the options `auto` and `forbid` are for if
+GVRP is enabled on my switch, which as discussed above, it is not. The next two ports
+are for my current standalone server and my workstation, both of which I'm putting on
+infra, so the default VLAN gets left as `untagged` and the other VLANs are set to `No`.
+The last two devices are my work computer and a Hue bridge for my lights, both of which
+belong on guest, so I set that VLAN to `untagged` and `No` for the other VLANs.
+
+Now over on pfsense I have to create the VLANs, add DHCP for them, and (for now) give
+them a nice open "allow all" type firewall rule. The process is the same as what I described
+in the guest VLAN above so I won't write it out again.
+
+Changing proxmox might be tricky since it uses static IPs. Presumably if I go in and
+change my network config I will lose connectivity until I move the host over to the
+new network. This will probably also do fun things to my cluster and ceph setup. That's
+ok though, I'm not running anything production on there yet, that's part of why I wanted
+to do this network rework now.
+
+# Set up SSIDs with VLAN tags
 
 # Create Wireguard Tunnels
 
 # Create firewall rules
 
-Don't forget about avahi for mdns and adding pfblocker to most everything.
-
-# Set up SSIDs with VLAN tags
-
-# Test with Laptop
-
-# Move over services
-
-See if you can move proxmox to DHCP and statically assign leases.
+Don't forget about avahi for mdns and adding pfblocker to most everything. Figure out how
+to change default LAN for name resolution etc.
