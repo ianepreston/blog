@@ -690,6 +690,84 @@ quorum on either my ceph cluster or my proxmox cluster. In summary, don't expect
 be able to migrate a proxmox cluster over to a new address range, it's going to be a
 rebuild.
 
+I still want to try a bit more here before I give up on rebuilding ceph. Mostly because
+I'm stubborn, partially because it will help me understand how ceph works.
+
+Checking what I still have running for ceph related processes I find the following:
+
+```bash
+root@pve3:~# ps ax | grep ceph
+   1621 ?        Ss     0:00 /usr/bin/python3.9 /usr/bin/ceph-crash
+   2478 ?        Ssl    0:01 /usr/bin/ceph-osd -f --cluster ceph --id 0 --setuser ceph --setgroup ceph
+   6658 pts/0    S+     0:00 grep ceph
+```
+
+The result is the same on all three of my nodes. Taking a look at
+[this forum](https://forum.proxmox.com/threads/unexpected-ceph-behaviour-from-unused-ceph-installation.95229/)
+gives me a tip to check the status of `ceph-crash` which in turn gives me this error:
+
+```Apr 15 13:17:33 pve1 ceph-crash[1421]: ERROR:ceph-crash:directory /var/lib/ceph/crash/posted does not exist; please create```
+
+After creating that directory I don't see any records getting created.
+
+Looks like I can stop the running `ceph-osd` with `systemctl stop ceph-osd.target` I still
+have the `ceph-crash` service running and even if I kill it the process comes back,
+so it's being triggered by some service. Running `systemctl --type=service --state=running`
+I can see there's the `ceph-crash` service so I stop that on each node. After running that
+it doesn't seem like I have any more CEPH services running. Let's try a purge again.
+
+```bash
+root@pve3:~# pveceph purge --crash --logs
+Error gathering ceph info, already purged? Message: got timeout
+Foreign MON address in ceph.conf. Keeping config & keyrings
+```
+
+So no luck there. Let's try [this post](https://forum.proxmox.com/threads/not-able-to-use-pveceph-purge-to-completely-remove-ceph.59606/)
+and run the following on each node:
+
+```bash
+rm -rf /etc/systemd/system/ceph*
+killall -9 ceph-mon ceph-mgr ceph-mds
+rm -rf /var/lib/ceph/mon/  /var/lib/ceph/mgr/  /var/lib/ceph/mds/
+rm /etc/pve/ceph.conf
+```
+
+Now I need to wipe my disks to get ready to start again. Initially when I try and
+wipe it from the menu I get a warning about the device having a holder. From
+[this forum](https://forum.proxmox.com/threads/sda-has-a-holder.97771/) post I learn to
+run `lsblk | grep ceph` to find the id and then `dmsetup remove <the id I found>`.
+After this I can wipe the disks.
+
+Let's see if I can rebuild the cluster using my ansible playbook from last time. After
+modifying it with the new network addresses of course. I can initialize the ceph cluster
+but creating monitors fails because I don't have `/var/lib/ceph/mon` to create monitors
+in. Fine, I create that folder on each node and then try adding monitors. Same thing
+fore creating managers, have to create `/var/lib/ceph/mgr`, might as well recreate
+`/var/lib/ceph/mds` while I'm at it. This whole experience is really making me rethink
+integrating distributed storage with my hypervisor. Let's try creating an OSD.
+Here's where things fall apart again: `auth: unable to find a keyring on /etc/pve/priv/ceph.client.bootstrap-osd.keyring: (2) No such file or directory`
+
+Ok. That's enough of this. This is way off topic for figuring out my network and it's pretty
+clear that I'm going to have to come back and figure out my distributed storage solution
+again.
+
+#### NFS
+
+After all that I realized my NFS share wasn't loading anymore. After thinking for a second
+I realized that made sense since my NFS rules only allowed connections from the `192.168.85.0/24`
+range. Adding a new rule for the infra range fixed that up.
+
+#### VMs with VLAN Tags
+
+For now let's make sure creating VMs with VLAN tags works the way I think it should
+and move on. I'll have to come back to refiguring my storage in a future post. First
+I create a VM with no VLAN tag assigned to the network interface and DHCP settings.
+It comes up and gives me an IP in the correct range. I could just create a new one, but
+let's see what happens if I just shut this down and change the VLAN tag on the interface?
+On the hardware tab I go to the network interface and give it a VLAN tag of 40. It pulls
+the new IP when it comes back up and works perfectly. Finally something goes well!
+
+
 # Set up SSIDs with VLAN tags
 
 # Create Wireguard Tunnels
