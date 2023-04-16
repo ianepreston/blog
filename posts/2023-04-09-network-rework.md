@@ -533,6 +533,8 @@ just to have somewhere to connect from my laptop, but I don't expect to need it 
 As inconvenient as this is I don't think it's a showstopper so I'm going to move on. Maybe
 I'll learn some more in the meantime that will be helpful.
 
+*Note*: Below I find that this behaviour doesn't reproduce over WiFi. I'm so confused.
+
 ## Carry on with VLAN setup
 
 At this point I think
@@ -804,8 +806,62 @@ and joined the guest network as I'd expect them to. I still haven't set any fire
 rules so the guest network isn't actually any more/less secure right now, but at least
 they're joining the correct network and nothing is immediately breaking.
 
-
 # Set up SSIDs with VLAN tags
+
+This part is a little scary because almost all of my devices in this house are on WiFi
+so if I break this I'm going to have a bad time. I think I'm just going to prove out the
+actual VLAN activity working and that nothing breaks just by being on a different network
+before I set up firewall rules. Right now my APs are still on my unmanaged switch. I think
+I first want to create new SSIDs with VLAN tags, confirm that doesn't break anything on
+the unmanaged side, and then move them over to the managed switch and see what happens.
+
+Over in my unifi controller portal the first thing I have to do is create networks for
+each of the VLANs I'm using. On the networks panel I add two networks named \[Trust/Guest\]VLAN
+and give them the appropriate VLAN tags. Over on WiFi I'm going to keep my existing SSID
+and just make it the guest network. This seems like the easiest way to handle migration
+and it will reduce confusion for guests. I'll change the network for that one from `default`
+to `GuestVLAN`. I'm not going to make it a guest network at this point, I'm not even sure
+what that will do if my router isn't Unifi. I'll handle firewall rules in pfsense later.
+I make a second network for the trust VLAN and I should be basically good to go. At this
+point my controller can't actually see my APs. I can ping them from the server that's running
+it, but I think since they're on different networks some broadcast that they're using for
+discovery isn't working. I'm guessing/hoping that all I'll have to do to address this is
+move them over to the other network. Down in the utility room again I change over the APs
+to their designated ports on the switch. They both come back up and pick up the static
+leases I assigned for them. Checking the Unifi console both of them show up with the
+status "Adopting", which is better than not visible at all. While the adoption is happening
+I take a look at my phone. I am online, but I've pulled an IP in the `Infra` range, so
+the VLAN tags aren't being applied yet. That makes sense given the APs are still adopting
+so they wouldn't have been able to incorporate any configs. The Unifi web interface now
+has them cycling between "Adopting" and "Offline" although I can still consistently ping
+them. I think something about moving my controller has broken the APs connections. I perform
+a factory reset on the APs and try again. Something about the credentials don't seem to
+be working. Let's try forgetting the AP and re-adopting it. It feels like it should
+work, I even get a notification that the AP has been adopted, but it still hangs on
+adotping. Still not working. Let's try a firmware update on the AP through ssh.
+
+Ok, firmware is updated, devices have been rebooted. I've also set the existing entries
+for both devices to "Forget" in the web UI. Both of them show back up as adoptable. I click
+adopt on one of them and eventually it just shows up as offline in the web portal even
+though I can still ssh into it. Let's try another factory reset now that I've done
+the firmware update. After running that command I can't ssh back into it. Power cycle the
+AP to see if that comes back up. Hmm, it comes back up but the firmware version is back.
+Looking at the AP it seems to start off with the default inform address, but when I set
+it to the correct one it goes back to the old IP of my controller server. After a bit
+of searching I realize that this is because I had to hard code the inform IP setting in
+the controller so it didn't use the docker IP of the container it was in, and that was
+set to my old IP. Let's try adopting again. Ok! One of them at least has switched over
+to "Getting Ready". That's farther than I've made it before. After a bit more waiting
+they both come back online. What a relief. Checking my phone I am now pulling an IP in
+the `192.168.30.0/24` range so it looks like VLAN tags worked too!
+
+I'm super curious at this point to see how my laptop will respond to getting VLAN tags
+from the WiFi. Will I still not be able to connect with WSL? I can?!? I'm so extra strength
+confused right now. Connecting to either SSID pulls the correct IP and WSL works just fine.
+Running traceroute confirms that it is routing traffic through the correct gateway address
+for whichever VLAN I'm on. Just to make sure I'm not totally losing it I plug back into
+the cable for my work machine that's on the guest VLAN and confirm I can reproduce the
+failure on WSL. I can. I have absolutely no idea what to make of this.
 
 # Create Wireguard Tunnels
 
