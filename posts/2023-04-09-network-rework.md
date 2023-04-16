@@ -535,11 +535,6 @@ I'll learn some more in the meantime that will be helpful.
 
 ## Carry on with VLAN setup
 
-Another potentially tricky device is proxmox, since I want the host machines to be in my
-infra LAN, but the VMs hosted by that could be in a few different places. I know in the
-proxmox interface I can add VLAN tags to the bridged network devices on VMs, but as I've
-seen above that doesn't mean everything will just work cleanly.
-
 At this point I think
 it's worth setting up the basics of what I need in terms of VLANs. I'll save the firewall
 rules for later, but I'll at least create the tags and interfaces. In the switch interface
@@ -572,7 +567,9 @@ Now over on pfsense I have to create the VLANs, add DHCP for them, and (for now)
 them a nice open "allow all" type firewall rule. The process is the same as what I described
 in the guest VLAN above so I won't write it out again.
 
-### Proxmox
+# Migrate Services
+
+## Proxmox
 
 Changing proxmox might be tricky since it uses static IPs. Presumably if I go in and
 change my network config I will lose connectivity until I move the host over to the
@@ -658,7 +655,7 @@ address to be `ring0`, increment the `config_version` and get rid of the second 
 Checking the cluster info from the datacenter page I see all three nodes using the correct
 IP on the first interface. Success!
 
-#### CEPH
+### CEPH
 
 I'm sure all these address changes have done interesting things to my CEPH cluster. Let's
 try and get that back on track now. On one of my nodes I head over to the CEPH tab and
@@ -751,13 +748,13 @@ Ok. That's enough of this. This is way off topic for figuring out my network and
 clear that I'm going to have to come back and figure out my distributed storage solution
 again.
 
-#### NFS
+## NFS
 
 After all that I realized my NFS share wasn't loading anymore. After thinking for a second
 I realized that made sense since my NFS rules only allowed connections from the `192.168.85.0/24`
 range. Adding a new rule for the infra range fixed that up.
 
-#### VMs with VLAN Tags
+## VMs with VLAN Tags
 
 For now let's make sure creating VMs with VLAN tags works the way I think it should
 and move on. I'll have to come back to refiguring my storage in a future post. First
@@ -766,6 +763,46 @@ It comes up and gives me an IP in the correct range. I could just create a new o
 let's see what happens if I just shut this down and change the VLAN tag on the interface?
 On the hardware tab I go to the network interface and give it a VLAN tag of 40. It pulls
 the new IP when it comes back up and works perfectly. Finally something goes well!
+
+## Migrate Synology and prod server
+
+Now that I have my VLANs setup, it's time to migrate my NAS over. To start I'm going to
+shutdown my production server so it doesn't get any weird behavior while things are
+shifting over. Once I've got the Synology back up I'll migrate it to the new Infra LAN
+as well. I can head into the "Info Center" and then Network section of the Synology
+control panel to get MAC addresses for each interface. This will allow me to create
+static routes in pfsense to give correct IP addresses. On the infra LAN the next free
+IP address after the gateway and switch is `192.168.10.3` so I'll assign that to the NAS.
+I'll keep the same pattern of making it `192.168.x.3` on each network for consistency.
+For hostnames I'll just use the name I've assigned the nas on infra, and all other networks
+I'll prepend the network name to distinguish. After adding in all the static mappings and
+confirming the order I set the ports on the VLAN it's time to head down to the utility
+room and move some cables around. When I come back upstairs I'm delighted to see that
+I can ping all the interfaces at the IP I expected. I have to flush my DNS cache before
+I can ping the original hostname on the infra IP, but otherwise this part is smooth
+sailing. Let's bring up my prod server and see if all my services still work. It came
+back up ok and it picked up the new IP, but only some of my docker containers are coming
+back. Again, that's out of scope for this so I'll just re-run my ansible playbook for
+setting up this machine and see if that resolves it. Ok, the problem was that I had volumes
+specified with reference to the old IP address. Even though the associated containers weren't
+running, they still had a claim on those volumes and so ansible couldn't remove and re-add
+them. After stopping all containers and removing them I re-ran the playbook and realized
+I had to update the NFS share permissions on my other shares to allow access from the
+Infra network. This was actually one of the reasons I wanted to migrate over. NFS is not
+secure (at least without some fancy user auth tied in that I've never bothered to setup)
+so having it only available on my infra network and using SMB everywhere else will enhance
+my security. While I was at this I moved my media box over to my guest network and after
+a bit of fiddling with kodi settings to point to the new share that's on the guest network
+things all came back up.
+
+## Migrate the last couple wired devices
+
+Beyond what I've moved over so far the only wired devices I have left are my work computer,
+a Hue bridge for lights, and my access points. I'll deal with the access points when
+it's time to migrate the SSIDs in the coming section. The last two devices went smoothly
+and joined the guest network as I'd expect them to. I still haven't set any firewall
+rules so the guest network isn't actually any more/less secure right now, but at least
+they're joining the correct network and nothing is immediately breaking.
 
 
 # Set up SSIDs with VLAN tags
