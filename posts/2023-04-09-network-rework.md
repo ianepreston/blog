@@ -22,7 +22,7 @@ or the couple friends I've created VPN credentials for so they can access some o
 services I run. Just typing that actually stresses me out a bit.
 
 The main goal is enhanced security and reliability through network segmentation. Guests
-connected to my WiFi shouldn't be able to connect to IoT devices or management interfaces
+connected to my WiFi shouldn't be able to connect to management interfaces
 in my house for example.
 
 A bonus goal is increased performance. My NAS has 4 rj45 ports that support
@@ -31,7 +31,10 @@ box that's running my pfsense router. While link aggregation can't boost the spe
 a single connection, and I don't do a ton of concurrent work on my network, having this
 would still be nice. Credit to [this post](https://forum.netgate.com/topic/165219/same-vlan-on-multiple-interfaces/6)
 for making me realize I should be using link aggregation with the router rather than
-trying to split VLANs between multiple separately managed interfaces.
+trying to split VLANs between multiple separately managed interfaces. *Addendum* I realize
+later down in this that I want to use the multiple NAS ports to connect directly into
+different networks, rather than do a big aggregation on one but still have everything
+have to go through my router.
 
 # Hardware I'm working with
 
@@ -134,7 +137,8 @@ A wireguard tunnel for me to use to administer my network.
 
 A wireguard tunnel for guests I've granted access to specific services. Exact services
 can be set with firewall rules and similar to guest devices VLAN I can restrict within
-network communication (I think).
+network communication (I think). *Addendum*: I ended up not going with this and just using
+firewall rules.
 
 ### Offsite OpenVPN
 
@@ -324,7 +328,7 @@ LAN, which I'm keeping around for the time being. Still on interfaces I switch o
 the `LAGG` tab and add an interface. I select `igb2` and `igb3` as parent interfaces,
 set the LAGG protocol to LACP. I'll leave LACP Timeout mode on the default of `Slow`
 and set the interface description to `igb2_3` because why not. After saving that I have
-a new interface labelled `LAG0`. Back to the interface assignment tab I add an interface
+a new interface labelled `LAGG0`. Back to the interface assignment tab I add an interface
 on `LAGG0` and then click on its default name of `OPT1` to configure it. In the config
 screen I check the box to enable it, give it a description of `LAN` (might change this
 to Infra later since that's its intended purpose), set IPv4 Configuration type to static,
@@ -386,6 +390,7 @@ their subnets.
 * Infrastructure Wireguard tunnel: For me to be able to administer the network from my
   laptop. Hopefully this will work both on site and remotely. That's the design plan for
   now at least. It will use the `192.168.20.0/24` range through a wireguard tunnel interface.
+  *Addendum*: Didn't end up using this.
 * Trust Wireguard tunnel: Similar to the trust internal network, but for remote access, either
   for myself or trusted friends and family. It will use the `192.168.25.0/24` range.
 * OpenVPN tunnel: For connection to my offsite Synology. Synology only natively supports
@@ -754,7 +759,9 @@ again.
 
 After all that I realized my NFS share wasn't loading anymore. After thinking for a second
 I realized that made sense since my NFS rules only allowed connections from the `192.168.85.0/24`
-range. Adding a new rule for the infra range fixed that up.
+range. Adding a new rule for the infra range fixed that up. *Addendum*: I did this for my
+proxmox shared folder but not for the rest of them here, this bites me later in the NAS
+migration section.
 
 ## VMs with VLAN Tags
 
@@ -947,7 +954,8 @@ to my phone in hotspot mode but couldn't get it working. I couldn't even get reg
 traffic happening while the VPN was on. Wireguard is set for split tunneling so I wonder
 if that's something about the hotspot having protections in place rather than an actual
 restriction. I'm going to leave testing the rest of this for now. Next time I'm out with
-my laptop I'll try some other tests.
+my laptop I'll try some other tests. Coming back to this after some reboots this is
+working as expected so I'm going to leave it alone.
 
 ## Guest LAN rules
 
@@ -969,3 +977,20 @@ create an alias for my switch and access points and block that as well.
 This works as expected. As a bonus, on my laptop if I connect through my wireguard tunnel
 I can access the router admin page, but I can't without the tunnel, so the extra permissions
 on Wireguard seem to work even if I'm still on my local network as well.
+
+# Scream test
+
+I'm not really calling this done at this point. I've done all the testing I can think
+of and things appear to be performing the way I'd expect them to. But as I've seen
+above, networking impacts basically everything so I'm going to leave this for at least
+a week before I fully relax. I'm not going to wait to publish this that long though,
+if anything comes up I'll come back here and edit this.
+
+# Conclusion
+
+Networking is hard. Not so much because of VLANs or Firewall rules themselves. Those
+are actually fairly straightforward (except with WSL for whatever reason). The challenge
+is in thinking about all the services you have and how they all talk to each other. So
+many little hard coded configs that I didn't think about, or access rules that I hadn't
+considered. I'm still glad I did this because I learned a lot and my network will be
+in better shape for the future, but man, what an effort.
