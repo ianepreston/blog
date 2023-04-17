@@ -865,8 +865,107 @@ failure on WSL. I can. I have absolutely no idea what to make of this.
 
 # Create Wireguard Tunnels
 
+Now I need to deal with wireguard. Right now my tunnel allows communication
+to my legacy LAN. It also uses `.105` for the third octet which was closer to my old IP
+addressing scheme. To match my IP scheme a bit closer I'm going to move my
+Wireguard tunnel over to `192.168.25.0/24` to it's close to the trust network range of
+`192.168.15.0/24`, that doesn't actually do anything inherently, it just makes it easier
+for me to keep straight in my head. On the wireguard peers I have to adjust their allowed
+IP ranges to cover that new range as well. Further, on the client for the peers I have
+to adjust the allowed IPs to cover the Infra LAN (I'll handle specific access
+to infra with firewall rules, but some services on that network have to be routable).
+
+I was originally going to make two wireguard tunnels and handle firewall rules at that
+level, but upon further consideration I think it will be easier to just set rules for
+specific devices than bother with all that.
+
+At this point I think Wireguard itself is basically correctly configured.
+
+# Set up static leases
+
+This part isn't strictly necessary, but I like using static leases for all devices on my
+network so it's easy to spot new additions and also to allow for hostname resolution. In
+pfsense I'll keep one window on the leases under my legacy LAN since that will help me
+figure out the identity of devices I've previously given static leases, and also allow
+me to clear off their old leases. In the other Window I'll check each of my newly created
+networks and ensure that they have the devices I'd expect. Checking my existing leases
+everything that doesn't currently have a static lease is on my guest network, which is
+perfect since everything I added on other networks I gave a static lease so I shouldn't
+be seeing anything there. After spending a little while confused about why I couldn't see
+my iPhone to give it a static lease I noticed it had a setting turned on for "Pivate WiFi
+access". Somehow this not only hides my MAC address but the IP it gets doesn't even show
+up in my list of DHCP leases. That's pretty neat, but also sneaky. For my home network
+I'm turning that setting off on the phone so I can give it a private address. Doing this
+is also a good opportunity to make sure I actually can identify all the devices on my
+network. For instance I got real confused by something labelled android but eventually
+realized it was the tablet panel for my security system.
+
+# Make sure everything works before adding firewall rules
+
+At this point I've got a bunch of stuff on different networks, but no actual security
+since everything is still allowed to route to everything. In theory this should mean that
+I won't have any issues at this stage but as I've seen at several other points in this
+adventure that's not always actually true. Before I add more complexity with firewall
+rules I'm going to step through all my devices and make sure they still work as I'd expect.
+
+It does! What a nice surprise after all the weird twists I've encountered going through
+this.
+
 # Create firewall rules
 
-Don't forget about avahi for mdns and adding pfblocker to most everything. Figure out how
-to change default LAN for name resolution etc. Make sure traffic to synology is routing
-through the correct interface.
+Now we're at the part where I actually add some security to all this network segmentation
+I've been doing.
+
+First I'm going to create some aliases to make things a bit easier on myself. The first
+one I'll make I'll label `pfsense_admin` and include the ports for https and ssh access
+to the router, since I don't want anything touching that. I can also use it to create
+my own anti-lockout rules for my infra LAN, since the default one from pfsense is tied
+to my legacy LAN. I'll also create an alias for my devices on wireguard, as I'll want
+them to have elevated access relative others I grant VPN access to. Next I'll create a
+"web" port alias for 80 and 443. Right now my services are on http but I'd like to move
+them to https in the future.
+
+## Wireguard rules
+
+I'm not going through these in any particular order beyond the order they happen to
+be in for my firewall rules tabs. I currently just have an allow all type rule on this
+interface so I need to restrict things a bit. The first rule I'll add is to allow my
+laptops to access anything. I'll make that the top rule and then I can add other rules
+below. Anyone else using this service is accessing either my file share over samba or
+one of the production services I'm running on my standalone machine. I add allow rules
+for samba by opening port 445 to my NAS IP, and the "web" alias port to my server. I
+also better allow access to this firewall since it's providing DNS if nothing else, but
+I'll block the admin ports first and then create an allow rule for the firewall generally.
+Rules are evaluated top to bottom so the block on admin ports will apply and then the allow
+on all other ports will follow. There might be a way to combine those rules but I'm going
+to try this for now. I don't want anything else to happen through VPN so I can finally
+disable the allow all rule I had to start (I could just delete it but whatever).
+
+Testing the rules from my phone on LTE work the way I'd expect. I can access my web
+portals but I can't get into the firewall web interface. I tried testing my laptop tethered
+to my phone in hotspot mode but couldn't get it working. I couldn't even get regular web
+traffic happening while the VPN was on. Wireguard is set for split tunneling so I wonder
+if that's something about the hotspot having protections in place rather than an actual
+restriction. I'm going to leave testing the rest of this for now. Next time I'm out with
+my laptop I'll try some other tests.
+
+## Guest LAN rules
+
+First rule I need is blocking admin access to the firewall, using the alias I already
+created. Next I'll create an alias for all my private networks, which is everything
+except this one and the WAN and block access to that. After that I just need an allow
+all rule. This one's actually pretty straightforward rules wise. One more thing I have
+to open is access from my Kodi box to the port on my prod server where I'm hosting its
+mariadb database. I also have to add a rule so my kobo can talk to my calibre server.
+
+Testing these rules I'm delighted to find that everything still works. My robot vacuum
+needed a reboot when I loaded it on the app, but maybe that was a coincidence?
+
+## Trust LAN rules
+
+This one should be easy as well. I block access to the admin portal on the router,
+create an alias for my switch and access points and block that as well.
+
+This works as expected. As a bonus, on my laptop if I connect through my wireguard tunnel
+I can access the router admin page, but I can't without the tunnel, so the extra permissions
+on Wireguard seem to work even if I'm still on my local network as well.
