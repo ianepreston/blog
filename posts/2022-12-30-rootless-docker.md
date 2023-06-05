@@ -110,23 +110,23 @@ I was ready to start testing network shares.
 The approach I took was to use [Autofs](https://help.ubuntu.com/community/Autofs). All
 the setup for this was done with the privileged account, then tested with the domain
 joined account. First step was to install `autofs` and `cifs-utils` and enable the autofs
-service. Next I created a folder under `/mnt/` for my domain user (`<EID>` in the rest of this)
-at `/mnt/<EID>` and locked down permissions for it `chmod 700 /mnt/<EID>`. I relied on
+service. Next I created a folder under `/mnt/` for my domain user (`<user>` in the rest of this)
+at `/mnt/<user>` and locked down permissions for it `chmod 700 /mnt/<user>`. I relied on
 [these](https://askubuntu.com/questions/1040095/mounting-cifs-share-per-user-using-autofs)
 [two](https://askubuntu.com/questions/1026316/cifs-mounts-and-kerberos-permissions-on-access-or-best-practice)
 posts for the most part to figure out my config.
 I added the following line to `/etc/auto.master`:
 
-`/mnt/<EID> /etc/auto.sambashares-<EID> --timeout=30 --ghost` see
+`/mnt/<user> /etc/auto.sambashares-<user> --timeout=30 --ghost` see
 [here](https://learn.redhat.com/t5/Platform-Linux/Halloween-tip-of-the-day-Using-autofs-with-the-ghost-option/td-p/2326)
 for the deal with the `--ghost` flag.
 
-Next under `/etc/auto.sambashares-<EID>` I added a line for each fileshare I wanted to
+Next under `/etc/auto.sambashares-<user>` I added a line for each fileshare I wanted to
 be able to access:
 
 `<share_short_name> -fstype=cifs,rw,sec=krb5,uid=${UID},cruid=${UID} :<share_full_path>`
 
-which will create a folder in `/mnt/<EID>/<share_short_name>` that maps to `<share_full_path>`.
+which will create a folder in `/mnt/<user>/<share_short_name>` that maps to `<share_full_path>`.
 
 Here is where I went down a long and stupid rabbit hole. When I tried to access this share
 using my domain user account I got a permission issue. Eventually I figured out my user
@@ -165,7 +165,7 @@ means it didn't read the `DOCKER_HOST` argument, which means it didn't work. Com
 are fun. I tried adding the line to `~/.profile` because apparently `/bin/sh` does read
 that, but it didn't work either. Following this [stack overflow](https://serverfault.com/questions/736471/how-do-i-change-my-default-shell-on-a-domain-account)
 I figured out how to add an `/etc/passwd/` entry for my domain account:
-`getent passwd <EID> | sudo tee -a /etc/passwd` which obviously also had to be done as
+`getent passwd <user> | sudo tee -a /etc/passwd` which obviously also had to be done as
 my privileged user. Once that was complete the devcontainer fired up as expected.
 
 The last piece was to double check that I could correctly access the autofs mounted
@@ -221,30 +221,30 @@ For further discussion of the user namespace remapping (which explains why users
   dockertest:165536:65536
   dockertesta:231072:65536
   dockertestb:296608:65536
-  <EID>:362144:65536
+  <user>:362144:65536
   ```
 
   - Local user accounts seem to get their entries auto-generated correctly, but at least in testing, domain joined user accounts had to be manually created.
 
 - For each user that will be running docker in this machine, create an entry in `/etc/passwd` that specifies their default shell as `bash`. Otherwise VS code will not be able to figure out the user level docker socket it should attach to.
 
-  - `getent passwd <EID> | sudo tee -a /etc/passwd`
+  - `getent passwd <user> | sudo tee -a /etc/passwd`
 
-- Create a base user folder to mount network shares for each user in `/mnt/<EID>`, make that user the owner of that folder and lock down access to that user (`chown <EID>` and `chmod 700 /mnt/<EID>`).
+- Create a base user folder to mount network shares for each user in `/mnt/<user>`, make that user the owner of that folder and lock down access to that user (`chown <user>` and `chmod 700 /mnt/<user>`).
 
 - For each user that will be running docker from this machine, create a line in `/etc/auto.master` in the following format:
 
   ```bash
-  /mnt/<EID> /etc/auto.sambashares-<EID> --timeout=30 –ghost
+  /mnt/<user> /etc/auto.sambashares-<user> --timeout=30 –ghost
   ```
 
-- Populate `/etc/auto.sambashares-<EID>` with a line for each network share that user has to access as follows:
+- Populate `/etc/auto.sambashares-<user>` with a line for each network share that user has to access as follows:
 
   ```bash
   <localsharename> -fstype=cifs,rw,sec=krb5,uid=${UID},cruid=${UID} :<full share path>
   ```
 
-  Where `<localsharename>` is the name of the folder under `/mnt/<EID>` that the share will be mounted to, and `<full share path>` is the path to the SMB file share.
+  Where `<localsharename>` is the name of the folder under `/mnt/<user>` that the share will be mounted to, and `<full share path>` is the path to the SMB file share.
 
 ## User configuration
 
@@ -269,5 +269,5 @@ docker run hello-world
 ### Set up network shares
 
 Attaching network shares cannot be done directly by the user. System administrators provision
-network drives for each user under `/mnt/<EID>`. If the network share you want is not
+network drives for each user under `/mnt/<user>`. If the network share you want is not
 there, contact your system administrator with its information and they will add it.
