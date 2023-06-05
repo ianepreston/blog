@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.2.475">
+<meta name="generator" content="quarto-1.3.361">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
@@ -19,9 +19,10 @@ div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
 ul.task-list{list-style: none;}
 ul.task-list li input[type="checkbox"] {
   width: 0.8em;
-  margin: 0 0.8em 0.2em -1.6em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
   vertical-align: middle;
 }
+/* CSS for syntax highlighting */
 pre > code.sourceCode { white-space: pre; position: relative; }
 pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
 pre > code.sourceCode > span:empty { height: 1.2em; }
@@ -48,43 +49,13 @@ pre.numberSource code > span > a:first-child::before
     -khtml-user-select: none; -moz-user-select: none;
     -ms-user-select: none; user-select: none;
     padding: 0 4px; width: 4em;
-    color: #aaaaaa;
   }
-pre.numberSource { margin-left: 3em; border-left: 1px solid #aaaaaa;  padding-left: 4px; }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
 div.sourceCode
   {   }
 @media screen {
 pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
 }
-code span.al { color: #ff0000; font-weight: bold; } /* Alert */
-code span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
-code span.at { color: #7d9029; } /* Attribute */
-code span.bn { color: #40a070; } /* BaseN */
-code span.bu { color: #008000; } /* BuiltIn */
-code span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
-code span.ch { color: #4070a0; } /* Char */
-code span.cn { color: #880000; } /* Constant */
-code span.co { color: #60a0b0; font-style: italic; } /* Comment */
-code span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
-code span.do { color: #ba2121; font-style: italic; } /* Documentation */
-code span.dt { color: #902000; } /* DataType */
-code span.dv { color: #40a070; } /* DecVal */
-code span.er { color: #ff0000; font-weight: bold; } /* Error */
-code span.ex { } /* Extension */
-code span.fl { color: #40a070; } /* Float */
-code span.fu { color: #06287e; } /* Function */
-code span.im { color: #008000; font-weight: bold; } /* Import */
-code span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
-code span.kw { color: #007020; font-weight: bold; } /* Keyword */
-code span.op { color: #666666; } /* Operator */
-code span.ot { color: #007020; } /* Other */
-code span.pp { color: #bc7a00; } /* Preprocessor */
-code span.sc { color: #4070a0; } /* SpecialChar */
-code span.ss { color: #bb6688; } /* SpecialString */
-code span.st { color: #4070a0; } /* String */
-code span.va { color: #19177c; } /* Variable */
-code span.vs { color: #4070a0; } /* VerbatimString */
-code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
 </style>
 
 
@@ -120,7 +91,8 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
     "search-more-matches-text": "more matches in this document",
     "search-clear-button-title": "Clear",
     "search-detached-cancel-button-title": "Cancel",
-    "search-submit-button-title": "Submit"
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
   }
 }</script>
 
@@ -139,22 +111,24 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
     <span class="navbar-title">Ian’s blog</span>
     </a>
   </div>
+            <div id="quarto-search" class="" title="Search"></div>
           <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
   <span class="navbar-toggler-icon"></span>
 </button>
           <div class="collapse navbar-collapse" id="navbarCollapse">
             <ul class="navbar-nav navbar-nav-scroll ms-auto">
   <li class="nav-item">
-    <a class="nav-link" href="../about.html">
+    <a class="nav-link" href="../about.html" rel="" target="">
  <span class="menu-text">about</span></a>
   </li>  
   <li class="nav-item compact">
-    <a class="nav-link" href="https://github.com/ianepreston"><i class="bi bi-github" role="img">
+    <a class="nav-link" href="https://github.com/ianepreston" rel="" target=""><i class="bi bi-github" role="img">
 </i> 
  <span class="menu-text"></span></a>
   </li>  
 </ul>
-              <div id="quarto-search" class="" title="Search"></div>
+            <div class="quarto-navbar-tools">
+</div>
           </div> <!-- /navcollapse -->
       </div> <!-- /container-fluid -->
     </nav>
@@ -275,10 +249,8 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <p>The first thing you should see is a login page. The default login is admin/pfsense. After that there’s a welcome page for the Wizard, followed by a page describing all the support options that are available. After that we get to the first page to actually populate.</p>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
-<figure class="figure">
-<img src="pfsense/pfsense_01_wizard_01.PNG" title="first wizard page" class="img-fluid figure-img">
-</figure>
-<p></p><figcaption class="figure-caption">wizard page</figcaption><p></p>
+<p><img src="pfsense/pfsense_01_wizard_01.PNG" title="first wizard page" class="img-fluid figure-img"></p>
+<figcaption class="figure-caption">wizard page</figcaption>
 </figure>
 </div>
 <p>All that’s necessary on this page is to give your router a name (I went with behemoth because I’m doing an <a href="https://en.wikipedia.org/wiki/The_Expanse_(novel_series)">expanse</a> themed naming scheme). You also need to name your local domain. localcomain seems fine so I left it at that. DNS can be configured here but I left it alone and will configure it later.</p>
@@ -286,10 +258,8 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <p>My WAN interface is DHCP so I just leave all default.</p>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
-<figure class="figure">
-<img src="pfsense/pfsense_01_wizard_02.PNG" title="second wizard page" class="img-fluid figure-img">
-</figure>
-<p></p><figcaption class="figure-caption">wizard page</figcaption><p></p>
+<p><img src="pfsense/pfsense_01_wizard_02.PNG" title="second wizard page" class="img-fluid figure-img"></p>
+<figcaption class="figure-caption">wizard page</figcaption>
 </figure>
 </div>
 <p>The next step is to configure your LAN interface. You can leave it on <code>192.168.1.1</code> but I prefer to change it. The reason is that <code>192.168.[1/0].1</code> is a super common address range. If I use that range on my LAN, and then try and VPN back into it from someone else’s network using the same address range it tends to cause issues. The <a href="https://docs.netgate.com/pfsense/en/latest/book/network/understanding-public-and-private-ip-addresses.html">pfsense book</a> has a good chapter on this. The 24 subnet mask is equivalent to <code>255.255.255.0</code>. If you haven’t seen that notation before, or need to brush up the <a href="https://docs.netgate.com/pfsense/en/latest/book/network/understanding-cidr-subnet-mask-notation.html">pfsense book</a> also has a decent high level introduction.</p>
@@ -305,10 +275,8 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <p>Up to here everything is super slick, but then I hit problems.</p>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
-<figure class="figure">
-<img src="pfsense/wifi_01.PNG" title="wifi" class="img-fluid figure-img">
-</figure>
-<p></p><figcaption class="figure-caption">Wi-Fi</figcaption><p></p>
+<p><img src="pfsense/wifi_01.PNG" title="wifi" class="img-fluid figure-img"></p>
+<figcaption class="figure-caption">Wi-Fi</figcaption>
 </figure>
 </div>
 <p>My WAP showed up on the home page but it was just stuck on “Adopting (Update Required)”. Initial googling suggested that I would have to manually push a firmware update before I could adopt. This didn’t actually solve the issue, but just for reference here’s how you do that:</p>
@@ -321,14 +289,14 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
 <p><img src="pfsense/wifi_02.PNG" class="img-fluid figure-img"></p>
-<p></p><figcaption class="figure-caption">WIFI</figcaption><p></p>
+<figcaption class="figure-caption">WIFI</figcaption>
 </figure>
 </div>
 <p>Then on the controller page hard code the IP and host and set “Override host with controller hostname/IP”. I also set “Make controller discoverable on the L2 network” since it’s a locally hosted controller, but I’m not sure that actually made a difference. Doesn’t hurt.</p>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
 <p><img src="pfsense/wifi_03.PNG" class="img-fluid figure-img"></p>
-<p></p><figcaption class="figure-caption">WIFI</figcaption><p></p>
+<figcaption class="figure-caption">WIFI</figcaption>
 </figure>
 </div>
 <p>For now I’m online!</p>
@@ -350,21 +318,21 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
 <p><img src="pfsense/pfsense_02_general_02.PNG" class="img-fluid figure-img"></p>
-<p></p><figcaption class="figure-caption">admin</figcaption><p></p>
+<figcaption class="figure-caption">admin</figcaption>
 </figure>
 </div>
 <p>Change browser tab text so I know what page each tab is on.</p>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
 <p><img src="pfsense/pfsense_02_general_03.PNG" class="img-fluid figure-img"></p>
-<p></p><figcaption class="figure-caption">text</figcaption><p></p>
+<figcaption class="figure-caption">text</figcaption>
 </figure>
 </div>
 <p>Enable SSH and change the default port to 2222 (security through obscurity). I’m going to set up keys later, for now let it work with a password but come back and update this later.</p>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
 <p><img src="pfsense/pfsense_02_general_04.PNG" class="img-fluid figure-img"></p>
-<p></p><figcaption class="figure-caption">ssh</figcaption><p></p>
+<figcaption class="figure-caption">ssh</figcaption>
 </figure>
 </div>
 <p>Fun piece of trivia, right as I enabled this my web front-end froze. The actual router was still functioning, but I couldn’t get any web admin. Part of it was that I had to switch from https to http in the URL, but even after that I would hit the login, it would accept my password, and just take me back to the login page. I found <a href="https://www.reddit.com/r/PFSENSE/comments/6r5xpq/switched_to_http_now_webconfigurator_wont_get/">this reddit thread</a> which had the same issue. For me I could connect in using a private browsing window, which led me to try restarting my browser, which fixed it. Computers…</p>
@@ -375,7 +343,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
 <p><img src="pfsense/pfsense_02_general_05.PNG" class="img-fluid figure-img"></p>
-<p></p><figcaption class="figure-caption">firewall</figcaption><p></p>
+<figcaption class="figure-caption">firewall</figcaption>
 </figure>
 </div>
 </section>
@@ -385,14 +353,14 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
 <p><img src="pfsense/pfsense_02_general_06.PNG" class="img-fluid figure-img"></p>
-<p></p><figcaption class="figure-caption">ipv6</figcaption><p></p>
+<figcaption class="figure-caption">ipv6</figcaption>
 </figure>
 </div>
 <p>Set everything possible to work on hardware. Given that I have Intel NICs in my router I think I can safely run all of these things. I ran iperf3 between two wired connections as well as <a href="https://www.speedtest.net">speedtest</a> before enabling the settings and then again after. Note that you have to reboot after changing these settings. After the reboot performance was essentially unchanged so I took that as a good sign and kept the settings.</p>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
 <p><img src="pfsense/pfsense_02_general_07.PNG" class="img-fluid figure-img"></p>
-<p></p><figcaption class="figure-caption">hardware</figcaption><p></p>
+<figcaption class="figure-caption">hardware</figcaption>
 </figure>
 </div>
 </section>
@@ -402,14 +370,14 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
 <p><img src="pfsense/pfsense_02_general_08.PNG" class="img-fluid figure-img"></p>
-<p></p><figcaption class="figure-caption">hiadaptive</figcaption><p></p>
+<figcaption class="figure-caption">hiadaptive</figcaption>
 </figure>
 </div>
 <p>My CPU supports AES-NI and I’ll want that enabled for better VPN performance later.</p>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
 <p><img src="pfsense/pfsense_02_general_09.PNG" class="img-fluid figure-img"></p>
-<p></p><figcaption class="figure-caption">aesni</figcaption><p></p>
+<figcaption class="figure-caption">aesni</figcaption>
 </figure>
 </div>
 </section>
@@ -419,7 +387,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
 <p><img src="pfsense/pfsense_02_general_10.PNG" class="img-fluid figure-img"></p>
-<p></p><figcaption class="figure-caption">notifications</figcaption><p></p>
+<figcaption class="figure-caption">notifications</figcaption>
 </figure>
 </div>
 <p>After all that I hit “test SMTP settings” and received an email informing me it worked. Hurray!</p>
@@ -431,14 +399,14 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
 <p><img src="pfsense/pfsense_02_general_12.PNG" class="img-fluid figure-img"></p>
-<p></p><figcaption class="figure-caption">dhcp6</figcaption><p></p>
+<figcaption class="figure-caption">dhcp6</figcaption>
 </figure>
 </div>
 <p>And then on each respective interface’s page I can disable IPv6</p>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
 <p><img src="pfsense/pfsense_02_general_11.PNG" class="img-fluid figure-img"></p>
-<p></p><figcaption class="figure-caption">dhcp6</figcaption><p></p>
+<figcaption class="figure-caption">dhcp6</figcaption>
 </figure>
 </div>
 </section>
@@ -455,14 +423,14 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
 <p><img src="pfsense/pfsense_03_ntp_01.PNG" class="img-fluid figure-img"></p>
-<p></p><figcaption class="figure-caption">ntp</figcaption><p></p>
+<figcaption class="figure-caption">ntp</figcaption>
 </figure>
 </div>
 <p>I’ll also enable RDD graphs because it might be fun to see a chart of time drift and recalibration for my system, why not?</p>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
 <p><img src="pfsense/pfsense_03_ntp_02.PNG" class="img-fluid figure-img"></p>
-<p></p><figcaption class="figure-caption">ntp</figcaption><p></p>
+<figcaption class="figure-caption">ntp</figcaption>
 </figure>
 </div>
 <p>Now that I’ve got a nice fancy NTP server it will be nice to have all the machines on my network in sync for time by using the local pfsense NTP server.</p>
@@ -471,7 +439,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
 <p><img src="pfsense/pfsense_03_ntp_03.PNG" class="img-fluid figure-img"></p>
-<p></p><figcaption class="figure-caption">ntp</figcaption><p></p>
+<figcaption class="figure-caption">ntp</figcaption>
 </figure>
 </div>
 <p>Since in this case I’m on timesyncd I’ll have to turn that service off, install ntp, enable it, and then point it to my pfsense box:</p>
@@ -493,14 +461,14 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
 <p><img src="pfsense/pfsense_04_dhcp_01.PNG" class="img-fluid figure-img"></p>
-<p></p><figcaption class="figure-caption">dhcp</figcaption><p></p>
+<figcaption class="figure-caption">dhcp</figcaption>
 </figure>
 </div>
 <p>Since I went to all the trouble of setting up NTP, I’ll set up DHCP to push that server. Note that I had to use the IP of my router here, not the hostname. This doesn’t guarantee DHCP clients will use the NTP server, but it provides the option, so why not?</p>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
 <p><img src="pfsense/pfsense_04_dhcp_02.PNG" class="img-fluid figure-img"></p>
-<p></p><figcaption class="figure-caption">dhcp</figcaption><p></p>
+<figcaption class="figure-caption">dhcp</figcaption>
 </figure>
 </div>
 <section id="static-mappings" class="level2">
@@ -509,14 +477,14 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
 <p><img src="pfsense/pfsense_04_dhcp_03.PNG" class="img-fluid figure-img"></p>
-<p></p><figcaption class="figure-caption">static mask</figcaption><p></p>
+<figcaption class="figure-caption">static mask</figcaption>
 </figure>
 </div>
 <p>Since I’m going to set up most of my network this way I’m also going to narrow the range for regular DHCP leases to be handed out back on the DHCP Server service page:</p>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
 <p><img src="pfsense/pfsense_04_dhcp_04.PNG" class="img-fluid figure-img"></p>
-<p></p><figcaption class="figure-caption">static mask</figcaption><p></p>
+<figcaption class="figure-caption">static mask</figcaption>
 </figure>
 </div>
 <p>After this I’ll have to trigger a release/renew cycle for all devices on the network. The easiest way to do this is probably just reboot the router.</p>
@@ -528,7 +496,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
 <p><img src="pfsense/pfsense_04_dhcp_05.PNG" class="img-fluid figure-img"></p>
-<p></p><figcaption class="figure-caption">resolver</figcaption><p></p>
+<figcaption class="figure-caption">resolver</figcaption>
 </figure>
 </div>
 <p>I think I only need the second one since I gave every client on my network a static lease, but the other one seems nice to have as well, so I’ll enable it.</p>
@@ -541,7 +509,7 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
 <p><img src="pfsense/pfsense_05_dns_01.PNG" class="img-fluid figure-img"></p>
-<p></p><figcaption class="figure-caption">servers</figcaption><p></p>
+<figcaption class="figure-caption">servers</figcaption>
 </figure>
 </div>
 <p>Respect to my ISP, all the fastest DNS servers are from them, and the two fastest are the ones I was assigned by DHCP. So this probably didn’t really do anything for me. Oh well.</p>
@@ -549,14 +517,14 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
 <p><img src="pfsense/pfsense_05_dns_02.PNG" class="img-fluid figure-img"></p>
-<p></p><figcaption class="figure-caption">resolver</figcaption><p></p>
+<figcaption class="figure-caption">resolver</figcaption>
 </figure>
 </div>
 <p>These should make response times for DNS queries a little faster at the cost of trivial CPU increase.</p>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
 <p><img src="pfsense/pfsense_05_dns_03.PNG" class="img-fluid figure-img"></p>
-<p></p><figcaption class="figure-caption">cache</figcaption><p></p>
+<figcaption class="figure-caption">cache</figcaption>
 </figure>
 </div>
 <p>Why not store more names? I have tons of RAM.</p>
@@ -569,34 +537,34 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
 <p><img src="pfsense/pfsense_06_pfblocker_01.PNG" class="img-fluid figure-img"></p>
-<p></p><figcaption class="figure-caption">pfblocker install</figcaption><p></p>
+<figcaption class="figure-caption">pfblocker install</figcaption>
 </figure>
 </div>
 <p>Head over to the settings page:</p>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
 <p><img src="pfsense/pfsense_06_pfblocker_02_install.PNG" class="img-fluid figure-img"></p>
-<p></p><figcaption class="figure-caption">pfblocker install</figcaption><p></p>
+<figcaption class="figure-caption">pfblocker install</figcaption>
 </figure>
 </div>
 <p>Then go through the wizard (this may come up automatically, it didn’t for me):</p>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
 <p><img src="pfsense/pfsense_06_pfblocker_02_wizard.PNG" class="img-fluid figure-img"></p>
-<p></p><figcaption class="figure-caption">pfblocker install</figcaption><p></p>
+<figcaption class="figure-caption">pfblocker install</figcaption>
 </figure>
 </div>
 <p>You get some warnings about how this will wipe your setup. That’s fine, we’re installing fresh. Then you get the first actual input prompt. The defaults are fine for me so I leave them:</p>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
 <p><img src="pfsense/pfsense_06_pfblocker_02_wizard2.PNG" class="img-fluid figure-img"></p>
-<p></p><figcaption class="figure-caption">pfblocker install</figcaption><p></p>
+<figcaption class="figure-caption">pfblocker install</figcaption>
 </figure>
 </div>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
 <p><img src="pfsense/pfsense_06_pfblocker_02_wizard3.PNG" class="img-fluid figure-img"></p>
-<p></p><figcaption class="figure-caption">pfblocker install</figcaption><p></p>
+<figcaption class="figure-caption">pfblocker install</figcaption>
 </figure>
 </div>
 <p>And that’s the wizard done! It should auto run an update to download all the blocklists and other goodness. Wait for that to finish.</p>
@@ -604,35 +572,35 @@ code span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warni
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
 <p><img src="pfsense/pfsense_06_pfblocker_03.PNG" class="img-fluid figure-img"></p>
-<p></p><figcaption class="figure-caption">geoblock</figcaption><p></p>
+<figcaption class="figure-caption">geoblock</figcaption>
 </figure>
 </div>
 <p>Enable floating rules (see the video for a discussion on why)</p>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
 <p><img src="pfsense/pfsense_06_pfblocker_04.PNG" class="img-fluid figure-img"></p>
-<p></p><figcaption class="figure-caption">floating</figcaption><p></p>
+<figcaption class="figure-caption">floating</figcaption>
 </figure>
 </div>
 <p>Enable kill states</p>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
 <p><img src="pfsense/pfsense_06_pfblocker_05.PNG" class="img-fluid figure-img"></p>
-<p></p><figcaption class="figure-caption">kill</figcaption><p></p>
+<figcaption class="figure-caption">kill</figcaption>
 </figure>
 </div>
 <p>On geoblocking I’m going to deny both for top spammers, and then deny inbound from anywhere except North America. I’m not hosting anything, the only inbound traffic should be me connecting in on VPN (set up later). I’ll have to remember to change this if I go on vacation somewhere off continent. I’m also going to disable logging for now as I don’t really need to look at when this happens. If there’s an issue I’ll turn it back on.</p>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
 <p><img src="pfsense/pfsense_06_pfblocker_06.PNG" class="img-fluid figure-img"></p>
-<p></p><figcaption class="figure-caption">geoip</figcaption><p></p>
+<figcaption class="figure-caption">geoip</figcaption>
 </figure>
 </div>
 <p>And that’s it! I can wait an hour or manually have it reload the settings:</p>
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
 <p><img src="pfsense/pfsense_06_pfblocker_07.PNG" class="img-fluid figure-img"></p>
-<p></p><figcaption class="figure-caption">reload</figcaption><p></p>
+<figcaption class="figure-caption">reload</figcaption>
 </figure>
 </div>
 </section>
@@ -722,9 +690,23 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
     icon: icon
   };
   anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
   const clipboard = new window.ClipboardJS('.code-copy-button', {
-    target: function(trigger) {
-      return trigger.previousElementSibling;
+    text: function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
     }
   });
   clipboard.on('success', function(e) {
@@ -789,6 +771,92 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
       return note.innerHTML;
     });
   }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
   const findCites = (el) => {
     const parentEl = el.parentElement;
     if (parentEl) {

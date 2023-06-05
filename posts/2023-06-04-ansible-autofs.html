@@ -6,10 +6,10 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
-<meta name="dcterms.date" content="2020-11-26">
-<meta name="description" content="Summarizing how I provision my machines with just the steps to reproduce the process.">
+<meta name="dcterms.date" content="2023-06-04">
+<meta name="description" content="A user isolated way to mount file shares on a shared Linux host">
 
-<title>Ian’s blog - Automating provisioning Arch continued - TLDR</title>
+<title>Ian’s blog - Configuring autofs for CIFS mounts with ansible</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -137,16 +137,15 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <header id="title-block-header" class="quarto-title-block default page-columns page-full">
   <div class="quarto-title-banner page-columns page-full">
     <div class="quarto-title column-body">
-      <h1 class="title">Automating provisioning Arch continued - TLDR</h1>
+      <h1 class="title">Configuring autofs for CIFS mounts with ansible</h1>
                   <div>
         <div class="description">
-          Summarizing how I provision my machines with just the steps to reproduce the process.
+          A user isolated way to mount file shares on a shared Linux host
         </div>
       </div>
                           <div class="quarto-categories">
-                <div class="quarto-category">configuration</div>
-                <div class="quarto-category">linux</div>
-                <div class="quarto-category">arch</div>
+                <div class="quarto-category">ansible</div>
+                <div class="quarto-category">Linux</div>
               </div>
                   </div>
   </div>
@@ -158,7 +157,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
       <div>
       <div class="quarto-title-meta-heading">Published</div>
       <div class="quarto-title-meta-contents">
-        <p class="date">November 26, 2020</p>
+        <p class="date">June 4, 2023</p>
       </div>
     </div>
     
@@ -175,17 +174,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
    
   <ul>
   <li><a href="#introduction" id="toc-introduction" class="nav-link active" data-scroll-target="#introduction">Introduction</a></li>
-  <li><a href="#arch-usb-boot" id="toc-arch-usb-boot" class="nav-link" data-scroll-target="#arch-usb-boot">Arch USB boot</a></li>
-  <li><a href="#from-the-live-boot" id="toc-from-the-live-boot" class="nav-link" data-scroll-target="#from-the-live-boot">From the live boot</a>
-  <ul class="collapse">
-  <li><a href="#setup-wifi" id="toc-setup-wifi" class="nav-link" data-scroll-target="#setup-wifi">Setup WiFi</a></li>
-  <li><a href="#make-sure-partitions-are-set-up" id="toc-make-sure-partitions-are-set-up" class="nav-link" data-scroll-target="#make-sure-partitions-are-set-up">Make sure partitions are set up</a></li>
-  <li><a href="#run-the-script" id="toc-run-the-script" class="nav-link" data-scroll-target="#run-the-script">Run the script</a></li>
-  </ul></li>
-  <li><a href="#set-up-ssh-keys" id="toc-set-up-ssh-keys" class="nav-link" data-scroll-target="#set-up-ssh-keys">Set up ssh keys</a></li>
-  <li><a href="#set-up-wifi-again" id="toc-set-up-wifi-again" class="nav-link" data-scroll-target="#set-up-wifi-again">Set up WiFi again</a></li>
-  <li><a href="#run-ansible" id="toc-run-ansible" class="nav-link" data-scroll-target="#run-ansible">Run Ansible</a></li>
-  <li><a href="#setup-dotfiles" id="toc-setup-dotfiles" class="nav-link" data-scroll-target="#setup-dotfiles">Setup dotfiles</a></li>
+  <li><a href="#variable-format" id="toc-variable-format" class="nav-link" data-scroll-target="#variable-format">Variable format</a></li>
+  <li><a href="#basic-setup" id="toc-basic-setup" class="nav-link" data-scroll-target="#basic-setup">Basic setup</a></li>
+  <li><a href="#populate-auto.master" id="toc-populate-auto.master" class="nav-link" data-scroll-target="#populate-auto.master">Populate auto.master</a></li>
+  <li><a href="#populate-user-level-share-specs" id="toc-populate-user-level-share-specs" class="nav-link" data-scroll-target="#populate-user-level-share-specs">Populate user level share specs</a></li>
   <li><a href="#conclusion" id="toc-conclusion" class="nav-link" data-scroll-target="#conclusion">Conclusion</a></li>
   </ul>
 </nav>
@@ -196,79 +188,88 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 
 
-<p>This is part 4 of a 4 part series describing how I provision my systems. Links to each part are below:</p>
-<ul>
-<li><a href="../posts/2020-10-14-arch-bootstrap.html">part 1 - The base OS install</a></li>
-<li><a href="../posts/2020-11-21-ansible.html">part 2 - Software install and system configuration with Ansible</a></li>
-<li><a href="../posts/2020-11-25-dotfiles.html">part 3 - User level and python environment config with dotfiles and mkrc</a></li>
-<li><a href="../posts/2020-11-26-arch-tldr.html">part 4 - The tldr that wraps up how to do the whole thing from start to finish</a>]</li>
-</ul>
 <section id="introduction" class="level1">
 <h1>Introduction</h1>
-<p>This note is a reference for me to put together my full provisioning pipeline.</p>
+<p>This guide shows how to set up user isolated mounts of CIFS (samba) network shares on a shared linux VM. Each user will get folders under <code>/mnt/&lt;user&gt;</code> that they authenticate to using kerberos. In this document I’m assuming that users are members of a group and that each group all should have access to the same shares. We’ll further assume you’ve got a fact set in your playbook that maps each user to their corresponding group. If you need guidance on that you can see <a href="../posts/2023-06-04-ansible-ad-users.html">this post</a>.</p>
+<p>This is a nice way of attaching file shares because it ensures users don’t need elevated privileges to access file shares (although an administrator has to configure it for them) and that creating a share for one user doesn’t inadvertently expose it to others. For a fully user level way of attaching file shares you can use <a href="https://man.archlinux.org/man/gio.1">gio</a> but I found it extremely flaky and annoying to use, so if you can handle having an administrator configure the share mount points for users I would recommend this approach.</p>
 </section>
-<section id="arch-usb-boot" class="level1">
-<h1>Arch USB boot</h1>
-<p>Follow <a href="https://wiki.archlinux.org/index.php/USB_flash_installation_medium">The Arch guide</a></p>
+<section id="variable-format" class="level1">
+<h1>Variable format</h1>
+<p>Somewhere in your playbook (in my case I set it in the variables folder of the role I was using, but putting in as a host variable or somewhere else may be more appropriate for your use case) we need a variable for each group that contains a list of associated shares. Something like this:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode yml code-with-copy"><code class="sourceCode yaml"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">example_group1</span><span class="kw">:</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">local_share_name</span><span class="kw">:</span><span class="at"> share1</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">full_share_path</span><span class="kw">:</span><span class="at"> </span><span class="st">"//fileshare.example.com/share1"</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">local_share_name</span><span class="kw">:</span><span class="at"> share2</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">full_share_path</span><span class="kw">:</span><span class="at"> </span><span class="st">"//fileshare.example.com/share2"</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="fu">example_group2</span><span class="kw">:</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">local_share_name</span><span class="kw">:</span><span class="at"> share3</span></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">full_share_path</span><span class="kw">:</span><span class="at"> </span><span class="st">"//fileshare.example.com/share3"</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </section>
-<section id="from-the-live-boot" class="level1">
-<h1>From the live boot</h1>
-<section id="setup-wifi" class="level2">
-<h2 class="anchored" data-anchor-id="setup-wifi">Setup WiFi</h2>
-<p>In the case where I’m doing this on a laptop I’ll likely have to get on WiFi before I can continue.</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">iwctl</span></span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="ex">station</span> wlan0 connect <span class="op">&lt;</span>your SSID<span class="op">&gt;</span>  # You can enclose it in quotes if it has spaces</span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="op">&lt;</span>enter <span class="ex">passphrase</span><span class="op">&gt;</span></span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="bu">exit</span></span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="ex">dhcpcd</span> wlan0</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<section id="basic-setup" class="level1">
+<h1>Basic setup</h1>
+<p>In this stage we will ensure pre-requisite software is installed on the host (assuming Ubuntu here, you will have to modify for other distros), and that the mount point folder for each user has been created:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode yml code-with-copy"><code class="sourceCode yaml"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> Install autofs</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">ansible.builtin.apt</span><span class="kw">:</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">pkg</span><span class="kw">:</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> autofs</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> cifs-utils</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> keyutils</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> Create base file share mount point</span></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">ansible.builtin.file</span><span class="kw">:</span></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">path</span><span class="kw">:</span><span class="at"> </span><span class="st">"/mnt/{{ item.user }}"</span></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">state</span><span class="kw">:</span><span class="at"> directory</span></span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">owner</span><span class="kw">:</span><span class="at"> </span><span class="st">"{{ item.user }}"</span></span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">group</span><span class="kw">:</span><span class="at"> </span><span class="st">"domain users@example.com"</span></span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">mode</span><span class="kw">:</span><span class="at"> </span><span class="st">"0700"</span></span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">with_items</span><span class="kw">:</span><span class="at"> </span><span class="st">"{{ users_dict }}"</span></span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> Start and enable the autofs service</span></span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">ansible.builtin.systemd</span><span class="kw">:</span></span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">name</span><span class="kw">:</span><span class="at"> autofs</span></span>
+<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">state</span><span class="kw">:</span><span class="at"> started</span></span>
+<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">enabled</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Where <code>users_dict</code> looks like what I created in <a href="../posts/2023-06-04-ansible-ad-users.html">this post</a>. You will also have to modify the <code>group</code> variable to be appropriate for your environment.</p>
+<p>I actually have the autofs service start task at the bottom of this play in my case, but thematically it makes more sense here.</p>
 </section>
-<section id="make-sure-partitions-are-set-up" class="level2">
-<h2 class="anchored" data-anchor-id="make-sure-partitions-are-set-up">Make sure partitions are set up</h2>
-<p>If you’re not just going to wipe the whole disk you can run <code>lsblk</code> to determine what partitions you have. <code>cfdisk</code> has a nice interface for creating and modifying partitions if necessary. To format the boot partition run:</p>
-<p><code>mkfs.vfat -F32 /dev/&lt;partition&gt;</code></p>
-<p><code>mkfs.ext4 /dev/&lt;partition&gt;</code> will work for the root partition.</p>
+<section id="populate-auto.master" class="level1">
+<h1>Populate auto.master</h1>
+<div class="sourceCode" id="cb3"><pre class="sourceCode yml code-with-copy"><code class="sourceCode yaml"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> populate auto.master with entries for each users' configs</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">ansible.builtin.template</span><span class="kw">:</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">src</span><span class="kw">:</span><span class="at"> auto.master.j2</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">dest</span><span class="kw">:</span><span class="at"> /etc/auto.master</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">owner</span><span class="kw">:</span><span class="at"> root</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">group</span><span class="kw">:</span><span class="at"> root</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">mode</span><span class="kw">:</span><span class="at"> </span><span class="st">'0644'</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Each user needs an entry in <code>/etc/auto.master</code> that points to a config file (which we’ll set in the next phase) with all their specific mount points. Using the template task and the template below we can accomplish this:</p>
+<pre class="jinja"><code># {{ ansible_managed }}
+{% for user in users_dict %}
+/mnt/{{ user.user }} /etc/auto.sambashares-{{ user.user }} --timeout=30 --ghost
+{% endfor %}</code></pre>
+<p>Each user gets a point below the <code>/mnt/&lt;user&gt;</code> folder we created in the basic setup, we point to a config file for them, set a timeout so the fileshare will not stay connected if users aren’t using it and then we add the <code>--ghost</code> flag so that all mount points get a directory created, even if they’re not currently attached. See <a href="https://learn.redhat.com/t5/Platform-Linux/Halloween-tip-of-the-day-Using-autofs-with-the-ghost-option/td-p/2326">here</a> for further docs.</p>
 </section>
-<section id="run-the-script" class="level2">
-<h2 class="anchored" data-anchor-id="run-the-script">Run the script</h2>
-<div class="sourceCode" id="cb2"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">bash</span> <span class="op">&lt;(</span><span class="ex">curl</span> <span class="at">-fsSL</span> http://bootstrap.ianpreston.ca<span class="op">)</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<p>After that power off, remove the USB and power back on.</p>
-</section>
-</section>
-<section id="set-up-ssh-keys" class="level1">
-<h1>Set up ssh keys</h1>
-<p>Plug in the USB with ssh keys on it. <a href="../posts/2020-05-03-ssh.html">Guide for reference</a></p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="ex">lsblk</span>  <span class="co"># find where the partition with the keys is stored</span></span>
-<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="fu">mkdir</span> ssh  <span class="co"># make a mount point</span></span>
-<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> mount /dev/sd<span class="op">&lt;</span>something<span class="op">&gt;</span> ssh</span>
-<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="fu">cp</span> <span class="at">-R</span> ssh ssh_local  <span class="co"># Have to set permissions on keys (stupid NTFS)</span></span>
-<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> ssh_local/CA</span>
-<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="fu">chmod</span> 600 host_ca</span>
-<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="fu">chmod</span> 600 user_ca</span>
-<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> ../</span>
-<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a><span class="fu">chmod</span> +x setup_host.sh</span>
-<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a><span class="fu">chmod</span> +x setup_user.sh</span>
-<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> ./setup_host.sh</span>
-<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a><span class="ex">./setup_user.sh</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-</section>
-<section id="set-up-wifi-again" class="level1">
-<h1>Set up WiFi again</h1>
-<div class="sourceCode" id="cb4"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="ex">nmcli</span> device wifi connect <span class="op">&lt;</span>SSID<span class="op">&gt;</span> password <span class="op">&lt;</span>password<span class="op">&gt;</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-</section>
-<section id="run-ansible" class="level1">
-<h1>Run Ansible</h1>
-<p>The bootstrap script cloned the repository into <code>/srv/recipes</code>. Modify the hosts file in <code>/srv/recipes/ansible/inventor/hosts</code> to include the hostname of the machine you’re setting up in the appropriate categories if you haven’t already.</p>
-<p>Run <code>provision_desktop.sh</code> in the ansible folder. It will fail part way through as you won’t have the keys set up for GitHub for your local user. Go through the ssh key generation process again for the newly created user, this will also make a GitHub specific key. Manually add that key to GitHub’s authorized keys and re-run the recipe. I’ve also seen it flake out a few times on particular application installs. Often I can just get past it by running <code>yay -S &lt;application&gt;</code> to manually install the problematic app. At the time of this writing there’s an additional fix required for spotify that’s mentioned on the AUR page for it. I’m not putting that in the recipe as I’m hoping it will be fixed soon.</p>
-</section>
-<section id="setup-dotfiles" class="level1">
-<h1>Setup dotfiles</h1>
-<p>Log in as your regular user.</p>
-<div class="sourceCode" id="cb5"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="bu">cd</span> ~/.dotfiles</span>
-<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="ex">./setup.sh</span></span>
-<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="ex">rcup</span> <span class="at">-v</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<section id="populate-user-level-share-specs" class="level1">
+<h1>Populate user level share specs</h1>
+<div class="sourceCode" id="cb5"><pre class="sourceCode yml code-with-copy"><code class="sourceCode yaml"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> Populate user specific share mounts</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">ansible.builtin.template</span><span class="kw">:</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">src</span><span class="kw">:</span><span class="at"> auto.sambashares.j2</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">dest</span><span class="kw">:</span><span class="at"> </span><span class="st">"/etc/auto.sambashares-{{ item.user }}"</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">owner</span><span class="kw">:</span><span class="at"> root</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">group</span><span class="kw">:</span><span class="at"> root</span></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">mode</span><span class="kw">:</span><span class="at"> </span><span class="st">'0644'</span></span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">with_items</span><span class="kw">:</span><span class="at"> </span><span class="st">"{{ users_dict }}"</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Again we’re populating a template, but this time we’re doing one for each user. As with above, most of the magic happens in the template itself:</p>
+<pre class="jinja"><code># {{ ansible_managed }}
+{% set shares = lookup('vars', item.group | replace('-', '_')) %}
+{% for share in shares %}
+{{ share.local_share_name }} -fstype=cifs,rw,sec=krb5,uid=${UID},cruid=${UID} :{{ share.full_share_path }}
+{% endfor %}</code></pre>
+<p>The <code>replace</code> step is because a lot of the groups I was using had a <code>-</code> in their name, which you can’t have in an ansible variable so I map the <code>-</code> to an <code>_</code>. We can then use that to refer to the variable described at the top of this post for whichever group the particular user happens to be in. Then we just iterate through all the shares defined and create a folder under <code>/mnt/&lt;user&gt;/&lt;local_share_name&gt;</code> that maps to <code>full_share_path</code> and will be authorized with kerberos.</p>
 </section>
 <section id="conclusion" class="level1">
 <h1>Conclusion</h1>
-<p>Sure, you could just install Ubuntu and be done with it, but where’s the fun in that? Why not spend weeks yak shaving your setup until you’re perfectly happy with it?</p>
+<p>Autofs and ansible are a pretty nice way to set up a bunch of users with consistent file shares securely on a shared host or multiple hosts.</p>
 
 
 </section>
