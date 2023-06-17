@@ -63,3 +63,98 @@ doesn't just do this for me. I think I have to drop the cloud piece for now as w
 I can get cleared to create a service principal and provide its authentication into
 terraform cloud. Lots of skipping things and coming back to it later so far in this learning
 path.
+
+# Get bored and try and build databricks
+
+Ok I lied. I still will be looking up docs and going through that, but I can't just
+follow more tutorials to build another web app. The thing I actually want to do with
+terraform right now is build a databricks environment based on their
+[sample terraform modules](https://www.databricks.com/blog/announcing-terraform-databricks-modules).
+Let's try that instead and see what I have to learn to do it properly.
+
+Copy pasting in the modules is going to be too easy though, so let's just take from it
+and figure things out as I go.
+
+I'll start by looking at the [example adb-lakehouse](https://github.com/databricks/terraform-databricks-examples/tree/main/examples/adb-lakehouse),
+and navigate into the modules it references as required.
+
+The first file I check is `data.tf` which just has the azure config itself which
+according to [the docs](https://registry.terraform.io/providers/hashicorp/azurerm/latest/docs/data-sources/client_config)
+will let me access things like my tenant and subscription ID. I'm sure that will come in
+handy later.
+
+# Naming things properly
+
+We've got standards around how things should be named in Azure, and I'd like to follow
+them as programmatically as feasible. The general naming convention is of the form
+`<environment prefix>-<region>-<type of resource>-<what it's for>-<counter>`. So
+a development resource group in the Canada Central region for testing databricks should
+be called `D-CC-RG-DATABRICKSTEST-01` or something similar. I think there's a way to enforce
+different types of object naming in terraform, but that seems more advanced than I want
+to take on right now. I do at least want to be able to derive naming for environment
+and region since I'm going to specify those as variables anyway.
+
+To start I'll create a couple variables in `variables.tf` for the environment and region:
+
+```terraform
+variable "region" {
+  type        = string
+  default     = "canadacentral"
+  description = "The region to deploy the workspace and all resources to"
+  validation {
+    condition     = contains(["canadacentral", "canadaeast"], var.region)
+    error_message = "Region must be canadacentral or canadaeast"
+  }
+}
+
+variable "environment" {
+  type        = string
+  default     = "development"
+  description = "What sort of environment this relates to"
+  validation {
+    condition     = contains(["development", "uat", "production"], var.environment)
+    error_message = "Environment must be 'development', 'uat', or 'production'"
+  }
+}
+```
+
+The `validation` block is a pretty cool feature, it lets me add additional constraints
+other than data type.
+
+The intuitive next step would be to create variables for environment and region prefixes
+that are derived from these variables that can be referenced throughout the rest of the
+code. Unfortunately, [that's not how this works](https://github.com/hashicorp/terraform/issues/17229).
+For now in my `main.tf` I'll use some [locals](https://developer.hashicorp.com/terraform/language/values/locals)
+to do this derivation. I think if I wanted to get fancier I could probably make a module
+that would take those variables as inputs and return names as outputs that would be
+reusable and extensible across my code base, but that's probably getting ahead of myself,
+this is already feeling a bit over-engineered.
+
+Anyway, in `main.tf` I can add locals like so:
+
+```terraform
+locals {
+  environment_prefix = upper(substr(var.environment, 0, 1))
+  region_prefix_map = {
+    canadacentral = "CC"
+    canadaeast    = "CE"
+  }
+  region_prefix = local.region_prefix_map[var.region]
+}
+```
+
+There's maybe a way to inline that `region_prefix_map` local but it's not doing any
+harm that I can see and this way feels more readable.
+
+Now if I can create a resource group that will be dynamically named like this:
+
+```terraform
+resource "azurerm_resource_group" "this" {
+  name     = "${local.environment_prefix}-${local.region_prefix}-RG-IPDATABRICKSTEST-01"
+  location = var.region
+}
+```
+
+Pretty neat! I'm starting to get my head around the terraform syntax too. The individual
+syntax is all fine, but right now at least I'm struggling with combining elements of it
+a little bit still.
