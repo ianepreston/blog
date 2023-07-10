@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.3.433">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="dcterms.date" content="2023-07-06">
+<meta name="description" content="Overengineering at its finest">
+
+<title>Ian’s blog - Automating my network</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../">
+<script src="../site_libs/quarto-html/quarto.js"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../site_libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 20,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+
+<link rel="stylesheet" href="../styles.css">
+</head>
+
+<body class="nav-fixed">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg navbar-dark ">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container">
+    <a class="navbar-brand" href="../index.html">
+    <span class="navbar-title">Ian’s blog</span>
+    </a>
+  </div>
+            <div id="quarto-search" class="" title="Search"></div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll ms-auto">
+  <li class="nav-item">
+    <a class="nav-link" href="../about.html" rel="" target="">
+ <span class="menu-text">about</span></a>
+  </li>  
+  <li class="nav-item compact">
+    <a class="nav-link" href="https://github.com/ianepreston" rel="" target=""><i class="bi bi-github" role="img">
+</i> 
+ <span class="menu-text"></span></a>
+  </li>  
+</ul>
+            <div class="quarto-navbar-tools">
+</div>
+          </div> <!-- /navcollapse -->
+      </div> <!-- /container-fluid -->
+    </nav>
+</header>
+<!-- content -->
+<header id="title-block-header" class="quarto-title-block default page-columns page-full">
+  <div class="quarto-title-banner page-columns page-full">
+    <div class="quarto-title column-body">
+      <h1 class="title">Automating my network</h1>
+                  <div>
+        <div class="description">
+          Overengineering at its finest
+        </div>
+      </div>
+                          <div class="quarto-categories">
+                <div class="quarto-category">networking</div>
+              </div>
+                  </div>
+  </div>
+    
+  
+  <div class="quarto-title-meta">
+
+      
+      <div>
+      <div class="quarto-title-meta-heading">Published</div>
+      <div class="quarto-title-meta-contents">
+        <p class="date">July 6, 2023</p>
+      </div>
+    </div>
+    
+      
+    </div>
+    
+  
+  </header><div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#introduction" id="toc-introduction" class="nav-link active" data-scroll-target="#introduction">Introduction</a></li>
+  <li><a href="#what-id-have-liked-to-do" id="toc-what-id-have-liked-to-do" class="nav-link" data-scroll-target="#what-id-have-liked-to-do">What I’d have liked to do</a></li>
+  <li><a href="#connecting-to-the-switch" id="toc-connecting-to-the-switch" class="nav-link" data-scroll-target="#connecting-to-the-switch">Connecting to the switch</a></li>
+  <li><a href="#figuring-out-the-commands-i-need" id="toc-figuring-out-the-commands-i-need" class="nav-link" data-scroll-target="#figuring-out-the-commands-i-need">Figuring out the commands I need</a></li>
+  <li><a href="#see-if-i-can-do-some-parsing-on-those-before-i-do-actual-change-based-operations" id="toc-see-if-i-can-do-some-parsing-on-those-before-i-do-actual-change-based-operations" class="nav-link" data-scroll-target="#see-if-i-can-do-some-parsing-on-those-before-i-do-actual-change-based-operations">See if I can do some parsing on those before I do actual change based operations</a></li>
+  <li><a href="#do-actual-modifications-to-the-switch-config" id="toc-do-actual-modifications-to-the-switch-config" class="nav-link" data-scroll-target="#do-actual-modifications-to-the-switch-config">Do actual modifications to the switch config</a></li>
+  <li><a href="#conclusion" id="toc-conclusion" class="nav-link" data-scroll-target="#conclusion">Conclusion</a></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content quarto-banner-title-block" id="quarto-document-content">
+
+
+
+
+<section id="introduction" class="level1">
+<h1>Introduction</h1>
+<p>In a <a href="../posts/2023-04-08-managed-switch.html">previous post</a> I set up a managed switch in my network, but I did it all manually through the menus. Realistically that’s fine, I don’t have a super big or complicated network and I don’t move things around enough to justify the investment in learning how to automate it in terms of time savings. But I like automating things, so let’s see what I can figure out.</p>
+</section>
+<section id="what-id-have-liked-to-do" class="level1">
+<h1>What I’d have liked to do</h1>
+<p>Ideally I would handle this through Ansible, since that’s what I use to do most of the rest of my home automation. Unfortunately, my switch is not one of the supported devices in Ansible’s networking stack as near as I can tell. The next best thing would have been to use <a href="https://napalm.readthedocs.io/en/latest/">NAPALM</a> for python based automation, but that’s also not supported. So I have to go one level down the stack and use <a href="https://pypi.org/project/netmiko/">netmiko</a>. Let’s see how that goes.</p>
+</section>
+<section id="connecting-to-the-switch" class="level1">
+<h1>Connecting to the switch</h1>
+<p>In the previous post I connected using the serial console and then telnet. For netmiko to work I will need SSH. This does not appear to be enabled by default. After checking the manual it looks like enabling this is a command line only operation. From the initial login I’m in the manager level interface and my prompt looks like this: <code>ProCurve Switch 2810-48G#</code> I need to get from there to the Global configuration level by running <code>config</code> so it looks like this <code>ProCurve Switch 2810-48G(config)#</code> and then run <code>crypto key generate ssh</code> to create a host key on the switch, <code>ip ssh</code> to enable ssh, and then <code>show ip ssh</code> to confirm that it worked.</p>
+<p>After this I’ll try and connect to the switch and find that it’s got too old a key exchange method to work by default:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">Unable</span> to negotiate with 192.168.10.2 port 22: no matching key exchange method found. Their offer: diffie-hellman-group1</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>After finding a bunch of other out of date security protocols that my ssh client didn’t support by default (probably a good reason to not have this switch in the enterprise anymore) I was able to get it working with the following ssh config:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ex">Host</span> switch</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>    <span class="ex">User</span> admin</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>    <span class="ex">HostName</span> 192.168.10.2</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>    <span class="ex">KexAlgorithms</span> +diffie-hellman-group1-sha1</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>    <span class="ex">PubkeyAcceptedAlgorithms</span> +ssh-rsa</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>    <span class="ex">HostkeyAlgorithms</span> +ssh-rsa</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>    <span class="ex">Ciphers</span> +3des-cbc</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>With that set I can now ssh into my switch. Let’s try and actually do something with netmiko.</p>
+<p>The baby connection test script that I used looks like this:</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> netmiko</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> getpass <span class="im">import</span> getpass</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>device <span class="op">=</span> {</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>    <span class="st">"ip"</span>: <span class="st">"192.168.10.2"</span>,</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>    <span class="st">"device_type"</span>: <span class="st">"hp_procurve"</span>,</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>    <span class="st">"username"</span>: <span class="st">"admin"</span>,</span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>    <span class="st">"password"</span>: getpass(<span class="st">"Enter password for the switch:</span><span class="ch">\n</span><span class="st">"</span>),</span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a><span class="cf">with</span> netmiko.ConnectHandler(<span class="op">**</span>device) <span class="im">as</span> connection:</span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>    <span class="bu">print</span>(connection)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>which does print out a signature for a connection object. I don’t have any actual info on the switch itself, but it appears to be working as I was getting a connection error before I configured ssh properly.</p>
+<p>We can do something a little more interesting that also validates the connection by modifying the last two lines to:</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="cf">with</span> netmiko.ConnectHandler(<span class="op">**</span>device) <span class="im">as</span> conn:</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>    sys_info <span class="op">=</span> conn.send_command(<span class="st">"show system-information"</span>)</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="bu">print</span>(sys_info)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>This indeed prints out the system info, so the connection is working.</p>
+</section>
+<section id="figuring-out-the-commands-i-need" class="level1">
+<h1>Figuring out the commands I need</h1>
+<p>Last time I worked on this I just did everything with the menu because I was lazy. If I’m going to automate things I will need to use the CLI, so let’s identify the commands I need and what their outputs look like.</p>
+<ul>
+<li><code>show vlan</code> will list all my VLANs</li>
+<li><code>show vlan &lt;vlan#&gt;</code> will list a specific VLAN as well as any ports that do tagged or untagged traffic for that VLAN</li>
+<li><code>show mac-address [&lt;port&gt;]</code> show mac addresses seen by the switch, optionally specify for a particular port. Returns them in format <code>######-######</code></li>
+</ul>
+</section>
+<section id="see-if-i-can-do-some-parsing-on-those-before-i-do-actual-change-based-operations" class="level1">
+<h1>See if I can do some parsing on those before I do actual change based operations</h1>
+<p>So far I haven’t identified the commands necessary to actually modify my setup, but let’s see if I can do some easy parsing on these to begin with.</p>
+<p>I’ll try <code>show vlan</code> to start. With a little bit of string parsing I can get a nice looking output:</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> get_vlans(conn) <span class="op">-&gt;</span> <span class="bu">list</span>[<span class="bu">dict</span>[<span class="bu">str</span>, <span class="bu">str</span>]]:</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""Get VLAN info.</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="co">    Returns a list of dictionaries with keys for</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="co">    vlan_num, vlan_name and vlan_status, all as strings.</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a><span class="co">    """</span></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>    base_output <span class="op">=</span> conn.send_command(<span class="st">"show vlan"</span>)</span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>    output_list <span class="op">=</span> [line.strip() <span class="cf">for</span> line <span class="kw">in</span> base_output.split(<span class="st">"</span><span class="ch">\n</span><span class="st">"</span>) <span class="cf">if</span> line.strip()]</span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>    vlan_list <span class="op">=</span> [line.split() <span class="cf">for</span> line <span class="kw">in</span> output_list <span class="cf">if</span> re.match(<span class="vs">r"\d+\ "</span>, line)]</span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>    vlan_dict <span class="op">=</span> [</span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>        {<span class="st">"vlan_num"</span>: line[<span class="dv">0</span>], <span class="st">"vlan_name"</span>: line[<span class="dv">1</span>], <span class="st">"vlan_status"</span>: line[<span class="dv">2</span>]}</span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> line <span class="kw">in</span> vlan_list</span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>    ]</span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> vlan_dict</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Which returns something like:</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>[</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>  {<span class="st">'vlan_num'</span>: <span class="st">'1'</span>, <span class="st">'vlan_name'</span>: <span class="st">'DEFAULT_VLAN'</span>, <span class="st">'vlan_status'</span>: <span class="st">'Port-based'</span>},</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>  {<span class="st">'vlan_num'</span>: <span class="st">'15'</span>, <span class="st">'vlan_name'</span>: <span class="st">'TRUST'</span>, <span class="st">'vlan_status'</span>: <span class="st">'Port-based'</span>},</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>  {<span class="st">'vlan_num'</span>: <span class="st">'30'</span>, <span class="st">'vlan_name'</span>: <span class="st">'Guest'</span>, <span class="st">'vlan_status'</span>: <span class="st">'Port-based'</span>},</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>  {<span class="st">'vlan_num'</span>: <span class="st">'40'</span>, <span class="st">'vlan_name'</span>: <span class="st">'LAB'</span>, <span class="st">'vlan_status'</span>: <span class="st">'Port-based'</span>}</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>I can probably do something for showing a particular VLAN:</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> get_vlan_ports(conn, vlan_num):</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""Get the ports associated with a vlan and their tagged or default status."""</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>    base_output <span class="op">=</span> conn.send_command(<span class="ss">f"show vlan </span><span class="sc">{</span>vlan_num<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>    output_list <span class="op">=</span> [line.strip() <span class="cf">for</span> line <span class="kw">in</span> base_output.split(<span class="st">"</span><span class="ch">\n</span><span class="st">"</span>) <span class="cf">if</span> line.strip()]</span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>    vlan_list <span class="op">=</span> [line.split() <span class="cf">for</span> line <span class="kw">in</span> output_list <span class="cf">if</span> re.match(<span class="vs">r"\d+\ "</span>, line)]</span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>    vlan_dict <span class="op">=</span> [{<span class="st">"port"</span>: line[<span class="dv">0</span>], <span class="st">"state"</span>: line[<span class="dv">1</span>]} <span class="cf">for</span> line <span class="kw">in</span> vlan_list]</span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> vlan_dict</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Which gets me something like:</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>[{<span class="st">'port'</span>: <span class="st">'3'</span>, <span class="st">'state'</span>: <span class="st">'Tagged'</span>}, {<span class="st">'port'</span>: <span class="st">'7'</span>, <span class="st">'state'</span>: <span class="st">'Tagged'</span>}, {<span class="st">'port'</span>: <span class="st">'15'</span>, <span class="st">'state'</span>: <span class="st">'Untagged'</span>}]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>For the MAC address I’m going to make a little helper function to do some string formatting first, as the formatting for MAC addresses from the switch is different than what I see in most other places. I want to be able to just copy paste from anywhere and have them comparable. This is a one liner: <code>re.sub("[^0-9]", "", mac)</code> in a function that takes <code>mac</code> as an argument. After that we have a similar pattern except in this case I’m going to return a dictionary where each key is a MAC address and each value is its associated port:</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> get_mac_ports(conn):</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""Get MAC addresses seen by the switch and their ports."""</span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>    base_output <span class="op">=</span> conn.send_command(<span class="st">"show mac-address"</span>)</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>    output_list <span class="op">=</span> [line.strip() <span class="cf">for</span> line <span class="kw">in</span> base_output.split(<span class="st">"</span><span class="ch">\n</span><span class="st">"</span>) <span class="cf">if</span> line.strip()]</span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>    mac_list <span class="op">=</span> [</span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>        line.split() <span class="cf">for</span> line <span class="kw">in</span> output_list <span class="cf">if</span> re.match(<span class="vs">r"[\da-fA-F]</span><span class="sc">{6}</span><span class="vs">"</span>, line)</span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>    ]</span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>    mac_dict <span class="op">=</span> {mac_parser(line[<span class="dv">0</span>]): line[<span class="dv">1</span>] <span class="cf">for</span> line <span class="kw">in</span> mac_list}</span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> mac_dict</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>With this if I have a dictionary with keys being the MAC addresses of my devices and values being the names of those devices, I can find what devices are on what ports in an automated way (if they’re on, the switch only shows current connections).</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> map_devices_to_ports(conn):</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>    mac_dict <span class="op">=</span> get_mac_ports(conn)</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>    home_ports <span class="op">=</span> {v: mac_dict.get(k) <span class="cf">for</span> k, v <span class="kw">in</span> home_macs.items()}</span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> home_ports</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>So one last thing in terms of info gathering. I’d like to know the state in terms of VLAN settings for all of my ports, plus the device associated with them if I have that:</p>
+<div class="sourceCode" id="cb11"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> vlan_status(conn):</span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""Get the VLAN assignment of each port, along with a name if you can."""</span></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>    vlans <span class="op">=</span> get_vlans(conn)</span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>    vlan_nums <span class="op">=</span> [x[<span class="st">"vlan_num"</span>] <span class="cf">for</span> x <span class="kw">in</span> vlans]</span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>    <span class="co"># vlan_desc = {x["vlan_num"]: f'{x["vlan_num"]}_{x["vlan_name"]}' for x in vlans}</span></span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>    all_ports <span class="op">=</span> {</span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>        <span class="bu">str</span>(port): {k: <span class="st">""</span> <span class="cf">for</span> k <span class="kw">in</span> [<span class="st">"name"</span>] <span class="op">+</span> vlan_nums} <span class="cf">for</span> port <span class="kw">in</span> <span class="bu">range</span>(<span class="dv">3</span>, <span class="dv">49</span>)</span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Assign names to ports I know</span></span>
+<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> k, v <span class="kw">in</span> map_devices_to_ports(conn).items():</span>
+<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a>        all_ports[v][<span class="st">"name"</span>] <span class="op">=</span> k</span>
+<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Associate VLAN tags</span></span>
+<span id="cb11-13"><a href="#cb11-13" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> vlan <span class="kw">in</span> vlan_nums:</span>
+<span id="cb11-14"><a href="#cb11-14" aria-hidden="true" tabindex="-1"></a>        port_dicts <span class="op">=</span> get_vlan_ports(conn, <span class="bu">int</span>(vlan))</span>
+<span id="cb11-15"><a href="#cb11-15" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> port_dict <span class="kw">in</span> port_dicts:</span>
+<span id="cb11-16"><a href="#cb11-16" aria-hidden="true" tabindex="-1"></a>            port <span class="op">=</span> port_dict[<span class="st">"port"</span>]</span>
+<span id="cb11-17"><a href="#cb11-17" aria-hidden="true" tabindex="-1"></a>            state <span class="op">=</span> port_dict[<span class="st">"state"</span>]</span>
+<span id="cb11-18"><a href="#cb11-18" aria-hidden="true" tabindex="-1"></a>            all_ports[port][vlan] <span class="op">=</span> state</span>
+<span id="cb11-19"><a href="#cb11-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-20"><a href="#cb11-20" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> all_ports</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>I had to do a few hacky things because I haven’t thought through my data structures very well, but I’m ok with this, it does the trick. Now for every port I get a name if I know the device as well as the status of ever VLAN in terms of “tagged”, “untagged” or an empty string for not applied. I start at port 3 because I have the first two trunked to my router and I don’t expect to have to change them and because they’re trunk ports I can’t just show ports 1 and 2.</p>
+</section>
+<section id="do-actual-modifications-to-the-switch-config" class="level1">
+<h1>Do actual modifications to the switch config</h1>
+<p>Let’s experiment with configuring an actual port the way I want it. The way the commands work in the HP console is operations are performed on VLANs based on ports, so something like <code>vlan 30 tagged 1-5</code> would allow traffic tagged with VLAN 30 on ports 1-5. I think of things more in terms of how I want ports to behave, so my preferred syntax would be something like <code>port 5 v30 tagged v15 untagged</code> to set port 5 to accept tagged traffic on VLAN 30 and mark untagged traffic as being on VLAN 15. There’s probably clever ways to bundle together my current state and desired state and only execute the commands necessary to reconcile them, but let’s do some building block stuff and figure out how to just change a particular VLAN assignment on a particular port to start.</p>
+<div class="sourceCode" id="cb12"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> set_port_vlan_state(conn, port: <span class="bu">int</span>, vlan: <span class="bu">int</span>, state: <span class="bu">str</span>):</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""Set VLAN state on a port."""</span></span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>    command <span class="op">=</span> <span class="ss">f"vlan </span><span class="sc">{</span>vlan<span class="sc">}</span><span class="ss"> </span><span class="sc">{</span>state<span class="sc">}</span><span class="ss"> </span><span class="sc">{</span>port<span class="sc">}</span><span class="ss">"</span></span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>    x <span class="op">=</span> conn.send_config_set(command)</span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> <span class="va">True</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>This “works” but doesn’t account for a lot of edge cases. For one thing, I can only enable VLANs as either tagged or untagged with this. If I want to disable them I need to add a flag that will add a “no” to the command. However, if I do that, I also need to ensure I’m not ending up in an invalid state, as I have to have at least one VLAN enabled either tagged or untagged on any given port. I think based on this it might make more sense to try and do a comprehensive remapping rather than individual steps.</p>
+<p>To start I’ll make a constant at the top of the script called <code>DESIRED_STATE</code> in the same format as the output of <code>vlan_status</code>. This should make it easier to reconcile and also lets me copy paste the output of <code>vlan_status</code> to do the initial population.</p>
+<p>Let’s write a little helper function to do basic validation on this <code>DESIRED_STATE</code>. I won’t be able to catch everything that could be wrong here, especially not just misconfiguration, but I can get the basics:</p>
+<div class="sourceCode" id="cb13"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> validate_desired_state():</span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""Make sure my desired state will actually work."""</span></span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>    <span class="co"># We'll catch VLANs actually existing later, just make sure we're consistent</span></span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>    reference_keys <span class="op">=</span> <span class="bu">set</span>(DESIRED_LAYOUT[<span class="st">"3"</span>].keys())</span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a>    correct_states <span class="op">=</span> {<span class="st">""</span>, <span class="st">"Untagged"</span>, <span class="st">"Tagged"</span>}</span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> k, v <span class="kw">in</span> DESIRED_LAYOUT.items():</span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a>        states <span class="op">=</span> <span class="bu">set</span>(pv <span class="cf">for</span> pk, pv <span class="kw">in</span> v.items() <span class="cf">if</span> pk <span class="op">!=</span> <span class="st">"name"</span>)</span>
+<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> states <span class="op">-</span> correct_states:</span>
+<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a>            <span class="cf">raise</span> <span class="pp">RuntimeError</span>(</span>
+<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a>                <span class="ss">f"Unknown VLAN status on port </span><span class="sc">{</span>k<span class="sc">}</span><span class="ss">: </span><span class="sc">{</span>states <span class="op">-</span> correct_states<span class="sc">}</span><span class="ss">"</span></span>
+<span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a>            )</span>
+<span id="cb13-12"><a href="#cb13-12" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> <span class="bu">set</span>(v.keys()) <span class="op">!=</span> reference_keys:</span>
+<span id="cb13-13"><a href="#cb13-13" aria-hidden="true" tabindex="-1"></a>            <span class="cf">raise</span> <span class="pp">RuntimeError</span>(<span class="ss">f"Keys for port </span><span class="sc">{</span>k<span class="sc">}</span><span class="ss"> don't match port 3"</span>)</span>
+<span id="cb13-14"><a href="#cb13-14" aria-hidden="true" tabindex="-1"></a>        untagged_count <span class="op">=</span> <span class="bu">len</span>([x <span class="cf">for</span> x <span class="kw">in</span> v.values() <span class="cf">if</span> x <span class="op">==</span> <span class="st">"Untagged"</span>])</span>
+<span id="cb13-15"><a href="#cb13-15" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> untagged_count <span class="op">&gt;</span> <span class="dv">1</span>:</span>
+<span id="cb13-16"><a href="#cb13-16" aria-hidden="true" tabindex="-1"></a>            <span class="cf">raise</span> <span class="pp">RuntimeError</span>(<span class="ss">f"Port </span><span class="sc">{</span>k<span class="sc">}</span><span class="ss"> has more than one VLAN set to untagged"</span>)</span>
+<span id="cb13-17"><a href="#cb13-17" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> untagged_count <span class="op">==</span> <span class="dv">0</span>:</span>
+<span id="cb13-18"><a href="#cb13-18" aria-hidden="true" tabindex="-1"></a>            <span class="cf">raise</span> <span class="pp">RuntimeError</span>(<span class="ss">f"Port </span><span class="sc">{</span>k<span class="sc">}</span><span class="ss"> has no VLAN specified for untagged"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Now we can do something to compare the current state and the desired state, and return any ports that don’t reconcile:</p>
+<div class="sourceCode" id="cb14"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> check_vlan_status(current_state: <span class="bu">dict</span>):</span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""Is the current state the same as the desired state?"""</span></span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Check names first</span></span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>    mismatch_names <span class="op">=</span> <span class="bu">dict</span>()</span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> k <span class="kw">in</span> current_state.keys():</span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> (</span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a>            current_state[k][<span class="st">"name"</span>] <span class="op">!=</span> DESIRED_LAYOUT[k][<span class="st">"name"</span>]</span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a>            <span class="co"># Allow for devices to just be turned off</span></span>
+<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a>            <span class="kw">and</span> current_state[k][<span class="st">"name"</span>] <span class="op">!=</span> <span class="st">""</span></span>
+<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a>        ):</span>
+<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a>            mismatch_names[</span>
+<span id="cb14-12"><a href="#cb14-12" aria-hidden="true" tabindex="-1"></a>                k</span>
+<span id="cb14-13"><a href="#cb14-13" aria-hidden="true" tabindex="-1"></a>            ] <span class="op">=</span> <span class="ss">f"Current Name: </span><span class="sc">{</span>current_state[k][<span class="st">'name'</span>]<span class="sc">}</span><span class="ss">, Desired Name: </span><span class="sc">{</span>DESIRED_LAYOUT[k][<span class="st">'name'</span>]<span class="sc">}</span><span class="ss">"</span></span>
+<span id="cb14-14"><a href="#cb14-14" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> mismatch_names:</span>
+<span id="cb14-15"><a href="#cb14-15" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(<span class="st">"Names don't match on some ports"</span>)</span>
+<span id="cb14-16"><a href="#cb14-16" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> k, v <span class="kw">in</span> mismatch_names.items():</span>
+<span id="cb14-17"><a href="#cb14-17" aria-hidden="true" tabindex="-1"></a>            <span class="bu">print</span>(<span class="ss">f"Port: </span><span class="sc">{</span>k<span class="sc">}</span><span class="ss"> </span><span class="sc">{</span>v<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb14-18"><a href="#cb14-18" aria-hidden="true" tabindex="-1"></a>        <span class="cf">raise</span> <span class="pp">RuntimeError</span>(<span class="st">"Port name mismatch"</span>)</span>
+<span id="cb14-19"><a href="#cb14-19" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Make sure we're working with the same VLANs</span></span>
+<span id="cb14-20"><a href="#cb14-20" aria-hidden="true" tabindex="-1"></a>    desired_vlans <span class="op">=</span> {</span>
+<span id="cb14-21"><a href="#cb14-21" aria-hidden="true" tabindex="-1"></a>        key</span>
+<span id="cb14-22"><a href="#cb14-22" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> vlans <span class="kw">in</span> DESIRED_LAYOUT.values()</span>
+<span id="cb14-23"><a href="#cb14-23" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> key <span class="kw">in</span> vlans.keys()</span>
+<span id="cb14-24"><a href="#cb14-24" aria-hidden="true" tabindex="-1"></a>        <span class="cf">if</span> key <span class="op">!=</span> <span class="st">"name"</span></span>
+<span id="cb14-25"><a href="#cb14-25" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb14-26"><a href="#cb14-26" aria-hidden="true" tabindex="-1"></a>    current_vlans <span class="op">=</span> {</span>
+<span id="cb14-27"><a href="#cb14-27" aria-hidden="true" tabindex="-1"></a>        key <span class="cf">for</span> vlans <span class="kw">in</span> current_state.values() <span class="cf">for</span> key <span class="kw">in</span> vlans.keys() <span class="cf">if</span> key <span class="op">!=</span> <span class="st">"name"</span></span>
+<span id="cb14-28"><a href="#cb14-28" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb14-29"><a href="#cb14-29" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> desired_vlans <span class="op">!=</span> current_vlans:</span>
+<span id="cb14-30"><a href="#cb14-30" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(</span>
+<span id="cb14-31"><a href="#cb14-31" aria-hidden="true" tabindex="-1"></a>            <span class="ss">f"VLANs don't match. Current state: </span><span class="sc">{</span>current_vlans<span class="sc">}</span><span class="ss"> Desired: </span><span class="sc">{</span>desired_vlans<span class="sc">}</span><span class="ss">"</span></span>
+<span id="cb14-32"><a href="#cb14-32" aria-hidden="true" tabindex="-1"></a>        )</span>
+<span id="cb14-33"><a href="#cb14-33" aria-hidden="true" tabindex="-1"></a>        <span class="cf">raise</span> <span class="pp">RuntimeError</span>(<span class="st">"VLAN selection mismatch"</span>)</span>
+<span id="cb14-34"><a href="#cb14-34" aria-hidden="true" tabindex="-1"></a>    <span class="co"># If names are all good check ports</span></span>
+<span id="cb14-35"><a href="#cb14-35" aria-hidden="true" tabindex="-1"></a>    mismatched_ports <span class="op">=</span> <span class="bu">dict</span>()</span>
+<span id="cb14-36"><a href="#cb14-36" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> k, v <span class="kw">in</span> DESIRED_LAYOUT.items():</span>
+<span id="cb14-37"><a href="#cb14-37" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> vlan <span class="kw">in</span> current_vlans:</span>
+<span id="cb14-38"><a href="#cb14-38" aria-hidden="true" tabindex="-1"></a>            <span class="cf">if</span> DESIRED_LAYOUT[k][vlan] <span class="op">!=</span> current_state[k][vlan]:</span>
+<span id="cb14-39"><a href="#cb14-39" aria-hidden="true" tabindex="-1"></a>                mismatched_ports[k] <span class="op">=</span> DESIRED_LAYOUT[k]</span>
+<span id="cb14-40"><a href="#cb14-40" aria-hidden="true" tabindex="-1"></a>                <span class="cf">break</span></span>
+<span id="cb14-41"><a href="#cb14-41" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> mismatched_ports</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>We do a little more runtime checking to make sure that devices I think are in a particular port aren’t showing up elsewhere. Note that I want to be able to run this with some devices powered down, as I may want to only bring them up after reconfiguring their ports, so I allow for the name identified in the current state to be an empty string. Then we make sure I have the right VLANs in my desired state, so I haven’t created or deleted any from my current state that I think I should have. If all that goes well I go through each port and if I find a mismatch in VLAN config I add the desired state to a <code>mismatched_ports</code> dictionary that I can pass into some reconcilliation function later.</p>
+<p>While doing some testing for this I got my switch into a weird state where I got intermitent errors running the script, even on functions that had worked fine before. I gave the switch a reboot to see if I could clear things up and that seemed to work, but it does add to how sketchy this whole setup feels. This is probably going to get filed under “learning activity” rather than “thing I use to manage my environment”. We’ll see though.</p>
+<p>I did get a function that would update the configuration of a port to match what I want from a desired state dictionary:</p>
+<div class="sourceCode" id="cb15"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> set_port_vlan_state(conn, port: <span class="bu">str</span>, state: <span class="bu">dict</span>):</span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""Set VLAN state on a port."""</span></span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Get rid of the name key</span></span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a>    state.pop(<span class="st">"name"</span>, <span class="va">None</span>)</span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a>    vlans <span class="op">=</span> <span class="bu">set</span>(state.keys())</span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Should only be one untagged VLAN and we validate that elsewhere.</span></span>
+<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a>    untagged_vlan <span class="op">=</span> [k <span class="cf">for</span> k, v <span class="kw">in</span> state.items() <span class="cf">if</span> v <span class="op">==</span> <span class="st">"Untagged"</span>][<span class="dv">0</span>]</span>
+<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a>    tagged_vlan <span class="op">=</span> [k <span class="cf">for</span> k, v <span class="kw">in</span> state.items() <span class="cf">if</span> v <span class="op">==</span> <span class="st">"Tagged"</span>]</span>
+<span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Set the untagged VLAN first so we definitely don't end up orphaned.</span></span>
+<span id="cb15-10"><a href="#cb15-10" aria-hidden="true" tabindex="-1"></a>    commands <span class="op">=</span> [</span>
+<span id="cb15-11"><a href="#cb15-11" aria-hidden="true" tabindex="-1"></a>        <span class="ss">f"vlan </span><span class="sc">{</span>untagged_vlan<span class="sc">}</span><span class="ss"> untagged </span><span class="sc">{</span>port<span class="sc">}</span><span class="ss">"</span>,</span>
+<span id="cb15-12"><a href="#cb15-12" aria-hidden="true" tabindex="-1"></a>    ]</span>
+<span id="cb15-13"><a href="#cb15-13" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Turn off untagged explicitly for all other VLANs</span></span>
+<span id="cb15-14"><a href="#cb15-14" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> vlan <span class="kw">in</span> vlans <span class="op">-</span> {untagged_vlan}:</span>
+<span id="cb15-15"><a href="#cb15-15" aria-hidden="true" tabindex="-1"></a>        commands.append(<span class="ss">f"no vlan </span><span class="sc">{</span>vlan<span class="sc">}</span><span class="ss"> untagged </span><span class="sc">{</span>port<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb15-16"><a href="#cb15-16" aria-hidden="true" tabindex="-1"></a>    <span class="co"># set tagged vlans</span></span>
+<span id="cb15-17"><a href="#cb15-17" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> vlan <span class="kw">in</span> tagged_vlan:</span>
+<span id="cb15-18"><a href="#cb15-18" aria-hidden="true" tabindex="-1"></a>        commands.append(<span class="ss">f"vlan </span><span class="sc">{</span>vlan<span class="sc">}</span><span class="ss"> tagged </span><span class="sc">{</span>port<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb15-19"><a href="#cb15-19" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Turn off tags on other VLANs</span></span>
+<span id="cb15-20"><a href="#cb15-20" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> vlan <span class="kw">in</span> vlans <span class="op">-</span> <span class="bu">set</span>(t <span class="cf">for</span> t <span class="kw">in</span> tagged_vlan):</span>
+<span id="cb15-21"><a href="#cb15-21" aria-hidden="true" tabindex="-1"></a>        commands.append(<span class="ss">f"no vlan </span><span class="sc">{</span>vlan<span class="sc">}</span><span class="ss"> tagged </span><span class="sc">{</span>port<span class="sc">}</span><span class="ss">"</span>)</span>
+<span id="cb15-22"><a href="#cb15-22" aria-hidden="true" tabindex="-1"></a>    <span class="co"># Now save the desired config</span></span>
+<span id="cb15-23"><a href="#cb15-23" aria-hidden="true" tabindex="-1"></a>    commands.append(<span class="st">"write memory"</span>)</span>
+<span id="cb15-24"><a href="#cb15-24" aria-hidden="true" tabindex="-1"></a>    conn.send_config_set(commands)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>I still run into hanging the connection to the switch from time to time with it, but maybe that’s not as big a deal given how infrequently I’ll actually be doing this outside of developing the script. The last thing I have to do is put that together with the list of unreconciled ports that I created into one big function:</p>
+<div class="sourceCode" id="cb16"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> reconcile(conn):</span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""Bring the current state of the switch in line with the desired state."""</span></span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>    validate_desired_state()</span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a>    current_state <span class="op">=</span> vlan_status(conn)</span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a>    mismatches <span class="op">=</span> check_vlan_status(current_state)</span>
+<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a>    <span class="cf">if</span> mismatches:</span>
+<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a>        <span class="cf">for</span> port, state <span class="kw">in</span> mismatches.items():</span>
+<span id="cb16-8"><a href="#cb16-8" aria-hidden="true" tabindex="-1"></a>            set_port_vlan_state(conn, port, state)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>And that appears to work!</p>
+</section>
+<section id="conclusion" class="level1">
+<h1>Conclusion</h1>
+<p>I’m pretty sure this is not what most people are talking about when they say “software defined networking”, and there were many hacky parts to the setup. On the other hand, it’s slightly easier for me to modify my switch setup in the future, I learned a bit more about managing my switch, and I got to practice my python. Overall I’d call that a win.</p>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    text: function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+  });
+  clipboard.on('success', function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  });
+  function tippyHover(el, contentFn) {
+    const config = {
+      allowHTML: true,
+      content: contentFn,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start'
+    };
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      return note.innerHTML;
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+</body></html>
