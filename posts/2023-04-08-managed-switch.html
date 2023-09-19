@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.3.433">
+<meta name="generator" content="quarto-1.3.450">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
@@ -139,7 +139,8 @@ ul.task-list li input[type="checkbox"] {
     <h2 id="toc-title">On this page</h2>
    
   <ul>
-  <li><a href="#introduction" id="toc-introduction" class="nav-link active" data-scroll-target="#introduction">Introduction</a></li>
+  <li><a href="#edit" id="toc-edit" class="nav-link active" data-scroll-target="#edit">Edit</a></li>
+  <li><a href="#introduction" id="toc-introduction" class="nav-link" data-scroll-target="#introduction">Introduction</a></li>
   <li><a href="#connecting-to-the-switch" id="toc-connecting-to-the-switch" class="nav-link" data-scroll-target="#connecting-to-the-switch">Connecting to the switch</a></li>
   <li><a href="#connect-in-and-bring-up-setup" id="toc-connect-in-and-bring-up-setup" class="nav-link" data-scroll-target="#connect-in-and-bring-up-setup">Connect in and bring up setup</a></li>
   <li><a href="#test-basic-connectivity" id="toc-test-basic-connectivity" class="nav-link" data-scroll-target="#test-basic-connectivity">Test basic connectivity</a></li>
@@ -152,6 +153,10 @@ ul.task-list li input[type="checkbox"] {
   <li><a href="#set-up-routing" id="toc-set-up-routing" class="nav-link" data-scroll-target="#set-up-routing">Set up routing</a></li>
   <li><a href="#try-the-web-interface" id="toc-try-the-web-interface" class="nav-link" data-scroll-target="#try-the-web-interface">Try the web interface</a></li>
   <li><a href="#conclusion" id="toc-conclusion" class="nav-link" data-scroll-target="#conclusion">Conclusion</a></li>
+  <li><a href="#new-switch" id="toc-new-switch" class="nav-link" data-scroll-target="#new-switch">New switch</a>
+  <ul class="collapse">
+  <li><a href="#failure" id="toc-failure" class="nav-link" data-scroll-target="#failure">Failure</a></li>
+  </ul></li>
   </ul>
 </nav>
     </div>
@@ -161,6 +166,10 @@ ul.task-list li input[type="checkbox"] {
 
 
 
+<section id="edit" class="level1">
+<h1>Edit</h1>
+<p>I bought another switch, I guess I’m a glutton for punishment. This one has some different connectivity and configuration requirements so I’ll document them at the bottom of the post.</p>
+</section>
 <section id="introduction" class="level1">
 <h1>Introduction</h1>
 <p>After some <a href="../posts/2023-02-24-k8s-the-hard-way.html">recent challenges</a> where experiments in my lab took down DNS for my entire network, I decided it was time to stop putting off cleaning up my network from the giant flat architecture it’s currently using.</p>
@@ -291,8 +300,43 @@ Press any key to continue</code></pre>
 <section id="conclusion" class="level1">
 <h1>Conclusion</h1>
 <p>In this post I demonstrated that I don’t really know a lot about networking and that this is going to be quite the learning experience. I also got the basic connectivity working on my managed switch. In the next post I’ll do some actual planning for my network and start configuring things and moving services over.</p>
+</section>
+<section id="new-switch" class="level1">
+<h1>New switch</h1>
+<p>I picked up another HP switch recently, a HP JG542A 5500-48G-PoE+. The nice thing about this compared to my earlier switch is the support for PoE+, which should mean I can take the PoE injectors out of my rack that I’m using for my access points, and support more devices later. It’s also got a couple SFP+ ports which might come in handy if I ever get cool enough to do fiber.</p>
+<p>Of course new switch means new problems. The first issue was that somehow the bootloader on it had been corrupted. I’m guessing the techs who refurbished it went a little to hardcore doing factory resets. After a bunch of searching I determined that the resolution would be to flash a new firmware. Unfortunately, firmware for this switch is behind an HPE paywall. After a bunch of back and forth I managed to get ahold of HPE support, who advised me to use my corporate email to create an account, even though I very clearly told them this was purely for my home lab and not at all related to my employment. After creating an account with my work email (good thing I have one of those I guess) the support team went above and beyond and actually set up a zoom call with me where they helped me find the firmware and walked me through flashing it on my switch. I think I’d still have preferred that the firmware just be public, but that was a nice consolation.</p>
+<p>After getting the switch flashed and confirming that I had connectivity, I had a new problem. The CLI for this switch appears to be different than my previous one. At a minimum I can’t seem to bring up a menu with the <code>menu</code> command. Let’s figure out how to give it an IP and configure it.</p>
+<p>As part of the flashing, the HPE folks helped me set up an IP address for the switch, unfortunately I don’t remember what commands I used so for now I can’t change it. I also don’t have any remote configs enabled on that interface, so I can ping it through there but that’s about it.</p>
+<p>Connecting over serial still works ok. I did the initial config with putty since it was easier, but now that the switch is down in my rack, I’m back to sshing into a server that has the console on a USB to serial connection and running <code>sudo screen /dev/ttyUSB0 9600</code> I have to connect at the slower rate on this switch, at least for now. Also, pro tip, <code>ctrl+backspace</code> is how you do backspace over serial.</p>
+<p>From there at least I’m able to turn on the web interface with <code>system-view</code> followed by <code>ip http enable</code>. According to <a href="https://techexpert.tips/hp-switch/hp-switch-initial-configuration/">this page</a> I should be able to login with username <code>admin</code> and no password by default but that didn’t work. If I run <code>return</code> to get back from <code>system-view</code> and then <code>display web users</code> I get back an empty list. So I assume I have to create or update a user?</p>
+<p>Let’s look at <a href="https://techhub.hpe.com/eginfolib/networking/docs/switches/5500hi/5998-5327_fund_cg/content/378579358.htm">the docs</a> according to this I have to:</p>
+<ul>
+<li>Assign an IP address to a Layer 3 interface.</li>
+<li>Create a local user account.</li>
+<li>Configure a local user account for Web login</li>
+<li>Assign a user privilege level and the Web service to the account.</li>
+</ul>
+<p>First step is done.</p>
+<p>Second step I accomplish with <code>system-view</code>, <code>local-user admin</code>, <code>password simple &lt;password&gt;</code> which I think has created a local user and given it a password.</p>
+<p>Ok, having found the Fundamentals Configuration Guide, which is differen than the Fundamentals Command Reference (Why does HP split their docs into so many documents?) I think I have a better handle on how to do this.</p>
+<p><code>system-view</code>, <code>local-user admin</code> <code>authorization-attribute level 3</code> (I think this is “manage”), <code>service-type web</code>. Weirdly this is referred to as a telnet service type, <code>quit</code>.</p>
+<p>After putting that all in I try the login page and it works! Let’s hit save on the web interface before I do anything else so I don’t lose my progress.</p>
+<p>As with the last switch, in theory I could get all fancy and learn the commands and automation for setting this up, but for now let’s just try and do things the GUI way. I’m not really trying to become a network wizard here (at least at this point) I just want a switch to work on my network.</p>
+<p>I take a quick run through the wizard. It allows me to set the device name (I’ll stick with HP) as well as IP configuration. Right now it’s just using DHCP, which is fine with me at this point but I’ll have to reconfigure that once I actually swap it out with my main switch to a hard coded value.</p>
+<p>Let’s walk through the rest of the menu items and see what I can find:</p>
+<p>Under Device -&gt; System time I’m able to configure NTP and have the switch reflect the correct date and time, always handy.</p>
+<p>Under port management I’ve got some handy status checks and also a place to add descriptions, which will come in handy later. I can also set default VLAN IDs for ports, but I haven’t created VLANs on this switch yet so that will have to wait.</p>
+<p>Under Energy Saving I can disable PoE on ports or shut them down. I’ll want to come back to this later as well.</p>
+<p>Under Network I can create VLANs so that’s an important piece for me.</p>
+<p>I create my VLANs again and give them names in that section. After that I head to modify VLAN and assign port statuses to match my old switch.</p>
+<p>Finally, I head down to PoE to turn on PoE just on the two ports that my access points will be connected to. No sense enabling it on anywhere else at this time.</p>
+<p>I think that’s it for now, let’s save and see if I can make this work.</p>
+<section id="failure" class="level2">
+<h2 class="anchored" data-anchor-id="failure">Failure</h2>
+<p>After all that I swapped over all the ports, took out my PoE injectors, fired everything up and couldn’t connect to anything wired or get power to my access points. I suppose I could keep hacking at this but we’ve gone well over the amount of effort I feel justified putting in to avoid having two PoE injectors in my rack so I’m going to give up. Fortunately the switch was fairly cheap.</p>
 
 
+</section>
 </section>
 
 </main> <!-- /main -->

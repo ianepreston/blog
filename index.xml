@@ -9,7 +9,7 @@
 <link>https://blog.ianpreston.ca/index.html</link>
 <atom:link href="https://blog.ianpreston.ca/index.xml" rel="self" type="application/rss+xml"/>
 <description></description>
-<generator>quarto-1.3.433</generator>
+<generator>quarto-1.3.450</generator>
 <lastBuildDate>Thu, 06 Jul 2023 00:00:00 GMT</lastBuildDate>
 <item>
   <title>Automating my network</title>
@@ -1150,8 +1150,8 @@ font-style: inherit;">in</span> mismatches.items():</span>
   <pubDate>Thu, 06 Jul 2023 00:00:00 GMT</pubDate>
 </item>
 <item>
-  <title>Configuring autofs for CIFS mounts with ansible</title>
-  <link>https://blog.ianpreston.ca/posts/2023-06-04-ansible-autofs.html</link>
+  <title>Install Microsoft ODBC drivers with ansible</title>
+  <link>https://blog.ianpreston.ca/posts/2023-06-04-odbc-drivers-ansible.html</link>
   <description><![CDATA[ 
 
 
@@ -1159,100 +1159,11 @@ font-style: inherit;">in</span> mismatches.items():</span>
 
 <section id="introduction" class="level1">
 <h1>Introduction</h1>
-<p>This guide shows how to set up user isolated mounts of CIFS (samba) network shares on a shared linux VM. Each user will get folders under <code>/mnt/&lt;user&gt;</code> that they authenticate to using kerberos. In this document I’m assuming that users are members of a group and that each group all should have access to the same shares. We’ll further assume you’ve got a fact set in your playbook that maps each user to their corresponding group. If you need guidance on that you can see <a href="../posts/2023-06-04-ansible-ad-users.html">this post</a>.</p>
-<p>This is a nice way of attaching file shares because it ensures users don’t need elevated privileges to access file shares (although an administrator has to configure it for them) and that creating a share for one user doesn’t inadvertently expose it to others. For a fully user level way of attaching file shares you can use <a href="https://man.archlinux.org/man/gio.1">gio</a> but I found it extremely flaky and annoying to use, so if you can handle having an administrator configure the share mount points for users I would recommend this approach.</p>
+<p>This is a quick note on how to set up Microsoft ODBC drivers using ansible. Most of it is quite trivial, but you can run into issues with the Microsoft repository version of dotnet conflicting with the one from the base Ubuntu repository, and this playbook addresses that.</p>
 </section>
-<section id="variable-format" class="level1">
-<h1>Variable format</h1>
-<p>Somewhere in your playbook (in my case I set it in the variables folder of the role I was using, but putting in as a host variable or somewhere else may be more appropriate for your use case) we need a variable for each group that contains a list of associated shares. Something like this:</p>
-<div class="sourceCode" id="cb1" style="background: #f1f3f5;"><pre class="sourceCode yml code-with-copy"><code class="sourceCode yaml"><span id="cb1-1"><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">example_group1</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">:</span></span>
-<span id="cb1-2"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">  </span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">-</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">local_share_name</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">:</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> share1</span></span>
-<span id="cb1-3"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">    </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">full_share_path</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">:</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> </span><span class="st" style="color: #20794D;
-background-color: null;
-font-style: inherit;">"//fileshare.example.com/share1"</span></span>
-<span id="cb1-4"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">  </span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">-</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">local_share_name</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">:</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> share2</span></span>
-<span id="cb1-5"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">    </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">full_share_path</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">:</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> </span><span class="st" style="color: #20794D;
-background-color: null;
-font-style: inherit;">"//fileshare.example.com/share2"</span></span>
-<span id="cb1-6"></span>
-<span id="cb1-7"><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">example_group2</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">:</span></span>
-<span id="cb1-8"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">  </span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">-</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">local_share_name</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">:</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> share3</span></span>
-<span id="cb1-9"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">    </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">full_share_path</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">:</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> </span><span class="st" style="color: #20794D;
-background-color: null;
-font-style: inherit;">"//fileshare.example.com/share3"</span></span></code></pre></div>
-</section>
-<section id="basic-setup" class="level1">
-<h1>Basic setup</h1>
-<p>In this stage we will ensure pre-requisite software is installed on the host (assuming Ubuntu here, you will have to modify for other distros), and that the mount point folder for each user has been created:</p>
-<div class="sourceCode" id="cb2" style="background: #f1f3f5;"><pre class="sourceCode yml code-with-copy"><code class="sourceCode yaml"><span id="cb2-1"><span class="kw" style="color: #003B4F;
+<section id="how-to-do-it" class="level1">
+<h1>How to do it</h1>
+<div class="sourceCode" id="cb1" style="background: #f1f3f5;"><pre class="sourceCode yml code-with-copy"><code class="sourceCode yaml"><span id="cb1-1"><span class="kw" style="color: #003B4F;
 background-color: null;
 font-style: inherit;">-</span><span class="at" style="color: #657422;
 background-color: null;
@@ -1262,44 +1173,30 @@ font-style: inherit;">name</span><span class="kw" style="color: #003B4F;
 background-color: null;
 font-style: inherit;">:</span><span class="at" style="color: #657422;
 background-color: null;
-font-style: inherit;"> Install autofs</span></span>
-<span id="cb2-2"><span class="at" style="color: #657422;
+font-style: inherit;"> Install odbc pre-requisites</span></span>
+<span id="cb1-2"><span class="at" style="color: #657422;
 background-color: null;
 font-style: inherit;">  </span><span class="fu" style="color: #4758AB;
 background-color: null;
 font-style: inherit;">ansible.builtin.apt</span><span class="kw" style="color: #003B4F;
 background-color: null;
 font-style: inherit;">:</span></span>
-<span id="cb2-3"><span class="at" style="color: #657422;
+<span id="cb1-3"><span class="at" style="color: #657422;
 background-color: null;
 font-style: inherit;">    </span><span class="fu" style="color: #4758AB;
 background-color: null;
 font-style: inherit;">pkg</span><span class="kw" style="color: #003B4F;
 background-color: null;
 font-style: inherit;">:</span></span>
-<span id="cb2-4"><span class="at" style="color: #657422;
+<span id="cb1-4"><span class="at" style="color: #657422;
 background-color: null;
 font-style: inherit;">      </span><span class="kw" style="color: #003B4F;
 background-color: null;
 font-style: inherit;">-</span><span class="at" style="color: #657422;
 background-color: null;
-font-style: inherit;"> autofs</span></span>
-<span id="cb2-5"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">      </span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">-</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> cifs-utils</span></span>
-<span id="cb2-6"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">      </span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">-</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> keyutils</span></span>
-<span id="cb2-7"></span>
-<span id="cb2-8"><span class="kw" style="color: #003B4F;
+font-style: inherit;"> lsb-release</span></span>
+<span id="cb1-5"></span>
+<span id="cb1-6"><span class="kw" style="color: #003B4F;
 background-color: null;
 font-style: inherit;">-</span><span class="at" style="color: #657422;
 background-color: null;
@@ -1309,26 +1206,66 @@ font-style: inherit;">name</span><span class="kw" style="color: #003B4F;
 background-color: null;
 font-style: inherit;">:</span><span class="at" style="color: #657422;
 background-color: null;
-font-style: inherit;"> Create base file share mount point</span></span>
-<span id="cb2-9"><span class="at" style="color: #657422;
+font-style: inherit;"> Add microsoft gpg key</span></span>
+<span id="cb1-7"><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">  ansible.builtin.shell</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">: </span><span class="ch" style="color: #20794D;
+background-color: null;
+font-style: inherit;">|</span></span>
+<span id="cb1-8">    install -m 0755 -d /etc/apt/keyrings &amp;&amp; \</span>
+<span id="cb1-9">    curl -fsSL https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor -o /etc/apt/keyrings/microsoft.gpg &amp;&amp; \</span>
+<span id="cb1-10">    chmod a+r /etc/apt/keyrings/microsoft.gpg</span>
+<span id="cb1-11"><span class="at" style="color: #657422;
 background-color: null;
 font-style: inherit;">  </span><span class="fu" style="color: #4758AB;
 background-color: null;
-font-style: inherit;">ansible.builtin.file</span><span class="kw" style="color: #003B4F;
+font-style: inherit;">args</span><span class="kw" style="color: #003B4F;
 background-color: null;
 font-style: inherit;">:</span></span>
-<span id="cb2-10"><span class="at" style="color: #657422;
+<span id="cb1-12"><span class="at" style="color: #657422;
 background-color: null;
 font-style: inherit;">    </span><span class="fu" style="color: #4758AB;
 background-color: null;
-font-style: inherit;">path</span><span class="kw" style="color: #003B4F;
+font-style: inherit;">creates</span><span class="kw" style="color: #003B4F;
 background-color: null;
 font-style: inherit;">:</span><span class="at" style="color: #657422;
 background-color: null;
 font-style: inherit;"> </span><span class="st" style="color: #20794D;
 background-color: null;
-font-style: inherit;">"/mnt/{{ item.user }}"</span></span>
-<span id="cb2-11"><span class="at" style="color: #657422;
+font-style: inherit;">"/etc/apt/keyrings/microsoft.gpg"</span></span>
+<span id="cb1-13"></span>
+<span id="cb1-14"><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">-</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">name</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">:</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> add Microsoft repository to apt</span></span>
+<span id="cb1-15"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">  </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">apt_repository</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">:</span></span>
+<span id="cb1-16"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">    </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">repo</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">:</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> </span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"deb [arch=amd64,armhf,arm64 signed-by=/etc/apt/keyrings/microsoft.gpg] https://packages.microsoft.com/ubuntu/{{ansible_distribution_version}}/prod {{ansible_distribution_release}} main"</span></span>
+<span id="cb1-17"><span class="at" style="color: #657422;
 background-color: null;
 font-style: inherit;">    </span><span class="fu" style="color: #4758AB;
 background-color: null;
@@ -1336,53 +1273,9 @@ font-style: inherit;">state</span><span class="kw" style="color: #003B4F;
 background-color: null;
 font-style: inherit;">:</span><span class="at" style="color: #657422;
 background-color: null;
-font-style: inherit;"> directory</span></span>
-<span id="cb2-12"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">    </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">owner</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">:</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> </span><span class="st" style="color: #20794D;
-background-color: null;
-font-style: inherit;">"{{ item.user }}"</span></span>
-<span id="cb2-13"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">    </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">group</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">:</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> </span><span class="st" style="color: #20794D;
-background-color: null;
-font-style: inherit;">"domain users@example.com"</span></span>
-<span id="cb2-14"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">    </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">mode</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">:</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> </span><span class="st" style="color: #20794D;
-background-color: null;
-font-style: inherit;">"0700"</span></span>
-<span id="cb2-15"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">  </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">with_items</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">:</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> </span><span class="st" style="color: #20794D;
-background-color: null;
-font-style: inherit;">"{{ users_dict }}"</span></span>
-<span id="cb2-16"></span>
-<span id="cb2-17"><span class="kw" style="color: #003B4F;
+font-style: inherit;"> present</span></span>
+<span id="cb1-18"></span>
+<span id="cb1-19"><span class="kw" style="color: #003B4F;
 background-color: null;
 font-style: inherit;">-</span><span class="at" style="color: #657422;
 background-color: null;
@@ -1392,67 +1285,15 @@ font-style: inherit;">name</span><span class="kw" style="color: #003B4F;
 background-color: null;
 font-style: inherit;">:</span><span class="at" style="color: #657422;
 background-color: null;
-font-style: inherit;"> Start and enable the autofs service</span></span>
-<span id="cb2-18"><span class="at" style="color: #657422;
+font-style: inherit;"> Prioritize Microsoft repo so you don't end up with dotnet conflicts if you need it later</span></span>
+<span id="cb1-20"><span class="at" style="color: #657422;
 background-color: null;
 font-style: inherit;">  </span><span class="fu" style="color: #4758AB;
 background-color: null;
-font-style: inherit;">ansible.builtin.systemd</span><span class="kw" style="color: #003B4F;
+font-style: inherit;">ansible.builtin.copy</span><span class="kw" style="color: #003B4F;
 background-color: null;
 font-style: inherit;">:</span></span>
-<span id="cb2-19"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">    </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">name</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">:</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> autofs</span></span>
-<span id="cb2-20"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">    </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">state</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">:</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> started</span></span>
-<span id="cb2-21"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">    </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">enabled</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">:</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> </span><span class="ch" style="color: #20794D;
-background-color: null;
-font-style: inherit;">true</span></span></code></pre></div>
-<p>Where <code>users_dict</code> looks like what I created in <a href="../posts/2023-06-04-ansible-ad-users.html">this post</a>. You will also have to modify the <code>group</code> variable to be appropriate for your environment.</p>
-<p>I actually have the autofs service start task at the bottom of this play in my case, but thematically it makes more sense here.</p>
-</section>
-<section id="populate-auto.master" class="level1">
-<h1>Populate auto.master</h1>
-<div class="sourceCode" id="cb3" style="background: #f1f3f5;"><pre class="sourceCode yml code-with-copy"><code class="sourceCode yaml"><span id="cb3-1"><span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">-</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">name</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">:</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> populate auto.master with entries for each users' configs</span></span>
-<span id="cb3-2"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">  </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">ansible.builtin.template</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">:</span></span>
-<span id="cb3-3"><span class="at" style="color: #657422;
+<span id="cb1-21"><span class="at" style="color: #657422;
 background-color: null;
 font-style: inherit;">    </span><span class="fu" style="color: #4758AB;
 background-color: null;
@@ -1460,82 +1301,10 @@ font-style: inherit;">src</span><span class="kw" style="color: #003B4F;
 background-color: null;
 font-style: inherit;">:</span><span class="at" style="color: #657422;
 background-color: null;
-font-style: inherit;"> auto.master.j2</span></span>
-<span id="cb3-4"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">    </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">dest</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">:</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> /etc/auto.master</span></span>
-<span id="cb3-5"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">    </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">owner</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">:</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> root</span></span>
-<span id="cb3-6"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">    </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">group</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">:</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> root</span></span>
-<span id="cb3-7"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">    </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">mode</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">:</span><span class="at" style="color: #657422;
-background-color: null;
 font-style: inherit;"> </span><span class="st" style="color: #20794D;
 background-color: null;
-font-style: inherit;">'0644'</span></span></code></pre></div>
-<p>Each user needs an entry in <code>/etc/auto.master</code> that points to a config file (which we’ll set in the next phase) with all their specific mount points. Using the template task and the template below we can accomplish this:</p>
-<pre class="jinja"><code># {{ ansible_managed }}
-{% for user in users_dict %}
-/mnt/{{ user.user }} /etc/auto.sambashares-{{ user.user }} --timeout=30 --ghost
-{% endfor %}</code></pre>
-<p>Each user gets a point below the <code>/mnt/&lt;user&gt;</code> folder we created in the basic setup, we point to a config file for them, set a timeout so the fileshare will not stay connected if users aren’t using it and then we add the <code>--ghost</code> flag so that all mount points get a directory created, even if they’re not currently attached. See <a href="https://learn.redhat.com/t5/Platform-Linux/Halloween-tip-of-the-day-Using-autofs-with-the-ghost-option/td-p/2326">here</a> for further docs.</p>
-</section>
-<section id="populate-user-level-share-specs" class="level1">
-<h1>Populate user level share specs</h1>
-<div class="sourceCode" id="cb5" style="background: #f1f3f5;"><pre class="sourceCode yml code-with-copy"><code class="sourceCode yaml"><span id="cb5-1"><span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">-</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">name</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">:</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> Populate user specific share mounts</span></span>
-<span id="cb5-2"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">  </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">ansible.builtin.template</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">:</span></span>
-<span id="cb5-3"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">    </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">src</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">:</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> auto.sambashares.j2</span></span>
-<span id="cb5-4"><span class="at" style="color: #657422;
+font-style: inherit;">"99-microsoft-dotnet.pref"</span></span>
+<span id="cb1-22"><span class="at" style="color: #657422;
 background-color: null;
 font-style: inherit;">    </span><span class="fu" style="color: #4758AB;
 background-color: null;
@@ -1545,66 +1314,74 @@ font-style: inherit;">:</span><span class="at" style="color: #657422;
 background-color: null;
 font-style: inherit;"> </span><span class="st" style="color: #20794D;
 background-color: null;
-font-style: inherit;">"/etc/auto.sambashares-{{ item.user }}"</span></span>
-<span id="cb5-5"><span class="at" style="color: #657422;
+font-style: inherit;">"/etc/apt/preferences.d/99-microsoft-dotnet.pref"</span></span>
+<span id="cb1-23"></span>
+<span id="cb1-24"><span class="kw" style="color: #003B4F;
 background-color: null;
-font-style: inherit;">    </span><span class="fu" style="color: #4758AB;
+font-style: inherit;">-</span><span class="at" style="color: #657422;
 background-color: null;
-font-style: inherit;">owner</span><span class="kw" style="color: #003B4F;
+font-style: inherit;"> </span><span class="fu" style="color: #4758AB;
 background-color: null;
-font-style: inherit;">:</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> root</span></span>
-<span id="cb5-6"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">    </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">group</span><span class="kw" style="color: #003B4F;
+font-style: inherit;">name</span><span class="kw" style="color: #003B4F;
 background-color: null;
 font-style: inherit;">:</span><span class="at" style="color: #657422;
 background-color: null;
-font-style: inherit;"> root</span></span>
-<span id="cb5-7"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">    </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">mode</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">:</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> </span><span class="st" style="color: #20794D;
-background-color: null;
-font-style: inherit;">'0644'</span></span>
-<span id="cb5-8"><span class="at" style="color: #657422;
+font-style: inherit;"> Install odbc drivers</span></span>
+<span id="cb1-25"><span class="at" style="color: #657422;
 background-color: null;
 font-style: inherit;">  </span><span class="fu" style="color: #4758AB;
 background-color: null;
-font-style: inherit;">with_items</span><span class="kw" style="color: #003B4F;
+font-style: inherit;">ansible.builtin.apt</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">:</span></span>
+<span id="cb1-26"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">    </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">pkg</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">:</span></span>
+<span id="cb1-27"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">      </span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">-</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> msodbcsql18</span></span>
+<span id="cb1-28"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">  </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">environment</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">:</span></span>
+<span id="cb1-29"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">    </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">ACCEPT_EULA</span><span class="kw" style="color: #003B4F;
 background-color: null;
 font-style: inherit;">:</span><span class="at" style="color: #657422;
 background-color: null;
 font-style: inherit;"> </span><span class="st" style="color: #20794D;
 background-color: null;
-font-style: inherit;">"{{ users_dict }}"</span></span></code></pre></div>
-<p>Again we’re populating a template, but this time we’re doing one for each user. As with above, most of the magic happens in the template itself:</p>
-<pre class="jinja"><code># {{ ansible_managed }}
-{% set shares = lookup('vars', item.group | replace('-', '_')) %}
-{% for share in shares %}
-{{ share.local_share_name }} -fstype=cifs,rw,sec=krb5,uid=${UID},cruid=${UID} :{{ share.full_share_path }}
-{% endfor %}</code></pre>
-<p>The <code>replace</code> step is because a lot of the groups I was using had a <code>-</code> in their name, which you can’t have in an ansible variable so I map the <code>-</code> to an <code>_</code>. We can then use that to refer to the variable described at the top of this post for whichever group the particular user happens to be in. Then we just iterate through all the shares defined and create a folder under <code>/mnt/&lt;user&gt;/&lt;local_share_name&gt;</code> that maps to <code>full_share_path</code> and will be authorized with kerberos.</p>
+font-style: inherit;">"Y"</span></span></code></pre></div>
+<p>The <code>99-microsoft-dotnet.pref</code> file is simple and looks like this:</p>
+<pre class="conf"><code>Package: *
+Pin: origin "packages.microsoft.com"
+Pin-Priority: 1001</code></pre>
 </section>
 <section id="conclusion" class="level1">
 <h1>Conclusion</h1>
-<p>Autofs and ansible are a pretty nice way to set up a bunch of users with consistent file shares securely on a shared host or multiple hosts.</p>
+<p>I’m not going to do a bunch of exposition on this. If you’re in the very specific circumstance of needing to install Microsoft ODBC drivers with ansible I hope this helps.</p>
 
 
 </section>
 
  ]]></description>
-  <category>ansible</category>
   <category>Linux</category>
-  <guid>https://blog.ianpreston.ca/posts/2023-06-04-ansible-autofs.html</guid>
+  <category>ansible</category>
+  <guid>https://blog.ianpreston.ca/posts/2023-06-04-odbc-drivers-ansible.html</guid>
   <pubDate>Sun, 04 Jun 2023 00:00:00 GMT</pubDate>
 </item>
 <item>
@@ -3455,241 +3232,6 @@ font-style: inherit;">&gt;-</span></span>
   <pubDate>Sun, 04 Jun 2023 00:00:00 GMT</pubDate>
 </item>
 <item>
-  <title>Install Microsoft ODBC drivers with ansible</title>
-  <link>https://blog.ianpreston.ca/posts/2023-06-04-odbc-drivers-ansible.html</link>
-  <description><![CDATA[ 
-
-
-
-
-<section id="introduction" class="level1">
-<h1>Introduction</h1>
-<p>This is a quick note on how to set up Microsoft ODBC drivers using ansible. Most of it is quite trivial, but you can run into issues with the Microsoft repository version of dotnet conflicting with the one from the base Ubuntu repository, and this playbook addresses that.</p>
-</section>
-<section id="how-to-do-it" class="level1">
-<h1>How to do it</h1>
-<div class="sourceCode" id="cb1" style="background: #f1f3f5;"><pre class="sourceCode yml code-with-copy"><code class="sourceCode yaml"><span id="cb1-1"><span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">-</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">name</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">:</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> Install odbc pre-requisites</span></span>
-<span id="cb1-2"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">  </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">ansible.builtin.apt</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">:</span></span>
-<span id="cb1-3"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">    </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">pkg</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">:</span></span>
-<span id="cb1-4"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">      </span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">-</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> lsb-release</span></span>
-<span id="cb1-5"></span>
-<span id="cb1-6"><span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">-</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">name</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">:</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> Add microsoft gpg key</span></span>
-<span id="cb1-7"><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">  ansible.builtin.shell</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">: </span><span class="ch" style="color: #20794D;
-background-color: null;
-font-style: inherit;">|</span></span>
-<span id="cb1-8">    install -m 0755 -d /etc/apt/keyrings &amp;&amp; \</span>
-<span id="cb1-9">    curl -fsSL https://packages.microsoft.com/keys/microsoft.asc | gpg --dearmor -o /etc/apt/keyrings/microsoft.gpg &amp;&amp; \</span>
-<span id="cb1-10">    chmod a+r /etc/apt/keyrings/microsoft.gpg</span>
-<span id="cb1-11"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">  </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">args</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">:</span></span>
-<span id="cb1-12"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">    </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">creates</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">:</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> </span><span class="st" style="color: #20794D;
-background-color: null;
-font-style: inherit;">"/etc/apt/keyrings/microsoft.gpg"</span></span>
-<span id="cb1-13"></span>
-<span id="cb1-14"><span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">-</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">name</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">:</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> add Microsoft repository to apt</span></span>
-<span id="cb1-15"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">  </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">apt_repository</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">:</span></span>
-<span id="cb1-16"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">    </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">repo</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">:</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> </span><span class="st" style="color: #20794D;
-background-color: null;
-font-style: inherit;">"deb [arch=amd64,armhf,arm64 signed-by=/etc/apt/keyrings/microsoft.gpg] https://packages.microsoft.com/ubuntu/{{ansible_distribution_version}}/prod {{ansible_distribution_release}} main"</span></span>
-<span id="cb1-17"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">    </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">state</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">:</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> present</span></span>
-<span id="cb1-18"></span>
-<span id="cb1-19"><span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">-</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">name</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">:</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> Prioritize Microsoft repo so you don't end up with dotnet conflicts if you need it later</span></span>
-<span id="cb1-20"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">  </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">ansible.builtin.copy</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">:</span></span>
-<span id="cb1-21"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">    </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">src</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">:</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> </span><span class="st" style="color: #20794D;
-background-color: null;
-font-style: inherit;">"99-microsoft-dotnet.pref"</span></span>
-<span id="cb1-22"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">    </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">dest</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">:</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> </span><span class="st" style="color: #20794D;
-background-color: null;
-font-style: inherit;">"/etc/apt/preferences.d/99-microsoft-dotnet.pref"</span></span>
-<span id="cb1-23"></span>
-<span id="cb1-24"><span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">-</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">name</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">:</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> Install odbc drivers</span></span>
-<span id="cb1-25"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">  </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">ansible.builtin.apt</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">:</span></span>
-<span id="cb1-26"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">    </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">pkg</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">:</span></span>
-<span id="cb1-27"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">      </span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">-</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> msodbcsql18</span></span>
-<span id="cb1-28"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">  </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">environment</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">:</span></span>
-<span id="cb1-29"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">    </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">ACCEPT_EULA</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">:</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> </span><span class="st" style="color: #20794D;
-background-color: null;
-font-style: inherit;">"Y"</span></span></code></pre></div>
-<p>The <code>99-microsoft-dotnet.pref</code> file is simple and looks like this:</p>
-<pre class="conf"><code>Package: *
-Pin: origin "packages.microsoft.com"
-Pin-Priority: 1001</code></pre>
-</section>
-<section id="conclusion" class="level1">
-<h1>Conclusion</h1>
-<p>I’m not going to do a bunch of exposition on this. If you’re in the very specific circumstance of needing to install Microsoft ODBC drivers with ansible I hope this helps.</p>
-
-
-</section>
-
- ]]></description>
-  <category>Linux</category>
-  <category>ansible</category>
-  <guid>https://blog.ianpreston.ca/posts/2023-06-04-odbc-drivers-ansible.html</guid>
-  <pubDate>Sun, 04 Jun 2023 00:00:00 GMT</pubDate>
-</item>
-<item>
   <title>A couple notes on working with Nvidia cards</title>
   <link>https://blog.ianpreston.ca/posts/2023-06-04-nvidia-notes.html</link>
   <description><![CDATA[ 
@@ -4208,6 +3750,464 @@ font-style: inherit;">'no-cgroups = true'</span></span></code></pre></div>
   <pubDate>Sun, 04 Jun 2023 00:00:00 GMT</pubDate>
 </item>
 <item>
+  <title>Configuring autofs for CIFS mounts with ansible</title>
+  <link>https://blog.ianpreston.ca/posts/2023-06-04-ansible-autofs.html</link>
+  <description><![CDATA[ 
+
+
+
+
+<section id="introduction" class="level1">
+<h1>Introduction</h1>
+<p>This guide shows how to set up user isolated mounts of CIFS (samba) network shares on a shared linux VM. Each user will get folders under <code>/mnt/&lt;user&gt;</code> that they authenticate to using kerberos. In this document I’m assuming that users are members of a group and that each group all should have access to the same shares. We’ll further assume you’ve got a fact set in your playbook that maps each user to their corresponding group. If you need guidance on that you can see <a href="../posts/2023-06-04-ansible-ad-users.html">this post</a>.</p>
+<p>This is a nice way of attaching file shares because it ensures users don’t need elevated privileges to access file shares (although an administrator has to configure it for them) and that creating a share for one user doesn’t inadvertently expose it to others. For a fully user level way of attaching file shares you can use <a href="https://man.archlinux.org/man/gio.1">gio</a> but I found it extremely flaky and annoying to use, so if you can handle having an administrator configure the share mount points for users I would recommend this approach.</p>
+</section>
+<section id="variable-format" class="level1">
+<h1>Variable format</h1>
+<p>Somewhere in your playbook (in my case I set it in the variables folder of the role I was using, but putting in as a host variable or somewhere else may be more appropriate for your use case) we need a variable for each group that contains a list of associated shares. Something like this:</p>
+<div class="sourceCode" id="cb1" style="background: #f1f3f5;"><pre class="sourceCode yml code-with-copy"><code class="sourceCode yaml"><span id="cb1-1"><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">example_group1</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">:</span></span>
+<span id="cb1-2"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">  </span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">-</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">local_share_name</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">:</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> share1</span></span>
+<span id="cb1-3"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">    </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">full_share_path</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">:</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> </span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"//fileshare.example.com/share1"</span></span>
+<span id="cb1-4"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">  </span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">-</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">local_share_name</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">:</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> share2</span></span>
+<span id="cb1-5"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">    </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">full_share_path</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">:</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> </span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"//fileshare.example.com/share2"</span></span>
+<span id="cb1-6"></span>
+<span id="cb1-7"><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">example_group2</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">:</span></span>
+<span id="cb1-8"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">  </span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">-</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">local_share_name</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">:</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> share3</span></span>
+<span id="cb1-9"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">    </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">full_share_path</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">:</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> </span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"//fileshare.example.com/share3"</span></span></code></pre></div>
+</section>
+<section id="basic-setup" class="level1">
+<h1>Basic setup</h1>
+<p>In this stage we will ensure pre-requisite software is installed on the host (assuming Ubuntu here, you will have to modify for other distros), and that the mount point folder for each user has been created:</p>
+<div class="sourceCode" id="cb2" style="background: #f1f3f5;"><pre class="sourceCode yml code-with-copy"><code class="sourceCode yaml"><span id="cb2-1"><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">-</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">name</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">:</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> Install autofs</span></span>
+<span id="cb2-2"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">  </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">ansible.builtin.apt</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">:</span></span>
+<span id="cb2-3"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">    </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">pkg</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">:</span></span>
+<span id="cb2-4"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">      </span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">-</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> autofs</span></span>
+<span id="cb2-5"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">      </span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">-</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> cifs-utils</span></span>
+<span id="cb2-6"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">      </span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">-</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> keyutils</span></span>
+<span id="cb2-7"></span>
+<span id="cb2-8"><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">-</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">name</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">:</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> Create base file share mount point</span></span>
+<span id="cb2-9"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">  </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">ansible.builtin.file</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">:</span></span>
+<span id="cb2-10"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">    </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">path</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">:</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> </span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"/mnt/{{ item.user }}"</span></span>
+<span id="cb2-11"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">    </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">state</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">:</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> directory</span></span>
+<span id="cb2-12"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">    </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">owner</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">:</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> </span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"{{ item.user }}"</span></span>
+<span id="cb2-13"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">    </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">group</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">:</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> </span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"domain users@example.com"</span></span>
+<span id="cb2-14"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">    </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">mode</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">:</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> </span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"0700"</span></span>
+<span id="cb2-15"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">  </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">with_items</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">:</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> </span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"{{ users_dict }}"</span></span>
+<span id="cb2-16"></span>
+<span id="cb2-17"><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">-</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">name</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">:</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> Start and enable the autofs service</span></span>
+<span id="cb2-18"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">  </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">ansible.builtin.systemd</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">:</span></span>
+<span id="cb2-19"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">    </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">name</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">:</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> autofs</span></span>
+<span id="cb2-20"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">    </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">state</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">:</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> started</span></span>
+<span id="cb2-21"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">    </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">enabled</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">:</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> </span><span class="ch" style="color: #20794D;
+background-color: null;
+font-style: inherit;">true</span></span></code></pre></div>
+<p>Where <code>users_dict</code> looks like what I created in <a href="../posts/2023-06-04-ansible-ad-users.html">this post</a>. You will also have to modify the <code>group</code> variable to be appropriate for your environment.</p>
+<p>I actually have the autofs service start task at the bottom of this play in my case, but thematically it makes more sense here.</p>
+</section>
+<section id="populate-auto.master" class="level1">
+<h1>Populate auto.master</h1>
+<div class="sourceCode" id="cb3" style="background: #f1f3f5;"><pre class="sourceCode yml code-with-copy"><code class="sourceCode yaml"><span id="cb3-1"><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">-</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">name</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">:</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> populate auto.master with entries for each users' configs</span></span>
+<span id="cb3-2"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">  </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">ansible.builtin.template</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">:</span></span>
+<span id="cb3-3"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">    </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">src</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">:</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> auto.master.j2</span></span>
+<span id="cb3-4"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">    </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">dest</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">:</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> /etc/auto.master</span></span>
+<span id="cb3-5"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">    </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">owner</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">:</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> root</span></span>
+<span id="cb3-6"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">    </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">group</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">:</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> root</span></span>
+<span id="cb3-7"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">    </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">mode</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">:</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> </span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">'0644'</span></span></code></pre></div>
+<p>Each user needs an entry in <code>/etc/auto.master</code> that points to a config file (which we’ll set in the next phase) with all their specific mount points. Using the template task and the template below we can accomplish this:</p>
+<pre class="jinja"><code># {{ ansible_managed }}
+{% for user in users_dict %}
+/mnt/{{ user.user }} /etc/auto.sambashares-{{ user.user }} --timeout=30 --ghost
+{% endfor %}</code></pre>
+<p>Each user gets a point below the <code>/mnt/&lt;user&gt;</code> folder we created in the basic setup, we point to a config file for them, set a timeout so the fileshare will not stay connected if users aren’t using it and then we add the <code>--ghost</code> flag so that all mount points get a directory created, even if they’re not currently attached. See <a href="https://learn.redhat.com/t5/Platform-Linux/Halloween-tip-of-the-day-Using-autofs-with-the-ghost-option/td-p/2326">here</a> for further docs.</p>
+</section>
+<section id="populate-user-level-share-specs" class="level1">
+<h1>Populate user level share specs</h1>
+<div class="sourceCode" id="cb5" style="background: #f1f3f5;"><pre class="sourceCode yml code-with-copy"><code class="sourceCode yaml"><span id="cb5-1"><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">-</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">name</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">:</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> Populate user specific share mounts</span></span>
+<span id="cb5-2"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">  </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">ansible.builtin.template</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">:</span></span>
+<span id="cb5-3"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">    </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">src</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">:</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> auto.sambashares.j2</span></span>
+<span id="cb5-4"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">    </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">dest</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">:</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> </span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"/etc/auto.sambashares-{{ item.user }}"</span></span>
+<span id="cb5-5"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">    </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">owner</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">:</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> root</span></span>
+<span id="cb5-6"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">    </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">group</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">:</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> root</span></span>
+<span id="cb5-7"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">    </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">mode</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">:</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> </span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">'0644'</span></span>
+<span id="cb5-8"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">  </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">with_items</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">:</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> </span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"{{ users_dict }}"</span></span></code></pre></div>
+<p>Again we’re populating a template, but this time we’re doing one for each user. As with above, most of the magic happens in the template itself:</p>
+<pre class="jinja"><code># {{ ansible_managed }}
+{% set shares = lookup('vars', item.group | replace('-', '_')) %}
+{% for share in shares %}
+{{ share.local_share_name }} -fstype=cifs,rw,sec=krb5,uid=${UID},cruid=${UID} :{{ share.full_share_path }}
+{% endfor %}</code></pre>
+<p>The <code>replace</code> step is because a lot of the groups I was using had a <code>-</code> in their name, which you can’t have in an ansible variable so I map the <code>-</code> to an <code>_</code>. We can then use that to refer to the variable described at the top of this post for whichever group the particular user happens to be in. Then we just iterate through all the shares defined and create a folder under <code>/mnt/&lt;user&gt;/&lt;local_share_name&gt;</code> that maps to <code>full_share_path</code> and will be authorized with kerberos.</p>
+</section>
+<section id="conclusion" class="level1">
+<h1>Conclusion</h1>
+<p>Autofs and ansible are a pretty nice way to set up a bunch of users with consistent file shares securely on a shared host or multiple hosts.</p>
+
+
+</section>
+
+ ]]></description>
+  <category>ansible</category>
+  <category>Linux</category>
+  <guid>https://blog.ianpreston.ca/posts/2023-06-04-ansible-autofs.html</guid>
+  <pubDate>Sun, 04 Jun 2023 00:00:00 GMT</pubDate>
+</item>
+<item>
   <title>Redesigning my network</title>
   <link>https://blog.ianpreston.ca/posts/2023-04-09-network-rework.html</link>
   <description><![CDATA[ 
@@ -4573,6 +4573,10 @@ font-style: inherit;">rm</span> /etc/pve/ceph.conf</span></code></pre></div>
 
 
 
+<section id="edit" class="level1">
+<h1>Edit</h1>
+<p>I bought another switch, I guess I’m a glutton for punishment. This one has some different connectivity and configuration requirements so I’ll document them at the bottom of the post.</p>
+</section>
 <section id="introduction" class="level1">
 <h1>Introduction</h1>
 <p>After some <a href="../posts/2023-02-24-k8s-the-hard-way.html">recent challenges</a> where experiments in my lab took down DNS for my entire network, I decided it was time to stop putting off cleaning up my network from the giant flat architecture it’s currently using.</p>
@@ -4703,8 +4707,43 @@ Press any key to continue</code></pre>
 <section id="conclusion" class="level1">
 <h1>Conclusion</h1>
 <p>In this post I demonstrated that I don’t really know a lot about networking and that this is going to be quite the learning experience. I also got the basic connectivity working on my managed switch. In the next post I’ll do some actual planning for my network and start configuring things and moving services over.</p>
+</section>
+<section id="new-switch" class="level1">
+<h1>New switch</h1>
+<p>I picked up another HP switch recently, a HP JG542A 5500-48G-PoE+. The nice thing about this compared to my earlier switch is the support for PoE+, which should mean I can take the PoE injectors out of my rack that I’m using for my access points, and support more devices later. It’s also got a couple SFP+ ports which might come in handy if I ever get cool enough to do fiber.</p>
+<p>Of course new switch means new problems. The first issue was that somehow the bootloader on it had been corrupted. I’m guessing the techs who refurbished it went a little to hardcore doing factory resets. After a bunch of searching I determined that the resolution would be to flash a new firmware. Unfortunately, firmware for this switch is behind an HPE paywall. After a bunch of back and forth I managed to get ahold of HPE support, who advised me to use my corporate email to create an account, even though I very clearly told them this was purely for my home lab and not at all related to my employment. After creating an account with my work email (good thing I have one of those I guess) the support team went above and beyond and actually set up a zoom call with me where they helped me find the firmware and walked me through flashing it on my switch. I think I’d still have preferred that the firmware just be public, but that was a nice consolation.</p>
+<p>After getting the switch flashed and confirming that I had connectivity, I had a new problem. The CLI for this switch appears to be different than my previous one. At a minimum I can’t seem to bring up a menu with the <code>menu</code> command. Let’s figure out how to give it an IP and configure it.</p>
+<p>As part of the flashing, the HPE folks helped me set up an IP address for the switch, unfortunately I don’t remember what commands I used so for now I can’t change it. I also don’t have any remote configs enabled on that interface, so I can ping it through there but that’s about it.</p>
+<p>Connecting over serial still works ok. I did the initial config with putty since it was easier, but now that the switch is down in my rack, I’m back to sshing into a server that has the console on a USB to serial connection and running <code>sudo screen /dev/ttyUSB0 9600</code> I have to connect at the slower rate on this switch, at least for now. Also, pro tip, <code>ctrl+backspace</code> is how you do backspace over serial.</p>
+<p>From there at least I’m able to turn on the web interface with <code>system-view</code> followed by <code>ip http enable</code>. According to <a href="https://techexpert.tips/hp-switch/hp-switch-initial-configuration/">this page</a> I should be able to login with username <code>admin</code> and no password by default but that didn’t work. If I run <code>return</code> to get back from <code>system-view</code> and then <code>display web users</code> I get back an empty list. So I assume I have to create or update a user?</p>
+<p>Let’s look at <a href="https://techhub.hpe.com/eginfolib/networking/docs/switches/5500hi/5998-5327_fund_cg/content/378579358.htm">the docs</a> according to this I have to:</p>
+<ul>
+<li>Assign an IP address to a Layer 3 interface.</li>
+<li>Create a local user account.</li>
+<li>Configure a local user account for Web login</li>
+<li>Assign a user privilege level and the Web service to the account.</li>
+</ul>
+<p>First step is done.</p>
+<p>Second step I accomplish with <code>system-view</code>, <code>local-user admin</code>, <code>password simple &lt;password&gt;</code> which I think has created a local user and given it a password.</p>
+<p>Ok, having found the Fundamentals Configuration Guide, which is differen than the Fundamentals Command Reference (Why does HP split their docs into so many documents?) I think I have a better handle on how to do this.</p>
+<p><code>system-view</code>, <code>local-user admin</code> <code>authorization-attribute level 3</code> (I think this is “manage”), <code>service-type web</code>. Weirdly this is referred to as a telnet service type, <code>quit</code>.</p>
+<p>After putting that all in I try the login page and it works! Let’s hit save on the web interface before I do anything else so I don’t lose my progress.</p>
+<p>As with the last switch, in theory I could get all fancy and learn the commands and automation for setting this up, but for now let’s just try and do things the GUI way. I’m not really trying to become a network wizard here (at least at this point) I just want a switch to work on my network.</p>
+<p>I take a quick run through the wizard. It allows me to set the device name (I’ll stick with HP) as well as IP configuration. Right now it’s just using DHCP, which is fine with me at this point but I’ll have to reconfigure that once I actually swap it out with my main switch to a hard coded value.</p>
+<p>Let’s walk through the rest of the menu items and see what I can find:</p>
+<p>Under Device -&gt; System time I’m able to configure NTP and have the switch reflect the correct date and time, always handy.</p>
+<p>Under port management I’ve got some handy status checks and also a place to add descriptions, which will come in handy later. I can also set default VLAN IDs for ports, but I haven’t created VLANs on this switch yet so that will have to wait.</p>
+<p>Under Energy Saving I can disable PoE on ports or shut them down. I’ll want to come back to this later as well.</p>
+<p>Under Network I can create VLANs so that’s an important piece for me.</p>
+<p>I create my VLANs again and give them names in that section. After that I head to modify VLAN and assign port statuses to match my old switch.</p>
+<p>Finally, I head down to PoE to turn on PoE just on the two ports that my access points will be connected to. No sense enabling it on anywhere else at this time.</p>
+<p>I think that’s it for now, let’s save and see if I can make this work.</p>
+<section id="failure" class="level2">
+<h2 class="anchored" data-anchor-id="failure">Failure</h2>
+<p>After all that I swapped over all the ports, took out my PoE injectors, fired everything up and couldn’t connect to anything wired or get power to my access points. I suppose I could keep hacking at this but we’ve gone well over the amount of effort I feel justified putting in to avoid having two PoE injectors in my rack so I’m going to give up. Fortunately the switch was fairly cheap.</p>
 
 
+</section>
 </section>
 
  ]]></description>
