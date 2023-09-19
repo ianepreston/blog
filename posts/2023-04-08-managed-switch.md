@@ -7,6 +7,11 @@ toc: true
 categories: [networking, Linux]
 ---
 
+# Edit
+
+I bought another switch, I guess I'm a glutton for punishment. This one has some different
+connectivity and configuration requirements so I'll document them at the bottom of the post.
+
 # Introduction
 
 After some [recent challenges](2023-02-24-k8s-the-hard-way.md) where experiments in my
@@ -276,3 +281,108 @@ In this post I demonstrated that I don't really know a lot about networking and 
 this is going to be quite the learning experience. I also got the basic connectivity
 working on my managed switch. In the next post I'll do some actual planning for my
 network and start configuring things and moving services over.
+
+# New switch
+
+I picked up another HP switch recently, a HP JG542A 5500-48G-PoE+. The nice thing about
+this compared to my earlier switch is the support for PoE+, which should mean I can
+take the PoE injectors out of my rack that I'm using for my access points, and support
+more devices later. It's also got a couple SFP+ ports which might come in handy if I ever
+get cool enough to do fiber.
+
+Of course new switch means new problems. The first issue was that somehow the bootloader
+on it had been corrupted. I'm guessing the techs who refurbished it went a little to
+hardcore doing factory resets. After a bunch of searching I determined that the resolution
+would be to flash a new firmware. Unfortunately, firmware for this switch is behind an HPE
+paywall. After a bunch of back and forth I managed to get ahold of HPE support, who advised
+me to use my corporate email to create an account, even though I very clearly told them
+this was purely for my home lab and not at all related to my employment. After creating
+an account with my work email (good thing I have one of those I guess) the support team
+went above and beyond and actually set up a zoom call with me where they helped me find
+the firmware and walked me through flashing it on my switch. I think I'd still have preferred
+that the firmware just be public, but that was a nice consolation.
+
+After getting the switch flashed and confirming that I had connectivity, I had a new problem.
+The CLI for this switch appears to be different than my previous one. At a minimum I can't
+seem to bring up a menu with the `menu` command. Let's figure out how to give it an IP
+and configure it.
+
+As part of the flashing, the HPE folks helped me set up an IP address for the switch,
+unfortunately I don't remember what commands I used so for now I can't change it. I also
+don't have any remote configs enabled on that interface, so I can ping it through
+there but that's about it.
+
+Connecting over serial still works ok. I did the initial config with putty since it was
+easier, but now that the switch is down in my rack, I'm back to sshing into a server
+that has the console on a USB to serial connection and running `sudo screen /dev/ttyUSB0 9600`
+I have to connect at the slower rate on this switch, at least for now. Also, pro tip,
+`ctrl+backspace` is how you do backspace over serial.
+
+From there at least I'm able to turn on the web interface with `system-view` followed by
+`ip http enable`. According to [this page](https://techexpert.tips/hp-switch/hp-switch-initial-configuration/)
+I should be able to login with username `admin` and no password by default but that didn't
+work. If I run `return` to get back from `system-view` and then `display web users` I get
+back an empty list. So I assume I have to create or update a user?
+
+Let's look at [the docs](https://techhub.hpe.com/eginfolib/networking/docs/switches/5500hi/5998-5327_fund_cg/content/378579358.htm)
+according to this I have to:
+
+- Assign an IP address to a Layer 3 interface. 
+- Create a local user account.
+- Configure a local user account for Web login
+- Assign a user privilege level and the Web service to the account.
+
+First step is done.
+
+Second step I accomplish with `system-view`, `local-user admin`, `password simple <password>`
+which I think has created a local user and given it a password.
+
+Ok, having found the Fundamentals Configuration Guide, which is differen than the
+Fundamentals Command Reference (Why does HP split their docs into so many documents?)
+I think I have a better handle on how to do this.
+
+`system-view`, `local-user admin` `authorization-attribute level 3` (I think this is "manage"),
+`service-type web`. Weirdly this is referred to as a telnet service type, `quit`.
+
+After putting that all in I try the login page and it works! Let's hit save on the web
+interface before I do anything else so I don't lose my progress.
+
+As with the last switch, in theory I could get all fancy and learn the commands and
+automation for setting this up, but for now let's just try and do things the GUI way.
+I'm not really trying to become a network wizard here (at least at this point) I just
+want a switch to work on my network.
+
+I take a quick run through the wizard. It allows me to set the device name (I'll stick with
+HP) as well as IP configuration. Right now it's just using DHCP, which is fine with me
+at this point but I'll have to reconfigure that once I actually swap it out with my main
+switch to a hard coded value.
+
+Let's walk through the rest of the menu items and see what I can find:
+
+Under Device -> System time I'm able to configure NTP and have the switch reflect the
+correct date and time, always handy.
+
+Under port management I've got some handy status checks and also a place to add descriptions,
+which will come in handy later. I can also set default VLAN IDs for ports, but I haven't
+created VLANs on this switch yet so that will have to wait.
+
+Under Energy Saving I can disable PoE on ports or shut them down. I'll want to come back
+to this later as well.
+
+Under Network I can create VLANs so that's an important piece for me.
+
+I create my VLANs again and give them names in that section. After that I head to modify
+VLAN and assign port statuses to match my old switch.
+
+Finally, I head down to PoE to turn on PoE just on the two ports that my access points will be connected to.
+No sense enabling it on anywhere else at this time.
+
+I think that's it for now, let's save and see if I can make this work.
+
+## Failure
+
+After all that I swapped over all the ports, took out my PoE injectors, fired everything
+up and couldn't connect to anything wired or get power to my access points. I suppose
+I could keep hacking at this but we've gone well over the amount of effort I feel justified
+putting in to avoid having two PoE injectors in my rack so I'm going to give up. Fortunately
+the switch was fairly cheap.
