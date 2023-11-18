@@ -10,7 +10,131 @@
 <atom:link href="https://blog.ianpreston.ca/index.xml" rel="self" type="application/rss+xml"/>
 <description></description>
 <generator>quarto-1.3.450</generator>
-<lastBuildDate>Thu, 06 Jul 2023 00:00:00 GMT</lastBuildDate>
+<lastBuildDate>Sat, 18 Nov 2023 00:00:00 GMT</lastBuildDate>
+<item>
+  <title>Databricks cluster policies in terraform</title>
+  <link>https://blog.ianpreston.ca/posts/2023-11-18-terraform-cluster.html</link>
+  <description><![CDATA[ 
+
+
+
+
+<section id="introduction" class="level1">
+<h1>Introduction</h1>
+<p>Recently I had to define some <a href="https://learn.microsoft.com/en-ca/azure/databricks/administration-guide/clusters/policies">databricks cluster policies</a> at work using <a href="https://registry.terraform.io/providers/databrickslabs/databricks/latest/docs/resources/cluster_policy">terraform</a>. I didn’t have super sophisticated requirements (at least I didn’t think so), but I still struggled to find sample code online that covered my requirements. This post is a brief write up on what I implemented and why, as well as some notes on potential improvements I might make later as my requirements get more detailed.</p>
+</section>
+<section id="creating-the-policies" class="level1">
+<h1>Creating the policies</h1>
+<p>All cluster policies are encoded in JSON, which we create from passing a collection of <code>map</code>s that we <code>merge</code> in terraform into the <code>jsonencode</code> method.</p>
+<section id="runtimes" class="level2">
+<h2 class="anchored" data-anchor-id="runtimes">Runtimes</h2>
+<p>One of the first things we want our cluster policy to enforce is using a recent version of the Databricks Runtime (DBR). Depending on the environment we might further restrict this to LTS releases only. Using a series of <code>data</code> blocks I find all the relevant releases. Note that this will change as new releases come out, so we’ll want to schedule running this to ensure we’re always enforcing the latest runtimes. As an example, this block finds the latest LTS release that supports the ML runtime and has GPU drivers installed:</p>
+<pre class="hcl"><code>data "databricks_spark_version" "latest_ml_gpu_lts" {
+  latest            = true
+  long_term_support = true
+  ml                = true
+  gpu               = true
+}</code></pre>
+<p>Another bonus on enforcing runtime policies is it provides an easier way to restrict GPU compute without having to find a list of instance types with GPUs. Since you can’t provision a runtime onto a VM with a GPU unless it includes GPU drivers we can limit access to GPU easily with this.</p>
+<p>In terms of which runtimes are enabled I made the assumption that we would want consistency across policies in terms of enabled runtimes. That is, the code does not allow for you to enable GPUs on single node compute policies but disable them on multi node.</p>
+<p>You’ll see a bit further down that offering multiple runtime limitations across policies within a workspace would be fairly straightforward but introduce a lot of boilerplate code, at least the way I’ve implemented it. Again, I don’t really see this being a requirement. Specific runtimes are enabled or disabled with the module booleans <code>lts_dbr</code>, <code>ml_dbr</code>, and <code>gpu_dbr</code>. So if <code>lts_dbr</code> is true then only LTS runtimes are enabled, if it’s false users are allowed to choose LTS or the most recent runtime. It’s similar for <code>ml_dbr</code> for ML runtimes and <code>gpu_dbr</code> for ML runtimes with GPU enabled (there is no non-ML GPU enabled runtime)</p>
+<p>Setting the actual array of allowed runtimes feels kind of hacky, terraform doesn’t seem to support if else blocks, or other cleaner ways I could think of to do this:</p>
+<pre class="hcl"><code>  no_lts_no_ml_no_gpu_arr = (!var.lts_dbr &amp;&amp; !var.ml_dbr &amp;&amp; !var.gpu_dbr) ? [data.databricks_spark_version.latest_lts.id, data.databricks_spark_version.latest.id] : null
+  lts_no_ml_no_gpu_arr    = (var.lts_dbr &amp;&amp; !var.ml_dbr &amp;&amp; !var.gpu_dbr) ? [data.databricks_spark_version.latest_lts.id] : null
+  lts_ml_no_gpu_arr       = (var.lts_dbr &amp;&amp; var.ml_dbr &amp;&amp; !var.gpu_dbr) ? [data.databricks_spark_version.latest_ml_lts.id, data.databricks_spark_version.latest_lts.id] : null
+  lts_ml_gpu_arr          = (var.lts_dbr &amp;&amp; var.ml_dbr &amp;&amp; var.gpu_dbr) ? [data.databricks_spark_version.latest_ml_lts.id, data.databricks_spark_version.latest_lts.id, data.databricks_spark_version.latest_ml_gpu_lts.id] : null
+  no_lts_ml_no_gpu_arr    = (!var.lts_dbr &amp;&amp; var.ml_dbr &amp;&amp; !var.gpu_dbr) ? [data.databricks_spark_version.latest_ml_lts.id, data.databricks_spark_version.latest_ml.id, data.databricks_spark_version.latest_lts.id, data.databricks_spark_version.latest.id, ] : null
+  no_lts_ml_gpu_arr       = (!var.lts_dbr &amp;&amp; var.ml_dbr &amp;&amp; !var.gpu_dbr) ? [data.databricks_spark_version.latest_ml_lts.id, data.databricks_spark_version.latest_ml.id, data.databricks_spark_version.latest_lts.id, data.databricks_spark_version.latest.id, data.databricks_spark_version.latest_ml_gpu_lts.id, data.databricks_spark_version.latest_ml_gpu.id] : null
+  fallback_spark_vers_arr = [data.databricks_spark_version.latest_lts.id]
+  runtime_version = {
+    "spark_version" : {
+      "type" : "allowlist",
+      "values" : coalesce(local.no_lts_no_ml_no_gpu_arr, local.lts_no_ml_no_gpu_arr, local.lts_ml_no_gpu_arr, local.no_lts_ml_no_gpu_arr, local.no_lts_ml_gpu_arr, local.fallback_spark_vers_arr),
+      "defaultValue" : data.databricks_spark_version.latest_lts.id
+    }
+  }</code></pre>
+<p>basically, whichever of those conditionals is true for the combination of runtime booleans that’s the list of runtimes that will be available to users of that policy. I put just the latest LTS runtime as a fallback just to handle errors, it shouldn’t really come up.</p>
+<p>This is honestly more limiting than I’d strictly prefer for the non-LTS releases. As an example, if DBR 14.0 is the latest LTS runtime, and 14.2 is the latest overall runtime, I’d prefer users be able to provision 14.1 as well. To handle that though I think I’d have to do some array sorting and regex inference to find the position of the LTS release in the non-LTS array and return everything up to and including that index, and frankly I didn’t feel like writing that. Maybe I’ll be more motivated in the future.</p>
+</section>
+<section id="cost-management" class="level2">
+<h2 class="anchored" data-anchor-id="cost-management">Cost management</h2>
+<p>The next big thing we want to enforce is cost management. One approach would be setting careful limitations on combinations of instance types and number of workers, but databricks also offers a <code>max_dbu</code> parameter which just limits the compute cost. This doesn’t exactly translate to overall cost, as underlying VM costs are not factored in, but they tend to be very closely related to the DBU cost of the instance type, so the simplicity seemed like a worthwhile trade off. Again, I’m assuming that we don’t want to have too many different DBU limits within a given workspace, although I have allowed for interactive and job/DLT compute to have different thresholds. We probably generally want to limit the threshold for exploratory work below what we use to run scheduled jobs. Note that this does introduce a somewhat perverse incentive at the margins to run a larger instance with photon disabled, as enabling photon doubles your DBU cost for any given size of underlying compute.</p>
+<p>This is accomplished by passing a line into the compute policy definition that looks something like this:</p>
+<pre class="hcl"><code>    { "dbus_per_hour" : { "type" : "range", "maxValue" : var.max_dbu_job } },</code></pre>
+</section>
+<section id="single-of-multi-node" class="level2">
+<h2 class="anchored" data-anchor-id="single-of-multi-node">Single of multi node</h2>
+<p>For interactive clusters I’ve created both single node and multi node cluster policies. In theory we shouldn’t really care which a user selects, as long as they’re below their cost threshold, but for less sophisticated users it might reduce complexity to only allow single node clusters.</p>
+<pre class="hcl"><code>  single_node = {
+    "spark_conf.spark.databricks.cluster.profile" : {
+      "type" : "fixed",
+      "value" : "singleNode",
+      "hidden" : true
+    },
+    "num_workers" : {
+      "type" : "fixed",
+      "value" : 0,
+      "hidden" : true
+    }
+  }</code></pre>
+<p>This can either be added to or left out of a policy definition to enforce single node</p>
+</section>
+<section id="auto-termination" class="level2">
+<h2 class="anchored" data-anchor-id="auto-termination">Auto termination</h2>
+<p>For all interactive policies (it’s not relevant to jobs or DLT) I enforce an auto termination of 10 minutes to minimize cluster idling. We could make that a variable if a need comes up, but I’d personally like to keep it low and consistent for now:</p>
+<pre class="hcl"><code>  autotermination = {
+    "autotermination_minutes" : {
+      "type" : "fixed",
+      "value" : 10
+      # "hidden" : true
+  } }</code></pre>
+<p>I took off the <code>hidden</code> flag for now so users can see that it’s been auto set for them. We can remove that later to reduce the complexity of the cluster creation interface.</p>
+<p>I have heard some feedback from ML users that it’s not reasonable to expect them to be sitting around ready to pounce on long running tasks when they’re prototyping so I’m going to end up modifying this to a range with a higher maximum value that we can configure for ML workspaces.</p>
+</section>
+<section id="tags" class="level2">
+<h2 class="anchored" data-anchor-id="tags">Tags</h2>
+<p>Finally, I added some tags, which right now don’t really do much since I don’t know what additional tags we want to add. A lot gets auto applied that might be sufficient, but I wanted to demonstrate the capability:</p>
+<pre class="hcl"><code>  default_tags = {
+    "custom_tags.lob" : {
+      "type" : "fixed",
+      "value" : "${var.lob_name}",
+      "hidden" : true
+    },
+    "custom_tags.TEST" : {
+      "type" : "fixed",
+      "value" : "testfromterraform"
+    }
+  }</code></pre>
+</section>
+<section id="actual-cluster-policies" class="level2">
+<h2 class="anchored" data-anchor-id="actual-cluster-policies">Actual cluster policies</h2>
+<p>Putting it all together we can define cluster policies like so:</p>
+<pre class="hcl"><code>resource "databricks_cluster_policy" "multi-node-personal" {
+  count = var.create_multi_node_personal_policy ? 1 : 0
+  name  = "Multi Node Personal Compute"
+  definition = jsonencode(merge(
+    { "dbus_per_hour" : { "type" : "range", "maxValue" : var.max_dbu_interactive } },
+    local.runtime_version,
+    local.autotermination,
+    local.default_tags,
+    local.photon
+  ))
+}</code></pre>
+</section>
+</section>
+<section id="conclusion" class="level1">
+<h1>Conclusion</h1>
+<p>In this post I demonstrated how to create a set of databricks cluster policies using a terraform module that can be applied to your workspaces. Nothing particularly earth shattering, and I’m not sure whether to be pleased or horrified with that giant block I wrote to produce the acceptable runtime list, but it works and it at least adds some more example code that others can build off.</p>
+
+
+</section>
+
+ ]]></description>
+  <category>databricks</category>
+  <category>terraform</category>
+  <guid>https://blog.ianpreston.ca/posts/2023-11-18-terraform-cluster.html</guid>
+  <pubDate>Sat, 18 Nov 2023 00:00:00 GMT</pubDate>
+</item>
 <item>
   <title>Automating my network</title>
   <link>https://blog.ianpreston.ca/posts/2023-07-06-network-automation.html</link>
@@ -1148,6 +1272,867 @@ font-style: inherit;">in</span> mismatches.items():</span>
   <category>networking</category>
   <guid>https://blog.ianpreston.ca/posts/2023-07-06-network-automation.html</guid>
   <pubDate>Thu, 06 Jul 2023 00:00:00 GMT</pubDate>
+</item>
+<item>
+  <title>Finding all AD group users with ansible</title>
+  <link>https://blog.ianpreston.ca/posts/2023-06-04-ansible-ad-users.html</link>
+  <description><![CDATA[ 
+
+
+
+
+<section id="introduction" class="level1">
+<h1>Introduction</h1>
+<p>This is a write up summarizing the process I went through to retrieve information about members of Active Directory groups from a Linux VM using ansible. My specific intent was to use it as part of a playbook to configure <a href="https://docs.docker.com/engine/security/rootless/">rootless docker</a>, but it would be applicable in any other situation where you need to get the members of a number of AD groups. The hardest part of it by far is getting the output of earlier tasks into a format that’s suitable for later steps. I’ve got a reasonable clean approach documented below, after trying some extremely ugly alternate approaches earlier. I’m sure there’s some even fancier way to do this that will make my approach look silly, and if you know it I’d love for you to fill me in.</p>
+</section>
+<section id="pre-requisites" class="level1">
+<h1>Pre-requisites</h1>
+<p>In order to do this I need the user ansible is running as to be authenticated against Active Directory. I don’t have elevated privileges on the AD I tested this on, so I think any normal user account should be sufficient. For this example I have my username and password stored as variables <code>ad_user</code> and <code>ad_password</code>.</p>
+<p>I’ve also got a host variable configured for each host I’m doing this on that maps to a list of AD groups I want members of for that host, called <code>domain_groups</code> in this playbook.</p>
+<p>Having set this up I need to make sure the host machine has a pre-requisite module available, and that the user I’m running as has a kerberos ticket issued for my user:</p>
+<div class="sourceCode" id="cb1" style="background: #f1f3f5;"><pre class="sourceCode yml code-with-copy"><code class="sourceCode yaml"><span id="cb1-1"><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">-</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">name</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">:</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> Install ldap pre-requisites</span></span>
+<span id="cb1-2"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">  </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">become</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">:</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> </span><span class="ch" style="color: #20794D;
+background-color: null;
+font-style: inherit;">true</span></span>
+<span id="cb1-3"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">  </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">ansible.builtin.apt</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">:</span></span>
+<span id="cb1-4"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">    </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">pkg</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">:</span></span>
+<span id="cb1-5"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">      </span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">-</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> python3-ldap</span></span>
+<span id="cb1-6"></span>
+<span id="cb1-7"><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">-</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">name</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">:</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> Issue a kerberos ticket to authenticate to AD</span></span>
+<span id="cb1-8"><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">  ansible.builtin.shell</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">: </span><span class="ch" style="color: #20794D;
+background-color: null;
+font-style: inherit;">|</span></span>
+<span id="cb1-9">    echo "{{ ad_password }}" | kinit -l 1h {{ ad_user }}@example.com</span>
+<span id="cb1-10"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">  </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">changed_when</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">:</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> </span><span class="ch" style="color: #20794D;
+background-color: null;
+font-style: inherit;">false</span></span></code></pre></div>
+<p>I’ve changed the actual domain to <code>example.com</code> and you’ll need to modify that to your domain of course.</p>
+</section>
+<section id="get-the-users" class="level1">
+<h1>Get the users</h1>
+<div class="sourceCode" id="cb2" style="background: #f1f3f5;"><pre class="sourceCode yml code-with-copy"><code class="sourceCode yaml"><span id="cb2-1"><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">-</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">name</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">:</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> Return all users in the groups associated with the machine using LDAP search</span></span>
+<span id="cb2-2"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">  </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">community.general.ldap_search</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">:</span></span>
+<span id="cb2-3"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">    </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">dn</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">:</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> </span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"cn={{ item }},cn=Users,dc=EXAMPLE,dc=COM"</span></span>
+<span id="cb2-4"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">    </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">sasl_class</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">:</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> </span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"gssapi"</span></span>
+<span id="cb2-5"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">    </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">server_uri</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">:</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> </span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"ldap://example.com"</span></span>
+<span id="cb2-6"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">    </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">attrs</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">:</span></span>
+<span id="cb2-7"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">      </span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">-</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> member</span></span>
+<span id="cb2-8"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">  </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">register</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">:</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> intermediate_calc_group_members</span></span>
+<span id="cb2-9"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">  </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">with_items</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">:</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> </span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"{{ domain_groups }}"</span></span></code></pre></div>
+<p>This first part does the actual data retrieval, everything that follows is just cleanup. For reference, the JSON I get out of this looks something like:</p>
+<div class="sourceCode" id="cb3" style="background: #f1f3f5;"><pre class="sourceCode json code-with-copy"><code class="sourceCode json"><span id="cb3-1"><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">{</span></span>
+<span id="cb3-2">            <span class="dt" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">"ansible_loop_var"</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">:</span> <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"item"</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">,</span></span>
+<span id="cb3-3">            <span class="dt" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">"changed"</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">:</span> <span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">false</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">,</span></span>
+<span id="cb3-4">            <span class="dt" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">"failed"</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">:</span> <span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">false</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">,</span></span>
+<span id="cb3-5">            <span class="dt" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">"invocation"</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">:</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">{</span></span>
+<span id="cb3-6">                <span class="dt" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">"module_args"</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">:</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">{</span></span>
+<span id="cb3-7">                    <span class="dt" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">"attrs"</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">:</span> <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">[</span></span>
+<span id="cb3-8">                        <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"member"</span></span>
+<span id="cb3-9">                    <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">]</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">,</span></span>
+<span id="cb3-10">                    <span class="dt" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">"bind_dn"</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">:</span> <span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">null</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">,</span></span>
+<span id="cb3-11">                    <span class="dt" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">"bind_pw"</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">:</span> <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">""</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">,</span></span>
+<span id="cb3-12">                    <span class="dt" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">"dn"</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">:</span> <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"cn=group1,cn=Users,dc=EXAMPLE,dc=COM"</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">,</span></span>
+<span id="cb3-13">                    <span class="dt" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">"filter"</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">:</span> <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"(objectClass=*)"</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">,</span></span>
+<span id="cb3-14">                    <span class="dt" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">"referrals_chasing"</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">:</span> <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"anonymous"</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">,</span></span>
+<span id="cb3-15">                    <span class="dt" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">"sasl_class"</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">:</span> <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"gssapi"</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">,</span></span>
+<span id="cb3-16">                    <span class="dt" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">"schema"</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">:</span> <span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">false</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">,</span></span>
+<span id="cb3-17">                    <span class="dt" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">"scope"</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">:</span> <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"base"</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">,</span></span>
+<span id="cb3-18">                    <span class="dt" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">"server_uri"</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">:</span> <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"ldap://example.com"</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">,</span></span>
+<span id="cb3-19">                    <span class="dt" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">"start_tls"</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">:</span> <span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">false</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">,</span></span>
+<span id="cb3-20">                    <span class="dt" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">"validate_certs"</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">:</span> <span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">true</span></span>
+<span id="cb3-21">                <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">}</span></span>
+<span id="cb3-22">            <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">},</span></span>
+<span id="cb3-23">            <span class="dt" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">"item"</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">:</span> <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"group1"</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">,</span></span>
+<span id="cb3-24">            <span class="dt" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">"results"</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">:</span> <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">[</span></span>
+<span id="cb3-25">                <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">{</span></span>
+<span id="cb3-26">                    <span class="dt" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">"dn"</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">:</span> <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"cn=group1,cn=Users,dc=EXAMPLE,dc=COM"</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">,</span></span>
+<span id="cb3-27">                    <span class="dt" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">"member"</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">:</span> <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">[</span></span>
+<span id="cb3-28">                        <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"CN=example_user,OU=Synced to Azure,OU=Example Client,OU=Example Corporate,dc=EXAMPLE,dc=COM"</span><span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">,</span></span>
+<span id="cb3-29">                        <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"CN=example_user,OU=Synced to Azure,OU=Example Client,OU=Example Corporate,dc=EXAMPLE,dc=COM"</span><span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">,</span></span>
+<span id="cb3-30">                        <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"CN=example_user,OU=Synced to Azure,OU=Example Client,OU=Example Corporate,dc=EXAMPLE,dc=COM"</span><span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">,</span></span>
+<span id="cb3-31">                        <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"CN=example_user,OU=Synced to Azure,OU=Example Client,OU=Example Corporate,dc=EXAMPLE,dc=COM"</span><span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">,</span></span>
+<span id="cb3-32">                        <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"CN=example_user,OU=Synced to Azure,OU=Example Client,OU=Example Corporate,dc=EXAMPLE,dc=COM"</span><span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">,</span></span>
+<span id="cb3-33">                        <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"CN=example_user,OU=Synced to Azure,OU=Example Client,OU=Example Corporate,dc=EXAMPLE,dc=COM"</span><span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">,</span></span>
+<span id="cb3-34">                        <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"CN=example_user,OU=Synced to Azure,OU=Example Client,OU=Example Corporate,dc=EXAMPLE,dc=COM"</span><span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">,</span></span>
+<span id="cb3-35">                        <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"CN=example_user,OU=Synced to Azure,OU=Example Client,OU=Example Corporate,dc=EXAMPLE,dc=COM"</span></span>
+<span id="cb3-36">                    <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">]</span></span>
+<span id="cb3-37">                <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">}</span></span>
+<span id="cb3-38">            <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">]</span></span>
+<span id="cb3-39">        <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">}</span><span class="er" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">,</span></span>
+<span id="cb3-40">        <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">{</span></span>
+<span id="cb3-41">            <span class="dt" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">"ansible_loop_var"</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">:</span> <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"item"</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">,</span></span>
+<span id="cb3-42">            <span class="dt" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">"changed"</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">:</span> <span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">false</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">,</span></span>
+<span id="cb3-43">            <span class="dt" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">"failed"</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">:</span> <span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">false</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">,</span></span>
+<span id="cb3-44">            <span class="dt" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">"invocation"</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">:</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">{</span></span>
+<span id="cb3-45">                <span class="dt" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">"module_args"</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">:</span> <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">{</span></span>
+<span id="cb3-46">                    <span class="dt" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">"attrs"</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">:</span> <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">[</span></span>
+<span id="cb3-47">                        <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"member"</span></span>
+<span id="cb3-48">                    <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">]</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">,</span></span>
+<span id="cb3-49">                    <span class="dt" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">"bind_dn"</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">:</span> <span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">null</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">,</span></span>
+<span id="cb3-50">                    <span class="dt" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">"bind_pw"</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">:</span> <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">""</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">,</span></span>
+<span id="cb3-51">                    <span class="dt" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">"dn"</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">:</span> <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"cn=group2,cn=Users,dc=EXAMPLE,dc=COM"</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">,</span></span>
+<span id="cb3-52">                    <span class="dt" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">"filter"</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">:</span> <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"(objectClass=*)"</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">,</span></span>
+<span id="cb3-53">                    <span class="dt" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">"referrals_chasing"</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">:</span> <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"anonymous"</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">,</span></span>
+<span id="cb3-54">                    <span class="dt" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">"sasl_class"</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">:</span> <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"gssapi"</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">,</span></span>
+<span id="cb3-55">                    <span class="dt" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">"schema"</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">:</span> <span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">false</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">,</span></span>
+<span id="cb3-56">                    <span class="dt" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">"scope"</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">:</span> <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"base"</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">,</span></span>
+<span id="cb3-57">                    <span class="dt" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">"server_uri"</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">:</span> <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"ldap://example.com"</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">,</span></span>
+<span id="cb3-58">                    <span class="dt" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">"start_tls"</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">:</span> <span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">false</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">,</span></span>
+<span id="cb3-59">                    <span class="dt" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">"validate_certs"</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">:</span> <span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">true</span></span>
+<span id="cb3-60">                <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">}</span></span>
+<span id="cb3-61">            <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">},</span></span>
+<span id="cb3-62">            <span class="dt" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">"item"</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">:</span> <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"group2"</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">,</span></span>
+<span id="cb3-63">            <span class="dt" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">"results"</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">:</span> <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">[</span></span>
+<span id="cb3-64">                <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">{</span></span>
+<span id="cb3-65">                    <span class="dt" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">"dn"</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">:</span> <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"cn=group2,cn=Users,dc=EXAMPLE,dc=COM"</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">,</span></span>
+<span id="cb3-66">                    <span class="dt" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">"member"</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">:</span> <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">[</span></span>
+<span id="cb3-67">                        <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"CN=example_user,OU=Example Clients,OU=Example Corporate,dc=EXAMPLE,dc=COM"</span><span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">,</span></span>
+<span id="cb3-68">                        <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"CN=example_user,OU=Example Clients,OU=Example Corporate,dc=EXAMPLE,dc=COM"</span><span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">,</span></span>
+<span id="cb3-69">                        <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"CN=example_user,OU=Example Clients,OU=Example Corporate,dc=EXAMPLE,dc=COM"</span><span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">,</span></span>
+<span id="cb3-70">                        <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"CN=example_user,OU=Example Clients,OU=Example Corporate,dc=EXAMPLE,dc=COM"</span><span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">,</span></span>
+<span id="cb3-71">                        <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"CN=example_user,OU=Example Clients,OU=Example Corporate,dc=EXAMPLE,dc=COM"</span><span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">,</span></span>
+<span id="cb3-72">                        <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"CN=example_user,CN=Users,dc=EXAMPLE,dc=COM"</span><span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">,</span></span>
+<span id="cb3-73">                        <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"CN=example_user,OU=Example Clients,OU=Example Corporate,dc=EXAMPLE,dc=COM"</span><span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">,</span></span>
+<span id="cb3-74">                        <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"CN=example_user,OU=Example Clients,OU=Example Corporate,dc=EXAMPLE,dc=COM"</span></span>
+<span id="cb3-75">                    <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">]</span></span>
+<span id="cb3-76">                <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">}</span></span>
+<span id="cb3-77">            <span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">]</span></span>
+<span id="cb3-78">        <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">}</span></span></code></pre></div>
+<p>In the example above I’ve replaced all the actual user names with <code>example_user</code> but you can see that the information I want to assemble (the usernames and which group each of them is in) is surrounded by a lot of extraneous data and text.</p>
+<div class="sourceCode" id="cb4" style="background: #f1f3f5;"><pre class="sourceCode yml code-with-copy"><code class="sourceCode yaml"><span id="cb4-1"><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">-</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">name</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">:</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> Get group and member list</span></span>
+<span id="cb4-2"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">  </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">set_fact</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">:</span></span>
+<span id="cb4-3"><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">    intermediate_calc_users</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">: </span><span class="ch" style="color: #20794D;
+background-color: null;
+font-style: inherit;">&gt;-</span></span>
+<span id="cb4-4">      {%- set result = [] -%}</span>
+<span id="cb4-5">      {%- for play_dict in intermediate_calc_group_members.results -%}</span>
+<span id="cb4-6">        {%- for user in play_dict['results'][0]['member'] -%}</span>
+<span id="cb4-7">          {%- set clean_user = user | regex_search('^CN=(\\w\\d+),.+', '\\1') | first | lower -%}</span>
+<span id="cb4-8">          {{</span>
+<span id="cb4-9">            result.append({'group': play_dict['item'], 'id': clean_user, 'user': clean_user + "@EXAMPLE.COM"})</span>
+<span id="cb4-10">          }}</span>
+<span id="cb4-11">        {%- endfor -%}</span>
+<span id="cb4-12">      {%- endfor -%}</span>
+<span id="cb4-13">      {{ result | to_json | from_json }}</span></code></pre></div>
+<p>Some parts of this are witchcraft to me. I don’t really know why I have to pipe my result to json and then back from json. It’s doing something to clean up my variables in such a way that subsequent steps can understand it, but as for why I’m not really sure. I got a lot of the structure of this variable construction from <a href="https://stackoverflow.com/questions/58727924/convert-nested-list-of-dicts-to-dict-in-ansible">this post</a>.</p>
+<p>The regex I’m using in this particular case is based on the fact that all the user IDs I’m working with are in the format of one letter followed by several numbers. If your user IDs are more heterogeneous you’ll have to mess with the regext to get just the username out of that part of the output that looks something like:</p>
+<div class="sourceCode" id="cb5" style="background: #f1f3f5;"><pre class="sourceCode json code-with-copy"><code class="sourceCode json"><span id="cb5-1"><span class="er" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">"CN=example_user,OU=Example</span> <span class="er" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">Clients,OU=Example</span> <span class="er" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">Corporate,dc=EXAMPLE,dc=COM"</span></span></code></pre></div>
+<p>At the end of this step I have a list of dictionaries with one entry per user with keys for their AD group, just their username, and their username with the domain appended.</p>
+<p>Note that this step will fail if you pull an AD group that only has one member, because the <code>member</code> item in the dictionary will go from being a list to a string. I didn’t specifically have to deal with that in my use case, but it would be more robust to do something like putting <code>play_dict['results'][0]['member']</code> in a list and then flattening that list so you always got a list back.</p>
+<div class="sourceCode" id="cb6" style="background: #f1f3f5;"><pre class="sourceCode yml code-with-copy"><code class="sourceCode yaml"><span id="cb6-1"><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">-</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">name</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">:</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> Register getent results so I can retrieve UIDs</span></span>
+<span id="cb6-2"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">  </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">ansible.builtin.getent</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">:</span></span>
+<span id="cb6-3"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">    </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">database</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">:</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> passwd</span></span>
+<span id="cb6-4"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">    </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">key</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">:</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> </span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"{{ item.user }}"</span></span>
+<span id="cb6-5"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">  </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">with_items</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">:</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> </span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"{{ intermediate_calc_users }}"</span></span>
+<span id="cb6-6"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">  </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">register</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">:</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> intermediate_calc_getent</span></span></code></pre></div>
+<p>For my particular use case in addition to the usernames I also needed the UIDs of each user, so in this step I use ansible’s built in <code>getent</code> module and the dictionary I created above in the last step to return the entry in <code>/etc/passwd</code> for each user, which will include their UID.</p>
+<div class="sourceCode" id="cb7" style="background: #f1f3f5;"><pre class="sourceCode yml code-with-copy"><code class="sourceCode yaml"><span id="cb7-1"><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">-</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">name</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">:</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> Cleanup getent results</span></span>
+<span id="cb7-2"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">  </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">set_fact</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">:</span></span>
+<span id="cb7-3"><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">    intermediate_calc_getent_clean</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">: </span><span class="ch" style="color: #20794D;
+background-color: null;
+font-style: inherit;">&gt;-</span></span>
+<span id="cb7-4">      {%- set result = [] -%}</span>
+<span id="cb7-5">      {%- for play_dict in intermediate_calc_getent.results -%}</span>
+<span id="cb7-6">        {%- set getent_passwd = play_dict['ansible_facts']['getent_passwd'] -%}</span>
+<span id="cb7-7">        {%- set key = getent_passwd.keys() | first -%}</span>
+<span id="cb7-8">        {{ result.append({'key': key,'value': getent_passwd[key][1]}) }}</span>
+<span id="cb7-9">      {%- endfor -%}</span>
+<span id="cb7-10">      {{ result | items2dict | to_json | from_json }}</span></code></pre></div>
+<p>Again, this step is a bit of black magic, just messing around with the output of the last step (ansible’s debug is your friend for this) and fiddling with it until I have a list of dictionaries with one item where the key is the username and the value is their UID.</p>
+<div class="sourceCode" id="cb8" style="background: #f1f3f5;"><pre class="sourceCode yml code-with-copy"><code class="sourceCode yaml"><span id="cb8-1"><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">-</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">name</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">:</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> Create final list of dicts for all users</span></span>
+<span id="cb8-2"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">  </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">set_fact</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">:</span></span>
+<span id="cb8-3"><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">    users_dict</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">: </span><span class="ch" style="color: #20794D;
+background-color: null;
+font-style: inherit;">&gt;-</span></span>
+<span id="cb8-4">      {%- set result = [] -%}</span>
+<span id="cb8-5">      {%- for user in intermediate_calc_users -%}</span>
+<span id="cb8-6">        {{ result.append({'group': user['group'], 'user': user['user'], 'user': user['user'], 'uid': intermediate_calc_getent_clean[user['user']]})}}</span>
+<span id="cb8-7">      {%- endfor -%}</span>
+<span id="cb8-8">      {{ result | to_json | from_json }}</span></code></pre></div>
+<p>Now all I have to do is combine those two dictionaries together into one. This part is pretty self explanatory except for that <code>to_json | from_json</code> bit at the bottom.</p>
+</section>
+<section id="conclusion" class="level1">
+<h1>Conclusion</h1>
+<p>If you work with Linux systems where users are managed by AD (or probably other LDAP providers, but I’m using AD in this example) then this is a handy trick to get a fact in your playbook with basic information about those users.</p>
+
+
+</section>
+
+ ]]></description>
+  <category>ansible</category>
+  <category>Linux</category>
+  <guid>https://blog.ianpreston.ca/posts/2023-06-04-ansible-ad-users.html</guid>
+  <pubDate>Sun, 04 Jun 2023 00:00:00 GMT</pubDate>
 </item>
 <item>
   <title>Install Microsoft ODBC drivers with ansible</title>
@@ -2371,8 +3356,8 @@ font-style: inherit;">"{{ users_dict }}"</span></span></code></pre></div>
   <pubDate>Sun, 04 Jun 2023 00:00:00 GMT</pubDate>
 </item>
 <item>
-  <title>Finding all AD group users with ansible</title>
-  <link>https://blog.ianpreston.ca/posts/2023-06-04-ansible-ad-users.html</link>
+  <title>Configuring autofs for CIFS mounts with ansible</title>
+  <link>https://blog.ianpreston.ca/posts/2023-06-04-ansible-autofs.html</link>
   <description><![CDATA[ 
 
 
@@ -2380,91 +3365,99 @@ font-style: inherit;">"{{ users_dict }}"</span></span></code></pre></div>
 
 <section id="introduction" class="level1">
 <h1>Introduction</h1>
-<p>This is a write up summarizing the process I went through to retrieve information about members of Active Directory groups from a Linux VM using ansible. My specific intent was to use it as part of a playbook to configure <a href="https://docs.docker.com/engine/security/rootless/">rootless docker</a>, but it would be applicable in any other situation where you need to get the members of a number of AD groups. The hardest part of it by far is getting the output of earlier tasks into a format that’s suitable for later steps. I’ve got a reasonable clean approach documented below, after trying some extremely ugly alternate approaches earlier. I’m sure there’s some even fancier way to do this that will make my approach look silly, and if you know it I’d love for you to fill me in.</p>
+<p>This guide shows how to set up user isolated mounts of CIFS (samba) network shares on a shared linux VM. Each user will get folders under <code>/mnt/&lt;user&gt;</code> that they authenticate to using kerberos. In this document I’m assuming that users are members of a group and that each group all should have access to the same shares. We’ll further assume you’ve got a fact set in your playbook that maps each user to their corresponding group. If you need guidance on that you can see <a href="../posts/2023-06-04-ansible-ad-users.html">this post</a>.</p>
+<p>This is a nice way of attaching file shares because it ensures users don’t need elevated privileges to access file shares (although an administrator has to configure it for them) and that creating a share for one user doesn’t inadvertently expose it to others. For a fully user level way of attaching file shares you can use <a href="https://man.archlinux.org/man/gio.1">gio</a> but I found it extremely flaky and annoying to use, so if you can handle having an administrator configure the share mount points for users I would recommend this approach.</p>
 </section>
-<section id="pre-requisites" class="level1">
-<h1>Pre-requisites</h1>
-<p>In order to do this I need the user ansible is running as to be authenticated against Active Directory. I don’t have elevated privileges on the AD I tested this on, so I think any normal user account should be sufficient. For this example I have my username and password stored as variables <code>ad_user</code> and <code>ad_password</code>.</p>
-<p>I’ve also got a host variable configured for each host I’m doing this on that maps to a list of AD groups I want members of for that host, called <code>domain_groups</code> in this playbook.</p>
-<p>Having set this up I need to make sure the host machine has a pre-requisite module available, and that the user I’m running as has a kerberos ticket issued for my user:</p>
-<div class="sourceCode" id="cb1" style="background: #f1f3f5;"><pre class="sourceCode yml code-with-copy"><code class="sourceCode yaml"><span id="cb1-1"><span class="kw" style="color: #003B4F;
+<section id="variable-format" class="level1">
+<h1>Variable format</h1>
+<p>Somewhere in your playbook (in my case I set it in the variables folder of the role I was using, but putting in as a host variable or somewhere else may be more appropriate for your use case) we need a variable for each group that contains a list of associated shares. Something like this:</p>
+<div class="sourceCode" id="cb1" style="background: #f1f3f5;"><pre class="sourceCode yml code-with-copy"><code class="sourceCode yaml"><span id="cb1-1"><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">example_group1</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">:</span></span>
+<span id="cb1-2"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">  </span><span class="kw" style="color: #003B4F;
 background-color: null;
 font-style: inherit;">-</span><span class="at" style="color: #657422;
 background-color: null;
 font-style: inherit;"> </span><span class="fu" style="color: #4758AB;
 background-color: null;
-font-style: inherit;">name</span><span class="kw" style="color: #003B4F;
+font-style: inherit;">local_share_name</span><span class="kw" style="color: #003B4F;
 background-color: null;
 font-style: inherit;">:</span><span class="at" style="color: #657422;
 background-color: null;
-font-style: inherit;"> Install ldap pre-requisites</span></span>
-<span id="cb1-2"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">  </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">become</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">:</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> </span><span class="ch" style="color: #20794D;
-background-color: null;
-font-style: inherit;">true</span></span>
+font-style: inherit;"> share1</span></span>
 <span id="cb1-3"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">  </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">ansible.builtin.apt</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">:</span></span>
-<span id="cb1-4"><span class="at" style="color: #657422;
 background-color: null;
 font-style: inherit;">    </span><span class="fu" style="color: #4758AB;
 background-color: null;
-font-style: inherit;">pkg</span><span class="kw" style="color: #003B4F;
+font-style: inherit;">full_share_path</span><span class="kw" style="color: #003B4F;
 background-color: null;
-font-style: inherit;">:</span></span>
-<span id="cb1-5"><span class="at" style="color: #657422;
+font-style: inherit;">:</span><span class="at" style="color: #657422;
 background-color: null;
-font-style: inherit;">      </span><span class="kw" style="color: #003B4F;
+font-style: inherit;"> </span><span class="st" style="color: #20794D;
 background-color: null;
-font-style: inherit;">-</span><span class="at" style="color: #657422;
+font-style: inherit;">"//fileshare.example.com/share1"</span></span>
+<span id="cb1-4"><span class="at" style="color: #657422;
 background-color: null;
-font-style: inherit;"> python3-ldap</span></span>
-<span id="cb1-6"></span>
-<span id="cb1-7"><span class="kw" style="color: #003B4F;
+font-style: inherit;">  </span><span class="kw" style="color: #003B4F;
 background-color: null;
 font-style: inherit;">-</span><span class="at" style="color: #657422;
 background-color: null;
 font-style: inherit;"> </span><span class="fu" style="color: #4758AB;
 background-color: null;
-font-style: inherit;">name</span><span class="kw" style="color: #003B4F;
+font-style: inherit;">local_share_name</span><span class="kw" style="color: #003B4F;
 background-color: null;
 font-style: inherit;">:</span><span class="at" style="color: #657422;
 background-color: null;
-font-style: inherit;"> Issue a kerberos ticket to authenticate to AD</span></span>
-<span id="cb1-8"><span class="fu" style="color: #4758AB;
+font-style: inherit;"> share2</span></span>
+<span id="cb1-5"><span class="at" style="color: #657422;
 background-color: null;
-font-style: inherit;">  ansible.builtin.shell</span><span class="kw" style="color: #003B4F;
+font-style: inherit;">    </span><span class="fu" style="color: #4758AB;
 background-color: null;
-font-style: inherit;">: </span><span class="ch" style="color: #20794D;
-background-color: null;
-font-style: inherit;">|</span></span>
-<span id="cb1-9">    echo "{{ ad_password }}" | kinit -l 1h {{ ad_user }}@example.com</span>
-<span id="cb1-10"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">  </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">changed_when</span><span class="kw" style="color: #003B4F;
+font-style: inherit;">full_share_path</span><span class="kw" style="color: #003B4F;
 background-color: null;
 font-style: inherit;">:</span><span class="at" style="color: #657422;
 background-color: null;
-font-style: inherit;"> </span><span class="ch" style="color: #20794D;
+font-style: inherit;"> </span><span class="st" style="color: #20794D;
 background-color: null;
-font-style: inherit;">false</span></span></code></pre></div>
-<p>I’ve changed the actual domain to <code>example.com</code> and you’ll need to modify that to your domain of course.</p>
+font-style: inherit;">"//fileshare.example.com/share2"</span></span>
+<span id="cb1-6"></span>
+<span id="cb1-7"><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">example_group2</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">:</span></span>
+<span id="cb1-8"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">  </span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">-</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">local_share_name</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">:</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> share3</span></span>
+<span id="cb1-9"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">    </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">full_share_path</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">:</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> </span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"//fileshare.example.com/share3"</span></span></code></pre></div>
 </section>
-<section id="get-the-users" class="level1">
-<h1>Get the users</h1>
+<section id="basic-setup" class="level1">
+<h1>Basic setup</h1>
+<p>In this stage we will ensure pre-requisite software is installed on the host (assuming Ubuntu here, you will have to modify for other distros), and that the mount point folder for each user has been created:</p>
 <div class="sourceCode" id="cb2" style="background: #f1f3f5;"><pre class="sourceCode yml code-with-copy"><code class="sourceCode yaml"><span id="cb2-1"><span class="kw" style="color: #003B4F;
 background-color: null;
 font-style: inherit;">-</span><span class="at" style="color: #657422;
@@ -2475,664 +3468,115 @@ font-style: inherit;">name</span><span class="kw" style="color: #003B4F;
 background-color: null;
 font-style: inherit;">:</span><span class="at" style="color: #657422;
 background-color: null;
-font-style: inherit;"> Return all users in the groups associated with the machine using LDAP search</span></span>
+font-style: inherit;"> Install autofs</span></span>
 <span id="cb2-2"><span class="at" style="color: #657422;
 background-color: null;
 font-style: inherit;">  </span><span class="fu" style="color: #4758AB;
 background-color: null;
-font-style: inherit;">community.general.ldap_search</span><span class="kw" style="color: #003B4F;
+font-style: inherit;">ansible.builtin.apt</span><span class="kw" style="color: #003B4F;
 background-color: null;
 font-style: inherit;">:</span></span>
 <span id="cb2-3"><span class="at" style="color: #657422;
 background-color: null;
 font-style: inherit;">    </span><span class="fu" style="color: #4758AB;
 background-color: null;
-font-style: inherit;">dn</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">:</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> </span><span class="st" style="color: #20794D;
-background-color: null;
-font-style: inherit;">"cn={{ item }},cn=Users,dc=EXAMPLE,dc=COM"</span></span>
-<span id="cb2-4"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">    </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">sasl_class</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">:</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> </span><span class="st" style="color: #20794D;
-background-color: null;
-font-style: inherit;">"gssapi"</span></span>
-<span id="cb2-5"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">    </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">server_uri</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">:</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> </span><span class="st" style="color: #20794D;
-background-color: null;
-font-style: inherit;">"ldap://example.com"</span></span>
-<span id="cb2-6"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">    </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">attrs</span><span class="kw" style="color: #003B4F;
+font-style: inherit;">pkg</span><span class="kw" style="color: #003B4F;
 background-color: null;
 font-style: inherit;">:</span></span>
-<span id="cb2-7"><span class="at" style="color: #657422;
+<span id="cb2-4"><span class="at" style="color: #657422;
 background-color: null;
 font-style: inherit;">      </span><span class="kw" style="color: #003B4F;
 background-color: null;
 font-style: inherit;">-</span><span class="at" style="color: #657422;
 background-color: null;
-font-style: inherit;"> member</span></span>
-<span id="cb2-8"><span class="at" style="color: #657422;
+font-style: inherit;"> autofs</span></span>
+<span id="cb2-5"><span class="at" style="color: #657422;
 background-color: null;
-font-style: inherit;">  </span><span class="fu" style="color: #4758AB;
+font-style: inherit;">      </span><span class="kw" style="color: #003B4F;
 background-color: null;
-font-style: inherit;">register</span><span class="kw" style="color: #003B4F;
+font-style: inherit;">-</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> cifs-utils</span></span>
+<span id="cb2-6"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">      </span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">-</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> keyutils</span></span>
+<span id="cb2-7"></span>
+<span id="cb2-8"><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">-</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">name</span><span class="kw" style="color: #003B4F;
 background-color: null;
 font-style: inherit;">:</span><span class="at" style="color: #657422;
 background-color: null;
-font-style: inherit;"> intermediate_calc_group_members</span></span>
+font-style: inherit;"> Create base file share mount point</span></span>
 <span id="cb2-9"><span class="at" style="color: #657422;
 background-color: null;
 font-style: inherit;">  </span><span class="fu" style="color: #4758AB;
 background-color: null;
-font-style: inherit;">with_items</span><span class="kw" style="color: #003B4F;
+font-style: inherit;">ansible.builtin.file</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">:</span></span>
+<span id="cb2-10"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">    </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">path</span><span class="kw" style="color: #003B4F;
 background-color: null;
 font-style: inherit;">:</span><span class="at" style="color: #657422;
 background-color: null;
 font-style: inherit;"> </span><span class="st" style="color: #20794D;
 background-color: null;
-font-style: inherit;">"{{ domain_groups }}"</span></span></code></pre></div>
-<p>This first part does the actual data retrieval, everything that follows is just cleanup. For reference, the JSON I get out of this looks something like:</p>
-<div class="sourceCode" id="cb3" style="background: #f1f3f5;"><pre class="sourceCode json code-with-copy"><code class="sourceCode json"><span id="cb3-1"><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">{</span></span>
-<span id="cb3-2">            <span class="dt" style="color: #AD0000;
-background-color: null;
-font-style: inherit;">"ansible_loop_var"</span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">:</span> <span class="st" style="color: #20794D;
-background-color: null;
-font-style: inherit;">"item"</span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">,</span></span>
-<span id="cb3-3">            <span class="dt" style="color: #AD0000;
-background-color: null;
-font-style: inherit;">"changed"</span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">:</span> <span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">false</span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">,</span></span>
-<span id="cb3-4">            <span class="dt" style="color: #AD0000;
-background-color: null;
-font-style: inherit;">"failed"</span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">:</span> <span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">false</span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">,</span></span>
-<span id="cb3-5">            <span class="dt" style="color: #AD0000;
-background-color: null;
-font-style: inherit;">"invocation"</span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">:</span> <span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">{</span></span>
-<span id="cb3-6">                <span class="dt" style="color: #AD0000;
-background-color: null;
-font-style: inherit;">"module_args"</span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">:</span> <span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">{</span></span>
-<span id="cb3-7">                    <span class="dt" style="color: #AD0000;
-background-color: null;
-font-style: inherit;">"attrs"</span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">:</span> <span class="ot" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">[</span></span>
-<span id="cb3-8">                        <span class="st" style="color: #20794D;
-background-color: null;
-font-style: inherit;">"member"</span></span>
-<span id="cb3-9">                    <span class="ot" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">]</span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">,</span></span>
-<span id="cb3-10">                    <span class="dt" style="color: #AD0000;
-background-color: null;
-font-style: inherit;">"bind_dn"</span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">:</span> <span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">null</span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">,</span></span>
-<span id="cb3-11">                    <span class="dt" style="color: #AD0000;
-background-color: null;
-font-style: inherit;">"bind_pw"</span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">:</span> <span class="st" style="color: #20794D;
-background-color: null;
-font-style: inherit;">""</span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">,</span></span>
-<span id="cb3-12">                    <span class="dt" style="color: #AD0000;
-background-color: null;
-font-style: inherit;">"dn"</span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">:</span> <span class="st" style="color: #20794D;
-background-color: null;
-font-style: inherit;">"cn=group1,cn=Users,dc=EXAMPLE,dc=COM"</span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">,</span></span>
-<span id="cb3-13">                    <span class="dt" style="color: #AD0000;
-background-color: null;
-font-style: inherit;">"filter"</span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">:</span> <span class="st" style="color: #20794D;
-background-color: null;
-font-style: inherit;">"(objectClass=*)"</span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">,</span></span>
-<span id="cb3-14">                    <span class="dt" style="color: #AD0000;
-background-color: null;
-font-style: inherit;">"referrals_chasing"</span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">:</span> <span class="st" style="color: #20794D;
-background-color: null;
-font-style: inherit;">"anonymous"</span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">,</span></span>
-<span id="cb3-15">                    <span class="dt" style="color: #AD0000;
-background-color: null;
-font-style: inherit;">"sasl_class"</span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">:</span> <span class="st" style="color: #20794D;
-background-color: null;
-font-style: inherit;">"gssapi"</span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">,</span></span>
-<span id="cb3-16">                    <span class="dt" style="color: #AD0000;
-background-color: null;
-font-style: inherit;">"schema"</span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">:</span> <span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">false</span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">,</span></span>
-<span id="cb3-17">                    <span class="dt" style="color: #AD0000;
-background-color: null;
-font-style: inherit;">"scope"</span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">:</span> <span class="st" style="color: #20794D;
-background-color: null;
-font-style: inherit;">"base"</span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">,</span></span>
-<span id="cb3-18">                    <span class="dt" style="color: #AD0000;
-background-color: null;
-font-style: inherit;">"server_uri"</span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">:</span> <span class="st" style="color: #20794D;
-background-color: null;
-font-style: inherit;">"ldap://example.com"</span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">,</span></span>
-<span id="cb3-19">                    <span class="dt" style="color: #AD0000;
-background-color: null;
-font-style: inherit;">"start_tls"</span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">:</span> <span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">false</span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">,</span></span>
-<span id="cb3-20">                    <span class="dt" style="color: #AD0000;
-background-color: null;
-font-style: inherit;">"validate_certs"</span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">:</span> <span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">true</span></span>
-<span id="cb3-21">                <span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">}</span></span>
-<span id="cb3-22">            <span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">},</span></span>
-<span id="cb3-23">            <span class="dt" style="color: #AD0000;
-background-color: null;
-font-style: inherit;">"item"</span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">:</span> <span class="st" style="color: #20794D;
-background-color: null;
-font-style: inherit;">"group1"</span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">,</span></span>
-<span id="cb3-24">            <span class="dt" style="color: #AD0000;
-background-color: null;
-font-style: inherit;">"results"</span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">:</span> <span class="ot" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">[</span></span>
-<span id="cb3-25">                <span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">{</span></span>
-<span id="cb3-26">                    <span class="dt" style="color: #AD0000;
-background-color: null;
-font-style: inherit;">"dn"</span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">:</span> <span class="st" style="color: #20794D;
-background-color: null;
-font-style: inherit;">"cn=group1,cn=Users,dc=EXAMPLE,dc=COM"</span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">,</span></span>
-<span id="cb3-27">                    <span class="dt" style="color: #AD0000;
-background-color: null;
-font-style: inherit;">"member"</span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">:</span> <span class="ot" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">[</span></span>
-<span id="cb3-28">                        <span class="st" style="color: #20794D;
-background-color: null;
-font-style: inherit;">"CN=example_user,OU=Synced to Azure,OU=Example Client,OU=Example Corporate,dc=EXAMPLE,dc=COM"</span><span class="ot" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">,</span></span>
-<span id="cb3-29">                        <span class="st" style="color: #20794D;
-background-color: null;
-font-style: inherit;">"CN=example_user,OU=Synced to Azure,OU=Example Client,OU=Example Corporate,dc=EXAMPLE,dc=COM"</span><span class="ot" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">,</span></span>
-<span id="cb3-30">                        <span class="st" style="color: #20794D;
-background-color: null;
-font-style: inherit;">"CN=example_user,OU=Synced to Azure,OU=Example Client,OU=Example Corporate,dc=EXAMPLE,dc=COM"</span><span class="ot" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">,</span></span>
-<span id="cb3-31">                        <span class="st" style="color: #20794D;
-background-color: null;
-font-style: inherit;">"CN=example_user,OU=Synced to Azure,OU=Example Client,OU=Example Corporate,dc=EXAMPLE,dc=COM"</span><span class="ot" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">,</span></span>
-<span id="cb3-32">                        <span class="st" style="color: #20794D;
-background-color: null;
-font-style: inherit;">"CN=example_user,OU=Synced to Azure,OU=Example Client,OU=Example Corporate,dc=EXAMPLE,dc=COM"</span><span class="ot" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">,</span></span>
-<span id="cb3-33">                        <span class="st" style="color: #20794D;
-background-color: null;
-font-style: inherit;">"CN=example_user,OU=Synced to Azure,OU=Example Client,OU=Example Corporate,dc=EXAMPLE,dc=COM"</span><span class="ot" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">,</span></span>
-<span id="cb3-34">                        <span class="st" style="color: #20794D;
-background-color: null;
-font-style: inherit;">"CN=example_user,OU=Synced to Azure,OU=Example Client,OU=Example Corporate,dc=EXAMPLE,dc=COM"</span><span class="ot" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">,</span></span>
-<span id="cb3-35">                        <span class="st" style="color: #20794D;
-background-color: null;
-font-style: inherit;">"CN=example_user,OU=Synced to Azure,OU=Example Client,OU=Example Corporate,dc=EXAMPLE,dc=COM"</span></span>
-<span id="cb3-36">                    <span class="ot" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">]</span></span>
-<span id="cb3-37">                <span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">}</span></span>
-<span id="cb3-38">            <span class="ot" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">]</span></span>
-<span id="cb3-39">        <span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">}</span><span class="er" style="color: #AD0000;
-background-color: null;
-font-style: inherit;">,</span></span>
-<span id="cb3-40">        <span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">{</span></span>
-<span id="cb3-41">            <span class="dt" style="color: #AD0000;
-background-color: null;
-font-style: inherit;">"ansible_loop_var"</span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">:</span> <span class="st" style="color: #20794D;
-background-color: null;
-font-style: inherit;">"item"</span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">,</span></span>
-<span id="cb3-42">            <span class="dt" style="color: #AD0000;
-background-color: null;
-font-style: inherit;">"changed"</span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">:</span> <span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">false</span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">,</span></span>
-<span id="cb3-43">            <span class="dt" style="color: #AD0000;
-background-color: null;
-font-style: inherit;">"failed"</span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">:</span> <span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">false</span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">,</span></span>
-<span id="cb3-44">            <span class="dt" style="color: #AD0000;
-background-color: null;
-font-style: inherit;">"invocation"</span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">:</span> <span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">{</span></span>
-<span id="cb3-45">                <span class="dt" style="color: #AD0000;
-background-color: null;
-font-style: inherit;">"module_args"</span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">:</span> <span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">{</span></span>
-<span id="cb3-46">                    <span class="dt" style="color: #AD0000;
-background-color: null;
-font-style: inherit;">"attrs"</span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">:</span> <span class="ot" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">[</span></span>
-<span id="cb3-47">                        <span class="st" style="color: #20794D;
-background-color: null;
-font-style: inherit;">"member"</span></span>
-<span id="cb3-48">                    <span class="ot" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">]</span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">,</span></span>
-<span id="cb3-49">                    <span class="dt" style="color: #AD0000;
-background-color: null;
-font-style: inherit;">"bind_dn"</span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">:</span> <span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">null</span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">,</span></span>
-<span id="cb3-50">                    <span class="dt" style="color: #AD0000;
-background-color: null;
-font-style: inherit;">"bind_pw"</span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">:</span> <span class="st" style="color: #20794D;
-background-color: null;
-font-style: inherit;">""</span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">,</span></span>
-<span id="cb3-51">                    <span class="dt" style="color: #AD0000;
-background-color: null;
-font-style: inherit;">"dn"</span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">:</span> <span class="st" style="color: #20794D;
-background-color: null;
-font-style: inherit;">"cn=group2,cn=Users,dc=EXAMPLE,dc=COM"</span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">,</span></span>
-<span id="cb3-52">                    <span class="dt" style="color: #AD0000;
-background-color: null;
-font-style: inherit;">"filter"</span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">:</span> <span class="st" style="color: #20794D;
-background-color: null;
-font-style: inherit;">"(objectClass=*)"</span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">,</span></span>
-<span id="cb3-53">                    <span class="dt" style="color: #AD0000;
-background-color: null;
-font-style: inherit;">"referrals_chasing"</span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">:</span> <span class="st" style="color: #20794D;
-background-color: null;
-font-style: inherit;">"anonymous"</span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">,</span></span>
-<span id="cb3-54">                    <span class="dt" style="color: #AD0000;
-background-color: null;
-font-style: inherit;">"sasl_class"</span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">:</span> <span class="st" style="color: #20794D;
-background-color: null;
-font-style: inherit;">"gssapi"</span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">,</span></span>
-<span id="cb3-55">                    <span class="dt" style="color: #AD0000;
-background-color: null;
-font-style: inherit;">"schema"</span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">:</span> <span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">false</span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">,</span></span>
-<span id="cb3-56">                    <span class="dt" style="color: #AD0000;
-background-color: null;
-font-style: inherit;">"scope"</span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">:</span> <span class="st" style="color: #20794D;
-background-color: null;
-font-style: inherit;">"base"</span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">,</span></span>
-<span id="cb3-57">                    <span class="dt" style="color: #AD0000;
-background-color: null;
-font-style: inherit;">"server_uri"</span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">:</span> <span class="st" style="color: #20794D;
-background-color: null;
-font-style: inherit;">"ldap://example.com"</span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">,</span></span>
-<span id="cb3-58">                    <span class="dt" style="color: #AD0000;
-background-color: null;
-font-style: inherit;">"start_tls"</span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">:</span> <span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">false</span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">,</span></span>
-<span id="cb3-59">                    <span class="dt" style="color: #AD0000;
-background-color: null;
-font-style: inherit;">"validate_certs"</span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">:</span> <span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">true</span></span>
-<span id="cb3-60">                <span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">}</span></span>
-<span id="cb3-61">            <span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">},</span></span>
-<span id="cb3-62">            <span class="dt" style="color: #AD0000;
-background-color: null;
-font-style: inherit;">"item"</span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">:</span> <span class="st" style="color: #20794D;
-background-color: null;
-font-style: inherit;">"group2"</span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">,</span></span>
-<span id="cb3-63">            <span class="dt" style="color: #AD0000;
-background-color: null;
-font-style: inherit;">"results"</span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">:</span> <span class="ot" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">[</span></span>
-<span id="cb3-64">                <span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">{</span></span>
-<span id="cb3-65">                    <span class="dt" style="color: #AD0000;
-background-color: null;
-font-style: inherit;">"dn"</span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">:</span> <span class="st" style="color: #20794D;
-background-color: null;
-font-style: inherit;">"cn=group2,cn=Users,dc=EXAMPLE,dc=COM"</span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">,</span></span>
-<span id="cb3-66">                    <span class="dt" style="color: #AD0000;
-background-color: null;
-font-style: inherit;">"member"</span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">:</span> <span class="ot" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">[</span></span>
-<span id="cb3-67">                        <span class="st" style="color: #20794D;
-background-color: null;
-font-style: inherit;">"CN=example_user,OU=Example Clients,OU=Example Corporate,dc=EXAMPLE,dc=COM"</span><span class="ot" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">,</span></span>
-<span id="cb3-68">                        <span class="st" style="color: #20794D;
-background-color: null;
-font-style: inherit;">"CN=example_user,OU=Example Clients,OU=Example Corporate,dc=EXAMPLE,dc=COM"</span><span class="ot" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">,</span></span>
-<span id="cb3-69">                        <span class="st" style="color: #20794D;
-background-color: null;
-font-style: inherit;">"CN=example_user,OU=Example Clients,OU=Example Corporate,dc=EXAMPLE,dc=COM"</span><span class="ot" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">,</span></span>
-<span id="cb3-70">                        <span class="st" style="color: #20794D;
-background-color: null;
-font-style: inherit;">"CN=example_user,OU=Example Clients,OU=Example Corporate,dc=EXAMPLE,dc=COM"</span><span class="ot" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">,</span></span>
-<span id="cb3-71">                        <span class="st" style="color: #20794D;
-background-color: null;
-font-style: inherit;">"CN=example_user,OU=Example Clients,OU=Example Corporate,dc=EXAMPLE,dc=COM"</span><span class="ot" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">,</span></span>
-<span id="cb3-72">                        <span class="st" style="color: #20794D;
-background-color: null;
-font-style: inherit;">"CN=example_user,CN=Users,dc=EXAMPLE,dc=COM"</span><span class="ot" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">,</span></span>
-<span id="cb3-73">                        <span class="st" style="color: #20794D;
-background-color: null;
-font-style: inherit;">"CN=example_user,OU=Example Clients,OU=Example Corporate,dc=EXAMPLE,dc=COM"</span><span class="ot" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">,</span></span>
-<span id="cb3-74">                        <span class="st" style="color: #20794D;
-background-color: null;
-font-style: inherit;">"CN=example_user,OU=Example Clients,OU=Example Corporate,dc=EXAMPLE,dc=COM"</span></span>
-<span id="cb3-75">                    <span class="ot" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">]</span></span>
-<span id="cb3-76">                <span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">}</span></span>
-<span id="cb3-77">            <span class="ot" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">]</span></span>
-<span id="cb3-78">        <span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">}</span></span></code></pre></div>
-<p>In the example above I’ve replaced all the actual user names with <code>example_user</code> but you can see that the information I want to assemble (the usernames and which group each of them is in) is surrounded by a lot of extraneous data and text.</p>
-<div class="sourceCode" id="cb4" style="background: #f1f3f5;"><pre class="sourceCode yml code-with-copy"><code class="sourceCode yaml"><span id="cb4-1"><span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">-</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">name</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">:</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> Get group and member list</span></span>
-<span id="cb4-2"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">  </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">set_fact</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">:</span></span>
-<span id="cb4-3"><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">    intermediate_calc_users</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">: </span><span class="ch" style="color: #20794D;
-background-color: null;
-font-style: inherit;">&gt;-</span></span>
-<span id="cb4-4">      {%- set result = [] -%}</span>
-<span id="cb4-5">      {%- for play_dict in intermediate_calc_group_members.results -%}</span>
-<span id="cb4-6">        {%- for user in play_dict['results'][0]['member'] -%}</span>
-<span id="cb4-7">          {%- set clean_user = user | regex_search('^CN=(\\w\\d+),.+', '\\1') | first | lower -%}</span>
-<span id="cb4-8">          {{</span>
-<span id="cb4-9">            result.append({'group': play_dict['item'], 'id': clean_user, 'user': clean_user + "@EXAMPLE.COM"})</span>
-<span id="cb4-10">          }}</span>
-<span id="cb4-11">        {%- endfor -%}</span>
-<span id="cb4-12">      {%- endfor -%}</span>
-<span id="cb4-13">      {{ result | to_json | from_json }}</span></code></pre></div>
-<p>Some parts of this are witchcraft to me. I don’t really know why I have to pipe my result to json and then back from json. It’s doing something to clean up my variables in such a way that subsequent steps can understand it, but as for why I’m not really sure. I got a lot of the structure of this variable construction from <a href="https://stackoverflow.com/questions/58727924/convert-nested-list-of-dicts-to-dict-in-ansible">this post</a>.</p>
-<p>The regex I’m using in this particular case is based on the fact that all the user IDs I’m working with are in the format of one letter followed by several numbers. If your user IDs are more heterogeneous you’ll have to mess with the regext to get just the username out of that part of the output that looks something like:</p>
-<div class="sourceCode" id="cb5" style="background: #f1f3f5;"><pre class="sourceCode json code-with-copy"><code class="sourceCode json"><span id="cb5-1"><span class="er" style="color: #AD0000;
-background-color: null;
-font-style: inherit;">"CN=example_user,OU=Example</span> <span class="er" style="color: #AD0000;
-background-color: null;
-font-style: inherit;">Clients,OU=Example</span> <span class="er" style="color: #AD0000;
-background-color: null;
-font-style: inherit;">Corporate,dc=EXAMPLE,dc=COM"</span></span></code></pre></div>
-<p>At the end of this step I have a list of dictionaries with one entry per user with keys for their AD group, just their username, and their username with the domain appended.</p>
-<p>Note that this step will fail if you pull an AD group that only has one member, because the <code>member</code> item in the dictionary will go from being a list to a string. I didn’t specifically have to deal with that in my use case, but it would be more robust to do something like putting <code>play_dict['results'][0]['member']</code> in a list and then flattening that list so you always got a list back.</p>
-<div class="sourceCode" id="cb6" style="background: #f1f3f5;"><pre class="sourceCode yml code-with-copy"><code class="sourceCode yaml"><span id="cb6-1"><span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">-</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">name</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">:</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> Register getent results so I can retrieve UIDs</span></span>
-<span id="cb6-2"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">  </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">ansible.builtin.getent</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">:</span></span>
-<span id="cb6-3"><span class="at" style="color: #657422;
+font-style: inherit;">"/mnt/{{ item.user }}"</span></span>
+<span id="cb2-11"><span class="at" style="color: #657422;
 background-color: null;
 font-style: inherit;">    </span><span class="fu" style="color: #4758AB;
 background-color: null;
-font-style: inherit;">database</span><span class="kw" style="color: #003B4F;
+font-style: inherit;">state</span><span class="kw" style="color: #003B4F;
 background-color: null;
 font-style: inherit;">:</span><span class="at" style="color: #657422;
 background-color: null;
-font-style: inherit;"> passwd</span></span>
-<span id="cb6-4"><span class="at" style="color: #657422;
+font-style: inherit;"> directory</span></span>
+<span id="cb2-12"><span class="at" style="color: #657422;
 background-color: null;
 font-style: inherit;">    </span><span class="fu" style="color: #4758AB;
 background-color: null;
-font-style: inherit;">key</span><span class="kw" style="color: #003B4F;
+font-style: inherit;">owner</span><span class="kw" style="color: #003B4F;
 background-color: null;
 font-style: inherit;">:</span><span class="at" style="color: #657422;
 background-color: null;
 font-style: inherit;"> </span><span class="st" style="color: #20794D;
 background-color: null;
 font-style: inherit;">"{{ item.user }}"</span></span>
-<span id="cb6-5"><span class="at" style="color: #657422;
+<span id="cb2-13"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">    </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">group</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">:</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> </span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"domain users@example.com"</span></span>
+<span id="cb2-14"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">    </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">mode</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">:</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> </span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"0700"</span></span>
+<span id="cb2-15"><span class="at" style="color: #657422;
 background-color: null;
 font-style: inherit;">  </span><span class="fu" style="color: #4758AB;
 background-color: null;
@@ -3142,18 +3586,9 @@ font-style: inherit;">:</span><span class="at" style="color: #657422;
 background-color: null;
 font-style: inherit;"> </span><span class="st" style="color: #20794D;
 background-color: null;
-font-style: inherit;">"{{ intermediate_calc_users }}"</span></span>
-<span id="cb6-6"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">  </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">register</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">:</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> intermediate_calc_getent</span></span></code></pre></div>
-<p>For my particular use case in addition to the usernames I also needed the UIDs of each user, so in this step I use ansible’s built in <code>getent</code> module and the dictionary I created above in the last step to return the entry in <code>/etc/passwd</code> for each user, which will include their UID.</p>
-<div class="sourceCode" id="cb7" style="background: #f1f3f5;"><pre class="sourceCode yml code-with-copy"><code class="sourceCode yaml"><span id="cb7-1"><span class="kw" style="color: #003B4F;
+font-style: inherit;">"{{ users_dict }}"</span></span>
+<span id="cb2-16"></span>
+<span id="cb2-17"><span class="kw" style="color: #003B4F;
 background-color: null;
 font-style: inherit;">-</span><span class="at" style="color: #657422;
 background-color: null;
@@ -3163,30 +3598,49 @@ font-style: inherit;">name</span><span class="kw" style="color: #003B4F;
 background-color: null;
 font-style: inherit;">:</span><span class="at" style="color: #657422;
 background-color: null;
-font-style: inherit;"> Cleanup getent results</span></span>
-<span id="cb7-2"><span class="at" style="color: #657422;
+font-style: inherit;"> Start and enable the autofs service</span></span>
+<span id="cb2-18"><span class="at" style="color: #657422;
 background-color: null;
 font-style: inherit;">  </span><span class="fu" style="color: #4758AB;
 background-color: null;
-font-style: inherit;">set_fact</span><span class="kw" style="color: #003B4F;
+font-style: inherit;">ansible.builtin.systemd</span><span class="kw" style="color: #003B4F;
 background-color: null;
 font-style: inherit;">:</span></span>
-<span id="cb7-3"><span class="fu" style="color: #4758AB;
+<span id="cb2-19"><span class="at" style="color: #657422;
 background-color: null;
-font-style: inherit;">    intermediate_calc_getent_clean</span><span class="kw" style="color: #003B4F;
+font-style: inherit;">    </span><span class="fu" style="color: #4758AB;
 background-color: null;
-font-style: inherit;">: </span><span class="ch" style="color: #20794D;
+font-style: inherit;">name</span><span class="kw" style="color: #003B4F;
 background-color: null;
-font-style: inherit;">&gt;-</span></span>
-<span id="cb7-4">      {%- set result = [] -%}</span>
-<span id="cb7-5">      {%- for play_dict in intermediate_calc_getent.results -%}</span>
-<span id="cb7-6">        {%- set getent_passwd = play_dict['ansible_facts']['getent_passwd'] -%}</span>
-<span id="cb7-7">        {%- set key = getent_passwd.keys() | first -%}</span>
-<span id="cb7-8">        {{ result.append({'key': key,'value': getent_passwd[key][1]}) }}</span>
-<span id="cb7-9">      {%- endfor -%}</span>
-<span id="cb7-10">      {{ result | items2dict | to_json | from_json }}</span></code></pre></div>
-<p>Again, this step is a bit of black magic, just messing around with the output of the last step (ansible’s debug is your friend for this) and fiddling with it until I have a list of dictionaries with one item where the key is the username and the value is their UID.</p>
-<div class="sourceCode" id="cb8" style="background: #f1f3f5;"><pre class="sourceCode yml code-with-copy"><code class="sourceCode yaml"><span id="cb8-1"><span class="kw" style="color: #003B4F;
+font-style: inherit;">:</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> autofs</span></span>
+<span id="cb2-20"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">    </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">state</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">:</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> started</span></span>
+<span id="cb2-21"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">    </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">enabled</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">:</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> </span><span class="ch" style="color: #20794D;
+background-color: null;
+font-style: inherit;">true</span></span></code></pre></div>
+<p>Where <code>users_dict</code> looks like what I created in <a href="../posts/2023-06-04-ansible-ad-users.html">this post</a>. You will also have to modify the <code>group</code> variable to be appropriate for your environment.</p>
+<p>I actually have the autofs service start task at the bottom of this play in my case, but thematically it makes more sense here.</p>
+</section>
+<section id="populate-auto.master" class="level1">
+<h1>Populate auto.master</h1>
+<div class="sourceCode" id="cb3" style="background: #f1f3f5;"><pre class="sourceCode yml code-with-copy"><code class="sourceCode yaml"><span id="cb3-1"><span class="kw" style="color: #003B4F;
 background-color: null;
 font-style: inherit;">-</span><span class="at" style="color: #657422;
 background-color: null;
@@ -3196,31 +3650,159 @@ font-style: inherit;">name</span><span class="kw" style="color: #003B4F;
 background-color: null;
 font-style: inherit;">:</span><span class="at" style="color: #657422;
 background-color: null;
-font-style: inherit;"> Create final list of dicts for all users</span></span>
-<span id="cb8-2"><span class="at" style="color: #657422;
+font-style: inherit;"> populate auto.master with entries for each users' configs</span></span>
+<span id="cb3-2"><span class="at" style="color: #657422;
 background-color: null;
 font-style: inherit;">  </span><span class="fu" style="color: #4758AB;
 background-color: null;
-font-style: inherit;">set_fact</span><span class="kw" style="color: #003B4F;
+font-style: inherit;">ansible.builtin.template</span><span class="kw" style="color: #003B4F;
 background-color: null;
 font-style: inherit;">:</span></span>
-<span id="cb8-3"><span class="fu" style="color: #4758AB;
+<span id="cb3-3"><span class="at" style="color: #657422;
 background-color: null;
-font-style: inherit;">    users_dict</span><span class="kw" style="color: #003B4F;
+font-style: inherit;">    </span><span class="fu" style="color: #4758AB;
 background-color: null;
-font-style: inherit;">: </span><span class="ch" style="color: #20794D;
+font-style: inherit;">src</span><span class="kw" style="color: #003B4F;
 background-color: null;
-font-style: inherit;">&gt;-</span></span>
-<span id="cb8-4">      {%- set result = [] -%}</span>
-<span id="cb8-5">      {%- for user in intermediate_calc_users -%}</span>
-<span id="cb8-6">        {{ result.append({'group': user['group'], 'user': user['user'], 'user': user['user'], 'uid': intermediate_calc_getent_clean[user['user']]})}}</span>
-<span id="cb8-7">      {%- endfor -%}</span>
-<span id="cb8-8">      {{ result | to_json | from_json }}</span></code></pre></div>
-<p>Now all I have to do is combine those two dictionaries together into one. This part is pretty self explanatory except for that <code>to_json | from_json</code> bit at the bottom.</p>
+font-style: inherit;">:</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> auto.master.j2</span></span>
+<span id="cb3-4"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">    </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">dest</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">:</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> /etc/auto.master</span></span>
+<span id="cb3-5"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">    </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">owner</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">:</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> root</span></span>
+<span id="cb3-6"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">    </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">group</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">:</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> root</span></span>
+<span id="cb3-7"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">    </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">mode</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">:</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> </span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">'0644'</span></span></code></pre></div>
+<p>Each user needs an entry in <code>/etc/auto.master</code> that points to a config file (which we’ll set in the next phase) with all their specific mount points. Using the template task and the template below we can accomplish this:</p>
+<pre class="jinja"><code># {{ ansible_managed }}
+{% for user in users_dict %}
+/mnt/{{ user.user }} /etc/auto.sambashares-{{ user.user }} --timeout=30 --ghost
+{% endfor %}</code></pre>
+<p>Each user gets a point below the <code>/mnt/&lt;user&gt;</code> folder we created in the basic setup, we point to a config file for them, set a timeout so the fileshare will not stay connected if users aren’t using it and then we add the <code>--ghost</code> flag so that all mount points get a directory created, even if they’re not currently attached. See <a href="https://learn.redhat.com/t5/Platform-Linux/Halloween-tip-of-the-day-Using-autofs-with-the-ghost-option/td-p/2326">here</a> for further docs.</p>
+</section>
+<section id="populate-user-level-share-specs" class="level1">
+<h1>Populate user level share specs</h1>
+<div class="sourceCode" id="cb5" style="background: #f1f3f5;"><pre class="sourceCode yml code-with-copy"><code class="sourceCode yaml"><span id="cb5-1"><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">-</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">name</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">:</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> Populate user specific share mounts</span></span>
+<span id="cb5-2"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">  </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">ansible.builtin.template</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">:</span></span>
+<span id="cb5-3"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">    </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">src</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">:</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> auto.sambashares.j2</span></span>
+<span id="cb5-4"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">    </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">dest</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">:</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> </span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"/etc/auto.sambashares-{{ item.user }}"</span></span>
+<span id="cb5-5"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">    </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">owner</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">:</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> root</span></span>
+<span id="cb5-6"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">    </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">group</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">:</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> root</span></span>
+<span id="cb5-7"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">    </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">mode</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">:</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> </span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">'0644'</span></span>
+<span id="cb5-8"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">  </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">with_items</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">:</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> </span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"{{ users_dict }}"</span></span></code></pre></div>
+<p>Again we’re populating a template, but this time we’re doing one for each user. As with above, most of the magic happens in the template itself:</p>
+<pre class="jinja"><code># {{ ansible_managed }}
+{% set shares = lookup('vars', item.group | replace('-', '_')) %}
+{% for share in shares %}
+{{ share.local_share_name }} -fstype=cifs,rw,sec=krb5,uid=${UID},cruid=${UID} :{{ share.full_share_path }}
+{% endfor %}</code></pre>
+<p>The <code>replace</code> step is because a lot of the groups I was using had a <code>-</code> in their name, which you can’t have in an ansible variable so I map the <code>-</code> to an <code>_</code>. We can then use that to refer to the variable described at the top of this post for whichever group the particular user happens to be in. Then we just iterate through all the shares defined and create a folder under <code>/mnt/&lt;user&gt;/&lt;local_share_name&gt;</code> that maps to <code>full_share_path</code> and will be authorized with kerberos.</p>
 </section>
 <section id="conclusion" class="level1">
 <h1>Conclusion</h1>
-<p>If you work with Linux systems where users are managed by AD (or probably other LDAP providers, but I’m using AD in this example) then this is a handy trick to get a fact in your playbook with basic information about those users.</p>
+<p>Autofs and ansible are a pretty nice way to set up a bunch of users with consistent file shares securely on a shared host or multiple hosts.</p>
 
 
 </section>
@@ -3228,7 +3810,7 @@ font-style: inherit;">&gt;-</span></span>
  ]]></description>
   <category>ansible</category>
   <category>Linux</category>
-  <guid>https://blog.ianpreston.ca/posts/2023-06-04-ansible-ad-users.html</guid>
+  <guid>https://blog.ianpreston.ca/posts/2023-06-04-ansible-autofs.html</guid>
   <pubDate>Sun, 04 Jun 2023 00:00:00 GMT</pubDate>
 </item>
 <item>
@@ -3747,464 +4329,6 @@ font-style: inherit;">'no-cgroups = true'</span></span></code></pre></div>
   <category>Linux</category>
   <category>nvidia</category>
   <guid>https://blog.ianpreston.ca/posts/2023-06-04-nvidia-notes.html</guid>
-  <pubDate>Sun, 04 Jun 2023 00:00:00 GMT</pubDate>
-</item>
-<item>
-  <title>Configuring autofs for CIFS mounts with ansible</title>
-  <link>https://blog.ianpreston.ca/posts/2023-06-04-ansible-autofs.html</link>
-  <description><![CDATA[ 
-
-
-
-
-<section id="introduction" class="level1">
-<h1>Introduction</h1>
-<p>This guide shows how to set up user isolated mounts of CIFS (samba) network shares on a shared linux VM. Each user will get folders under <code>/mnt/&lt;user&gt;</code> that they authenticate to using kerberos. In this document I’m assuming that users are members of a group and that each group all should have access to the same shares. We’ll further assume you’ve got a fact set in your playbook that maps each user to their corresponding group. If you need guidance on that you can see <a href="../posts/2023-06-04-ansible-ad-users.html">this post</a>.</p>
-<p>This is a nice way of attaching file shares because it ensures users don’t need elevated privileges to access file shares (although an administrator has to configure it for them) and that creating a share for one user doesn’t inadvertently expose it to others. For a fully user level way of attaching file shares you can use <a href="https://man.archlinux.org/man/gio.1">gio</a> but I found it extremely flaky and annoying to use, so if you can handle having an administrator configure the share mount points for users I would recommend this approach.</p>
-</section>
-<section id="variable-format" class="level1">
-<h1>Variable format</h1>
-<p>Somewhere in your playbook (in my case I set it in the variables folder of the role I was using, but putting in as a host variable or somewhere else may be more appropriate for your use case) we need a variable for each group that contains a list of associated shares. Something like this:</p>
-<div class="sourceCode" id="cb1" style="background: #f1f3f5;"><pre class="sourceCode yml code-with-copy"><code class="sourceCode yaml"><span id="cb1-1"><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">example_group1</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">:</span></span>
-<span id="cb1-2"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">  </span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">-</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">local_share_name</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">:</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> share1</span></span>
-<span id="cb1-3"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">    </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">full_share_path</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">:</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> </span><span class="st" style="color: #20794D;
-background-color: null;
-font-style: inherit;">"//fileshare.example.com/share1"</span></span>
-<span id="cb1-4"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">  </span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">-</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">local_share_name</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">:</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> share2</span></span>
-<span id="cb1-5"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">    </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">full_share_path</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">:</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> </span><span class="st" style="color: #20794D;
-background-color: null;
-font-style: inherit;">"//fileshare.example.com/share2"</span></span>
-<span id="cb1-6"></span>
-<span id="cb1-7"><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">example_group2</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">:</span></span>
-<span id="cb1-8"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">  </span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">-</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">local_share_name</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">:</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> share3</span></span>
-<span id="cb1-9"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">    </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">full_share_path</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">:</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> </span><span class="st" style="color: #20794D;
-background-color: null;
-font-style: inherit;">"//fileshare.example.com/share3"</span></span></code></pre></div>
-</section>
-<section id="basic-setup" class="level1">
-<h1>Basic setup</h1>
-<p>In this stage we will ensure pre-requisite software is installed on the host (assuming Ubuntu here, you will have to modify for other distros), and that the mount point folder for each user has been created:</p>
-<div class="sourceCode" id="cb2" style="background: #f1f3f5;"><pre class="sourceCode yml code-with-copy"><code class="sourceCode yaml"><span id="cb2-1"><span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">-</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">name</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">:</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> Install autofs</span></span>
-<span id="cb2-2"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">  </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">ansible.builtin.apt</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">:</span></span>
-<span id="cb2-3"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">    </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">pkg</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">:</span></span>
-<span id="cb2-4"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">      </span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">-</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> autofs</span></span>
-<span id="cb2-5"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">      </span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">-</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> cifs-utils</span></span>
-<span id="cb2-6"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">      </span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">-</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> keyutils</span></span>
-<span id="cb2-7"></span>
-<span id="cb2-8"><span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">-</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">name</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">:</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> Create base file share mount point</span></span>
-<span id="cb2-9"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">  </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">ansible.builtin.file</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">:</span></span>
-<span id="cb2-10"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">    </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">path</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">:</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> </span><span class="st" style="color: #20794D;
-background-color: null;
-font-style: inherit;">"/mnt/{{ item.user }}"</span></span>
-<span id="cb2-11"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">    </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">state</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">:</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> directory</span></span>
-<span id="cb2-12"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">    </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">owner</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">:</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> </span><span class="st" style="color: #20794D;
-background-color: null;
-font-style: inherit;">"{{ item.user }}"</span></span>
-<span id="cb2-13"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">    </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">group</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">:</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> </span><span class="st" style="color: #20794D;
-background-color: null;
-font-style: inherit;">"domain users@example.com"</span></span>
-<span id="cb2-14"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">    </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">mode</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">:</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> </span><span class="st" style="color: #20794D;
-background-color: null;
-font-style: inherit;">"0700"</span></span>
-<span id="cb2-15"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">  </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">with_items</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">:</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> </span><span class="st" style="color: #20794D;
-background-color: null;
-font-style: inherit;">"{{ users_dict }}"</span></span>
-<span id="cb2-16"></span>
-<span id="cb2-17"><span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">-</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">name</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">:</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> Start and enable the autofs service</span></span>
-<span id="cb2-18"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">  </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">ansible.builtin.systemd</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">:</span></span>
-<span id="cb2-19"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">    </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">name</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">:</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> autofs</span></span>
-<span id="cb2-20"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">    </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">state</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">:</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> started</span></span>
-<span id="cb2-21"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">    </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">enabled</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">:</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> </span><span class="ch" style="color: #20794D;
-background-color: null;
-font-style: inherit;">true</span></span></code></pre></div>
-<p>Where <code>users_dict</code> looks like what I created in <a href="../posts/2023-06-04-ansible-ad-users.html">this post</a>. You will also have to modify the <code>group</code> variable to be appropriate for your environment.</p>
-<p>I actually have the autofs service start task at the bottom of this play in my case, but thematically it makes more sense here.</p>
-</section>
-<section id="populate-auto.master" class="level1">
-<h1>Populate auto.master</h1>
-<div class="sourceCode" id="cb3" style="background: #f1f3f5;"><pre class="sourceCode yml code-with-copy"><code class="sourceCode yaml"><span id="cb3-1"><span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">-</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">name</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">:</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> populate auto.master with entries for each users' configs</span></span>
-<span id="cb3-2"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">  </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">ansible.builtin.template</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">:</span></span>
-<span id="cb3-3"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">    </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">src</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">:</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> auto.master.j2</span></span>
-<span id="cb3-4"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">    </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">dest</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">:</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> /etc/auto.master</span></span>
-<span id="cb3-5"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">    </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">owner</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">:</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> root</span></span>
-<span id="cb3-6"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">    </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">group</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">:</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> root</span></span>
-<span id="cb3-7"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">    </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">mode</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">:</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> </span><span class="st" style="color: #20794D;
-background-color: null;
-font-style: inherit;">'0644'</span></span></code></pre></div>
-<p>Each user needs an entry in <code>/etc/auto.master</code> that points to a config file (which we’ll set in the next phase) with all their specific mount points. Using the template task and the template below we can accomplish this:</p>
-<pre class="jinja"><code># {{ ansible_managed }}
-{% for user in users_dict %}
-/mnt/{{ user.user }} /etc/auto.sambashares-{{ user.user }} --timeout=30 --ghost
-{% endfor %}</code></pre>
-<p>Each user gets a point below the <code>/mnt/&lt;user&gt;</code> folder we created in the basic setup, we point to a config file for them, set a timeout so the fileshare will not stay connected if users aren’t using it and then we add the <code>--ghost</code> flag so that all mount points get a directory created, even if they’re not currently attached. See <a href="https://learn.redhat.com/t5/Platform-Linux/Halloween-tip-of-the-day-Using-autofs-with-the-ghost-option/td-p/2326">here</a> for further docs.</p>
-</section>
-<section id="populate-user-level-share-specs" class="level1">
-<h1>Populate user level share specs</h1>
-<div class="sourceCode" id="cb5" style="background: #f1f3f5;"><pre class="sourceCode yml code-with-copy"><code class="sourceCode yaml"><span id="cb5-1"><span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">-</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">name</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">:</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> Populate user specific share mounts</span></span>
-<span id="cb5-2"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">  </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">ansible.builtin.template</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">:</span></span>
-<span id="cb5-3"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">    </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">src</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">:</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> auto.sambashares.j2</span></span>
-<span id="cb5-4"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">    </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">dest</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">:</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> </span><span class="st" style="color: #20794D;
-background-color: null;
-font-style: inherit;">"/etc/auto.sambashares-{{ item.user }}"</span></span>
-<span id="cb5-5"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">    </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">owner</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">:</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> root</span></span>
-<span id="cb5-6"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">    </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">group</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">:</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> root</span></span>
-<span id="cb5-7"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">    </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">mode</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">:</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> </span><span class="st" style="color: #20794D;
-background-color: null;
-font-style: inherit;">'0644'</span></span>
-<span id="cb5-8"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">  </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">with_items</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">:</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> </span><span class="st" style="color: #20794D;
-background-color: null;
-font-style: inherit;">"{{ users_dict }}"</span></span></code></pre></div>
-<p>Again we’re populating a template, but this time we’re doing one for each user. As with above, most of the magic happens in the template itself:</p>
-<pre class="jinja"><code># {{ ansible_managed }}
-{% set shares = lookup('vars', item.group | replace('-', '_')) %}
-{% for share in shares %}
-{{ share.local_share_name }} -fstype=cifs,rw,sec=krb5,uid=${UID},cruid=${UID} :{{ share.full_share_path }}
-{% endfor %}</code></pre>
-<p>The <code>replace</code> step is because a lot of the groups I was using had a <code>-</code> in their name, which you can’t have in an ansible variable so I map the <code>-</code> to an <code>_</code>. We can then use that to refer to the variable described at the top of this post for whichever group the particular user happens to be in. Then we just iterate through all the shares defined and create a folder under <code>/mnt/&lt;user&gt;/&lt;local_share_name&gt;</code> that maps to <code>full_share_path</code> and will be authorized with kerberos.</p>
-</section>
-<section id="conclusion" class="level1">
-<h1>Conclusion</h1>
-<p>Autofs and ansible are a pretty nice way to set up a bunch of users with consistent file shares securely on a shared host or multiple hosts.</p>
-
-
-</section>
-
- ]]></description>
-  <category>ansible</category>
-  <category>Linux</category>
-  <guid>https://blog.ianpreston.ca/posts/2023-06-04-ansible-autofs.html</guid>
   <pubDate>Sun, 04 Jun 2023 00:00:00 GMT</pubDate>
 </item>
 <item>
@@ -9489,6 +9613,45 @@ font-style: inherit;">))</span></span></code></pre></div>
   <pubDate>Sat, 31 Dec 2022 00:00:00 GMT</pubDate>
 </item>
 <item>
+  <title>Building my own devcontainers</title>
+  <link>https://blog.ianpreston.ca/posts/2022-12-30-devcontainers.html</link>
+  <description><![CDATA[ 
+
+
+
+
+<section id="introduction" class="level1">
+<h1>Introduction</h1>
+<p>Microsoft has created the <a href="https://code.visualstudio.com/docs/devcontainers/containers">devcontainer</a> standard for packaging up your development environment into a docker image and I love it.</p>
+<p>Even though I have a fairly automated environment setup at home, it’s still a hassle whenever I want to start a new project or pick up an old one to make sure I have all the dependencies in place. It’s even trickier if I’m trying to help another person contribute to a project of mine. Devcontainers solve both these issues. Microsoft publishes a number of out of the box images and templates in their GitHub <a href="https://github.com/devcontainers">devcontainers project</a>.</p>
+<p>These work quite well, but I’m picky and want things set up in a certain way. For instance, I want <a href="https://github.com/thoughtbot/rcm">rcm</a> installed for dotfile management, and <a href="https://starship.rs/">starship prompt</a> in any environment I work in. On top of that, for python development I like the <a href="https://cjolowicz.github.io/posts/hypermodern-python-01-setup/">hypermodern</a> suite of tools to be installed. It would be relatively easy to make a dockerfile that has these features installed and put it in every project, but I want to overengineer things. This isn’t entirely just me liking to hack on things. The build time for my python environment is actually quite long thanks to compiling several different versions of python, so while a Dockerfile would work, it would be annoying to maintain and take quite a while to build.</p>
+<p>In light of this, I decided to make my own copy of the <a href="https://github.com/devcontainers/images">images repository</a> that Microsoft uses to build their devcontainers and make my own. This post chronicles some of the challenges I had doing that.</p>
+</section>
+<section id="figuring-out-the-code" class="level1">
+<h1>Figuring out the code</h1>
+<p>To start I just copied the entire <a href="https://github.com/devcontainers/images">images</a> repository and poked around. It’s a beast of a repo (at least compared to the personal or small organization projects I’m used to working on) so it took quite a while just to get a sense of what was there. At a high level there’s a <code>.github</code> folder which contains the CI/CD workflows, a <code>build</code> folder that contains node scripts that build the images, and a <code>src</code> folder that contains the devcontainer specs. I started by deleting all but the <code>base-ubuntu</code> image from <code>src</code> so I could focus on getting one container built without extensive build times. After that I tried to get the build script working locally. Fortunately there are pretty good README files included in each section of the codebase, so I could get a general sense of what was going on.</p>
+<p>The next two difficult parts that went together were figuring out how to navigate and understand the node codebase, since I’ve never written node or any javascript before, and figuring out what I’d need to modify to get things working in my repository. Some things were relatively straightforward, like the GitHub actions were calling for secrets like <code>REPOSITORY_NAME</code> and <code>REPOSITORY_SECRET</code> that I’d have to swap out for my image registry name and credentials. Once I got past that surface level understanding though, it got trickier. One fairly easy example was that the original GitHub action wanted to be run on some custom Microsoft <code>devcontainer-image-builder-ubuntu</code> VM that I didn’t have access to. It seemed to work fine if I changed that to <code>ubuntu-latest</code>, I just had to notice the issue and change it. Other things were more embedded. Microsoft is publishing their images to <a href="https://azure.microsoft.com/en-us/products/container-registry/">Azure container registry</a> whereas I want to use <a href="https://hub.docker.com/">Docker hub</a>. Again, some of this was as simple as switching out <code>az login</code> with <code>docker login</code> in the scripts, but some of it was a little more complicated. Part of the node code queries the registry to see what images are there and what tags they have to make sure published image tags aren’t overwritten accidentally. This is a great feature, but it relied heavily on calling the <code>acr</code> command prompt to retrieve that info. I had to find those sections in the code, figure out what sort of data they’d be returning, figure out what request to send to the docker hub API to get similar data, and then modify the node code to parse it the same way. Since I’d never worked with the docker hub API, or node, or seen the actual output of the <code>acr</code> commands I was trying to reproduce, this took some trial and error.</p>
+<p>An additional challenge was separating out the nice features of the Microsoft code base from the stuff that I didn’t want and that just made things more complicated. The two main things in the latter category were the secondary registry logic and the stubs repository logic. In both cases, Microsoft is publishing lots of extra stuff besides the built devcontainer image, either because they have two repositories to publish to (I think this relates to them moving the devcontainer spec outside of VS Code into its own project) or they want to publish stub files that other developers can extend for their own purposes. Neither applies to me, but since that logic is embedded in the GitHub actions and the node code that publishes regular images I had to find and strip out all that logic before I could publish my own images.</p>
+</section>
+<section id="building-my-own-devcontainers" class="level1">
+<h1>Building my own devcontainers</h1>
+<p>Prior to going to all the trouble of setting up this build infrastructure, I’d already spent quite a bit of time building devcontainer images, primarily for python. In light of that, once I got the build infrastructure going it wasn’t a huge leap to get my own devcontainers building. There were some growing pains though. The Microsoft image builder builds multiple variants of images, namely basing them off different Ubuntu releases or architectures (x86/64 vs arm). I definitely ran into situations where things seemed to be building fine but then I realized some combo of release and architecture was failing and stopping the whole pipeline from completing. There are ways to test those things locally in the repository, but I didn’t have any comprehensive workflow set up so it was easy to miss things. Some stuff I just didn’t bother fixing and removed the troublesome build. For instance, there were a fair number of issues building images based on Ubuntu 18.04LTS (one of the default variants from Microsoft) and I just decided there was no point spending time fixing issues with a release that was about to be EOL from Ubuntu and just dropped it. Similarly, my Infrastructure as Code image didn’t want to install Terraform on the arm build. I’m not currently planning to run that on an arm system so I just dropped it, maybe I’ll put it back later if I want to run it off a raspberry pi but for now it’s not worth the effort.</p>
+</section>
+<section id="conclusion" class="level1">
+<h1>Conclusion</h1>
+<p>This was quite likely more effort than it was objectively worth compared to just building an image and pushing it manually with some tags using the <a href="https://containers.dev/supporting#devcontainer-cli">devcontainer cli</a> at least for my personal projects. I did learn a fair bit going through the exercise though, and since I also intend to adopt devcontainers at work (for myself and other people writing at least python code) knowing how to build images in a more automated and versioned manner will be useful.</p>
+<p>My repository is <a href="https://github.com/ianepreston/devcontainers">here</a>, the original Microsoft one is <a href="https://github.com/devcontainers/images">here</a>. My repo is definitely a bit of a mess with ugly commits just testing out CI/CD outcomes and a lot of failed releases since I’d never used GitHub directly to release software before, but that’s all part of the learning experience.</p>
+
+
+</section>
+
+ ]]></description>
+  <category>configuration</category>
+  <category>linux</category>
+  <guid>https://blog.ianpreston.ca/posts/2022-12-30-devcontainers.html</guid>
+  <pubDate>Fri, 30 Dec 2022 00:00:00 GMT</pubDate>
+</item>
+<item>
   <title>Setting up rootless docker</title>
   <link>https://blog.ianpreston.ca/posts/2022-12-30-rootless-docker.html</link>
   <description><![CDATA[ 
@@ -9714,45 +9877,6 @@ font-style: inherit;">docker</span> run hello-world</span></code></pre></div>
   <category>configuration</category>
   <category>linux</category>
   <guid>https://blog.ianpreston.ca/posts/2022-12-30-rootless-docker.html</guid>
-  <pubDate>Fri, 30 Dec 2022 00:00:00 GMT</pubDate>
-</item>
-<item>
-  <title>Building my own devcontainers</title>
-  <link>https://blog.ianpreston.ca/posts/2022-12-30-devcontainers.html</link>
-  <description><![CDATA[ 
-
-
-
-
-<section id="introduction" class="level1">
-<h1>Introduction</h1>
-<p>Microsoft has created the <a href="https://code.visualstudio.com/docs/devcontainers/containers">devcontainer</a> standard for packaging up your development environment into a docker image and I love it.</p>
-<p>Even though I have a fairly automated environment setup at home, it’s still a hassle whenever I want to start a new project or pick up an old one to make sure I have all the dependencies in place. It’s even trickier if I’m trying to help another person contribute to a project of mine. Devcontainers solve both these issues. Microsoft publishes a number of out of the box images and templates in their GitHub <a href="https://github.com/devcontainers">devcontainers project</a>.</p>
-<p>These work quite well, but I’m picky and want things set up in a certain way. For instance, I want <a href="https://github.com/thoughtbot/rcm">rcm</a> installed for dotfile management, and <a href="https://starship.rs/">starship prompt</a> in any environment I work in. On top of that, for python development I like the <a href="https://cjolowicz.github.io/posts/hypermodern-python-01-setup/">hypermodern</a> suite of tools to be installed. It would be relatively easy to make a dockerfile that has these features installed and put it in every project, but I want to overengineer things. This isn’t entirely just me liking to hack on things. The build time for my python environment is actually quite long thanks to compiling several different versions of python, so while a Dockerfile would work, it would be annoying to maintain and take quite a while to build.</p>
-<p>In light of this, I decided to make my own copy of the <a href="https://github.com/devcontainers/images">images repository</a> that Microsoft uses to build their devcontainers and make my own. This post chronicles some of the challenges I had doing that.</p>
-</section>
-<section id="figuring-out-the-code" class="level1">
-<h1>Figuring out the code</h1>
-<p>To start I just copied the entire <a href="https://github.com/devcontainers/images">images</a> repository and poked around. It’s a beast of a repo (at least compared to the personal or small organization projects I’m used to working on) so it took quite a while just to get a sense of what was there. At a high level there’s a <code>.github</code> folder which contains the CI/CD workflows, a <code>build</code> folder that contains node scripts that build the images, and a <code>src</code> folder that contains the devcontainer specs. I started by deleting all but the <code>base-ubuntu</code> image from <code>src</code> so I could focus on getting one container built without extensive build times. After that I tried to get the build script working locally. Fortunately there are pretty good README files included in each section of the codebase, so I could get a general sense of what was going on.</p>
-<p>The next two difficult parts that went together were figuring out how to navigate and understand the node codebase, since I’ve never written node or any javascript before, and figuring out what I’d need to modify to get things working in my repository. Some things were relatively straightforward, like the GitHub actions were calling for secrets like <code>REPOSITORY_NAME</code> and <code>REPOSITORY_SECRET</code> that I’d have to swap out for my image registry name and credentials. Once I got past that surface level understanding though, it got trickier. One fairly easy example was that the original GitHub action wanted to be run on some custom Microsoft <code>devcontainer-image-builder-ubuntu</code> VM that I didn’t have access to. It seemed to work fine if I changed that to <code>ubuntu-latest</code>, I just had to notice the issue and change it. Other things were more embedded. Microsoft is publishing their images to <a href="https://azure.microsoft.com/en-us/products/container-registry/">Azure container registry</a> whereas I want to use <a href="https://hub.docker.com/">Docker hub</a>. Again, some of this was as simple as switching out <code>az login</code> with <code>docker login</code> in the scripts, but some of it was a little more complicated. Part of the node code queries the registry to see what images are there and what tags they have to make sure published image tags aren’t overwritten accidentally. This is a great feature, but it relied heavily on calling the <code>acr</code> command prompt to retrieve that info. I had to find those sections in the code, figure out what sort of data they’d be returning, figure out what request to send to the docker hub API to get similar data, and then modify the node code to parse it the same way. Since I’d never worked with the docker hub API, or node, or seen the actual output of the <code>acr</code> commands I was trying to reproduce, this took some trial and error.</p>
-<p>An additional challenge was separating out the nice features of the Microsoft code base from the stuff that I didn’t want and that just made things more complicated. The two main things in the latter category were the secondary registry logic and the stubs repository logic. In both cases, Microsoft is publishing lots of extra stuff besides the built devcontainer image, either because they have two repositories to publish to (I think this relates to them moving the devcontainer spec outside of VS Code into its own project) or they want to publish stub files that other developers can extend for their own purposes. Neither applies to me, but since that logic is embedded in the GitHub actions and the node code that publishes regular images I had to find and strip out all that logic before I could publish my own images.</p>
-</section>
-<section id="building-my-own-devcontainers" class="level1">
-<h1>Building my own devcontainers</h1>
-<p>Prior to going to all the trouble of setting up this build infrastructure, I’d already spent quite a bit of time building devcontainer images, primarily for python. In light of that, once I got the build infrastructure going it wasn’t a huge leap to get my own devcontainers building. There were some growing pains though. The Microsoft image builder builds multiple variants of images, namely basing them off different Ubuntu releases or architectures (x86/64 vs arm). I definitely ran into situations where things seemed to be building fine but then I realized some combo of release and architecture was failing and stopping the whole pipeline from completing. There are ways to test those things locally in the repository, but I didn’t have any comprehensive workflow set up so it was easy to miss things. Some stuff I just didn’t bother fixing and removed the troublesome build. For instance, there were a fair number of issues building images based on Ubuntu 18.04LTS (one of the default variants from Microsoft) and I just decided there was no point spending time fixing issues with a release that was about to be EOL from Ubuntu and just dropped it. Similarly, my Infrastructure as Code image didn’t want to install Terraform on the arm build. I’m not currently planning to run that on an arm system so I just dropped it, maybe I’ll put it back later if I want to run it off a raspberry pi but for now it’s not worth the effort.</p>
-</section>
-<section id="conclusion" class="level1">
-<h1>Conclusion</h1>
-<p>This was quite likely more effort than it was objectively worth compared to just building an image and pushing it manually with some tags using the <a href="https://containers.dev/supporting#devcontainer-cli">devcontainer cli</a> at least for my personal projects. I did learn a fair bit going through the exercise though, and since I also intend to adopt devcontainers at work (for myself and other people writing at least python code) knowing how to build images in a more automated and versioned manner will be useful.</p>
-<p>My repository is <a href="https://github.com/ianepreston/devcontainers">here</a>, the original Microsoft one is <a href="https://github.com/devcontainers/images">here</a>. My repo is definitely a bit of a mess with ugly commits just testing out CI/CD outcomes and a lot of failed releases since I’d never used GitHub directly to release software before, but that’s all part of the learning experience.</p>
-
-
-</section>
-
- ]]></description>
-  <category>configuration</category>
-  <category>linux</category>
-  <guid>https://blog.ianpreston.ca/posts/2022-12-30-devcontainers.html</guid>
   <pubDate>Fri, 30 Dec 2022 00:00:00 GMT</pubDate>
 </item>
 <item>
@@ -12542,80 +12666,6 @@ font-style: inherit;">;</span></span></code></pre></div>
   <category>yyc</category>
   <guid>https://blog.ianpreston.ca/posts/2021-12-30-wheretolive.html</guid>
   <pubDate>Thu, 30 Dec 2021 00:00:00 GMT</pubDate>
-</item>
-<item>
-  <title>My Portfolio</title>
-  <link>https://blog.ianpreston.ca/posts/2021-04-10-portfolio.html</link>
-  <description><![CDATA[ 
-
-
-
-
-<section id="intro" class="level1">
-<h1>Intro</h1>
-<p>Some of the posts on this blog are pretty big guides or documents that I like to reference and refer others to regularly. In addition, I have a few other projects that I haven’t written about, but would still be nice to share. This post will compile all the bigger posts and projects I’ve worked on as one easy to reference article.</p>
-</section>
-<section id="stats_can-package" class="level1">
-<h1>stats_can package</h1>
-<p>I am the creator and maintainer of an open source package called stats_can. It provides a python interface to data and metadata from <a href="https://www.statcan.gc.ca/eng/start">Statistics Canada</a>. You can read the documentation for it <a href="https://stats-can.readthedocs.io/en/latest/">here</a>, the code is available <a href="https://github.com/ianepreston/stats_can">here</a>. You can also see a talk I gave on what goes into building and maintaining the library <a href="https://www.youtube.com/watch?v=SJzg7HnISxw">here</a>. Unfortunately the first few minutes of the talk were not recorded, but the full slide deck is available <a href="https://docs.google.com/presentation/d/1ijCHBcqwYRbm3ZuHEJajwq5q89HPCu25UzUV2m-dx7Q/edit?usp=drivesdk">here</a>.</p>
-</section>
-<section id="terra-mystica-faction-selection-model" class="level1">
-<h1>Terra Mystica faction selection model</h1>
-<p>This is a project I worked on for a friend that’s really into the board game <a href="https://boardgamegeek.com/boardgame/120677/terra-mystica">Terra Mystica</a>. It scrapes a few hundred thousand games off of an <a href="https://terra.snellman.net/">online Terra Mystica gaming site</a>, ingests and cleans the game data, and then trains a model to help determine which faction you should play, based on the starting layout of the game. Right now the model is a pretty simple linear regression. At some point I’d like to come back to this and try some bayesian methods, both to learn more about them, and to see if I can improve performance. You can see the code for the project <a href="https://github.com/ianepreston/terra-mystica-models">here</a>. The notebooks folder in that repository walks through the development process and was used to provide status updates to the friend I was building the app for. I also built a very rudimentary webapp that will let you plug in the starting conditions for the game, and then return a ranked list of all the factions based on those inputs. It’s hosted on the free tier of Azure, so it’s quite slow, but it’s available <a href="https://tmmodel.azurewebsites.net/">here</a>. You can also pull down and deploy the docker container the webapp and model are stored in <a href="https://hub.docker.com/repository/docker/ianepreston/terra_mystica">here</a>.</p>
-</section>
-<section id="rent-or-own-model" class="level1">
-<h1>Rent or Own model</h1>
-<p>This package is designed to help me understand the financial trade offs between renting or owning a home. Other online calculators exist, but they’re typically designed for the US, and even the Canadian ones I could find were meant for Ontario. Since I live in Alberta, and I like this sort of thing, I thought it would be fun to build my own. You can check out the code <a href="https://github.com/ianepreston/rentorown">here</a>. From the readme on that page, or at <a href="https://mybinder.org/v2/gh/ianepreston/rentorown/HEAD?urlpath=lab/tree/index.ipynb">this link</a> you can open a <a href="https://mybinder.org/">binder</a> container that will let you play around with it in a Jupyter notebook. At some point in the future I might turn it into a full fledged web app, but for now the notebook suits my needs.</p>
-</section>
-<section id="data-structures-and-algorithms" class="level1">
-<h1>Data Structures and Algorithms</h1>
-<p>My job and interests are both more directly related to data science/engineering than classic software engineering. With that said, I do still like to code, and I think having a solid grasps of at least the basics of CS is handy for anyone who spends a lot of time writing code. To that end, in addition to completing a <a href="https://www.athabascau.ca/syllabi/comp/comp272.php">Data Structures and Algorithms course at Athabasca University</a> I like to do the <a href="https://adventofcode.com/">Advent of Code</a> challenges every year:</p>
-<ul>
-<li>Here’s my <a href="https://github.com/ianepreston/scratch/tree/main/advent-of-code">2022 advent</a>. I’ll also use this one for future years. In addition to putting everything in a package as I’d done in previous years, this year was the first one where I set up my development environment in a <a href="https://containers.dev/">dev container</a> and a lot of what I learned went into building my <a href="https://github.com/ianepreston/devcontainers">devcontainers</a> repo. I also built up documentation and a write up of my notes on the puzzle solutions that were published to <a href="https://ians-advent-of-code.readthedocs.io/en/latest/index.html">readthedocs</a>.</li>
-<li>Here’s my <a href="https://github.com/ianepreston/scratch/tree/main/advent_2021">2021 advent</a>. This year I made a little data pipeline with a docker file to scrape and read in the puzzle inputs automatically.</li>
-<li>Here’s my <a href="https://github.com/ianepreston/scratch/tree/main/advent_2020">2020 advent</a>. This year I was also learning package development and type hinting, so the repository and code are really overengineered for what should be a daily coding kata. It was fun to work on though and I learned a lot</li>
-<li>I didn’t fully complete the <a href="https://github.com/ianepreston/scratch/tree/main/advent_2019">2019 advent</a>. That was the year you implemented an assembly language emulator and built on it through the course of the project. Between that (not really my area of interest) and a whole lot of really tedious maze problems near the end (maybe I should come back to those) I didn’t really have the motivation to complete the last few days. That was the first year I coded along live though, so that was a good challenge.</li>
-<li>My <a href="https://github.com/ianepreston/scratch/tree/main/advent_2018">2018 advent</a> is a bit of a weird one. I used the advent challenges as the material for a weekly coding tutorial I ran at work. To facilitate that format some of the code is done in jupyter, and a lot of the solutions are less efficient/elegant than I might have done in another context, but they worked to illustrate whatever concept I was covering at the time.</li>
-</ul>
-</section>
-<section id="bigger-posts" class="level1">
-<h1>Bigger posts</h1>
-<p>This section will include links to the larger and more involved blog posts I’ve made.</p>
-<section id="homelab-cluster" class="level2">
-<h2 class="anchored" data-anchor-id="homelab-cluster">Homelab cluster</h2>
-<p>I’ve been learning about proxmox, virtualization, and kubernetes in my homelab. The first in the series on configuring proxmox is <a href="../posts/2022-11-21-proxmox.html">here</a>. I also took a stab at getting <a href="https://github.com/kelseyhightower/kubernetes-the-hard-way">kubernetes the hard way</a> going on my local setup, and got most of the way through it before realizing there were a lot of differences between my home setup and the cloud and that there was some more fundamental learning I’d have to do before that exercise was super helpful. I did learn a decent amount though, some about kubernetes, more about terraform.</p>
-</section>
-<section id="mortgage-modeling" class="level2">
-<h2 class="anchored" data-anchor-id="mortgage-modeling">Mortgage modeling</h2>
-<p>When I was in the process of planning to buy my house, I wanted to understand whether it made sense to go with a variable or fixed rate mortgage. As part of that analysis I pulled some historical data in and did some analysis of how that decision would have worked out for me over the last few decades. The post is <a href="../posts/2022-03-17-mortgage.html">here</a>.</p>
-</section>
-<section id="where-to-live-app" class="level2">
-<h2 class="anchored" data-anchor-id="where-to-live-app">Where to live app</h2>
-<p>This post documents the process I went through to build a where to live app. It scrapes listings from rental and sales sites daily, and then combines them with other data sets like commute times, grocery store locations, and flood risk to produce personalized lists of candidate listings. The blog describes the implementation in more detail, along with some important lessons I learned and links to the code. The blog post is <a href="../posts/2021-12-30-wheretolive.html">here</a>.</p>
-</section>
-<section id="paper-reproduction---albertas-fiscal-responses-to-fluctuations-in-non-renewable-resource-revenue-in-python" class="level2">
-<h2 class="anchored" data-anchor-id="paper-reproduction---albertas-fiscal-responses-to-fluctuations-in-non-renewable-resource-revenue-in-python">Paper Reproduction - “Alberta’s Fiscal Responses To Fluctuations In Non-Renewable-Resource Revenue” in python</h2>
-<p>This is a paper reproduction I did of a paper that was published by the University of Calgary’s school of public policy. In the course of reproducing the paper I actually found a data error in the original paper. After correcting the error the conclusions of the paper do not appear to be supported. An interesting exercise in coding, and reproducibility in science. The blog post is <a href="../posts/2021-02-26-ferede.html">here</a>.</p>
-</section>
-<section id="automating-provisioning-arch" class="level2">
-<h2 class="anchored" data-anchor-id="automating-provisioning-arch">Automating provisioning Arch</h2>
-<p>I use Arch Linux btw. <a href="../posts/2020-11-26-arch-tldr.html">This post</a> links to a 3 part post series I did about automating the setup of my workstations and servers. It goes from a detailed breakdown of the bash script that’s used to get a bare bones arch install, through to using <a href="https://www.ansible.com/">ansible</a> to do all the system configuration, software install, and server setup (mostly a bunch of docker containers), followed by setting up a user profile using <a href="https://github.com/thoughtbot/rcm">rcm</a>.</p>
-</section>
-<section id="python-packaging-guide" class="level2">
-<h2 class="anchored" data-anchor-id="python-packaging-guide">Python packaging guide</h2>
-<p>There are lots of great guides on how to build a python package. I’m personally a big fan of <a href="https://cjolowicz.github.io/posts/hypermodern-python-01-setup/">hypermodern python</a> and use its accompanying <a href="https://cookiecutter.readthedocs.io/en/1.7.2/">cookiecutter</a> whenever I’m setting up a new project. But there’s not much out there that walks you through all the phases between just having a script that you can run up to building a full blown package. Also, most guides don’t cover conda, and I find the conda docs are really tuned towards people who are bundling C code or something else with their package, not just making a pure python package. To bridge this gap, and to help cement my own understanding of packaging, I wrote <a href="../posts/2020-07-09-pypack.html">this guide</a>.</p>
-</section>
-<section id="setting-up-a-data-science-environment-in-windows" class="level2">
-<h2 class="anchored" data-anchor-id="setting-up-a-data-science-environment-in-windows">Setting up a data science environment in Windows</h2>
-<p><a href="../posts/2020-02-15-windows-ds-software.html">This guide</a> is for everyone out there that only has a locked down Windows machine, but still wants to work with data in python. Almost all the guides I could find online assumed you had a Mac or Linux machine, and even the Windows ones often assumed you had administrative rights. This guide gets you set up with conda, git, and vs code, all without elevated privilege. The only thing I haven’t managed to do in a Windows environment is build a python package. I’m sure it’s doable, but this guide is for those writing scripts/notebooks.</p>
-
-
-</section>
-</section>
-
- ]]></description>
-  <guid>https://blog.ianpreston.ca/posts/2021-04-10-portfolio.html</guid>
-  <pubDate>Sat, 10 Apr 2021 00:00:00 GMT</pubDate>
 </item>
 </channel>
 </rss>
