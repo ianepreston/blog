@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.3.450">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="dcterms.date" content="2023-11-12">
+<meta name="description" content="Hypervisor hopping is the new distro hopping">
+
+<title>Ian’s blog - Checking out XCP-NG</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../">
+<script src="../site_libs/quarto-html/quarto.js"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../site_libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 20,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+
+<link rel="stylesheet" href="../styles.css">
+</head>
+
+<body class="nav-fixed">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg navbar-dark ">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container">
+    <a class="navbar-brand" href="../index.html">
+    <span class="navbar-title">Ian’s blog</span>
+    </a>
+  </div>
+            <div id="quarto-search" class="" title="Search"></div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll ms-auto">
+  <li class="nav-item">
+    <a class="nav-link" href="../about.html" rel="" target="">
+ <span class="menu-text">about</span></a>
+  </li>  
+  <li class="nav-item compact">
+    <a class="nav-link" href="https://github.com/ianepreston" rel="" target=""><i class="bi bi-github" role="img">
+</i> 
+ <span class="menu-text"></span></a>
+  </li>  
+</ul>
+            <div class="quarto-navbar-tools">
+</div>
+          </div> <!-- /navcollapse -->
+      </div> <!-- /container-fluid -->
+    </nav>
+</header>
+<!-- content -->
+<header id="title-block-header" class="quarto-title-block default page-columns page-full">
+  <div class="quarto-title-banner page-columns page-full">
+    <div class="quarto-title column-body">
+      <h1 class="title">Checking out XCP-NG</h1>
+                  <div>
+        <div class="description">
+          Hypervisor hopping is the new distro hopping
+        </div>
+      </div>
+                          <div class="quarto-categories">
+                <div class="quarto-category">linux</div>
+                <div class="quarto-category">virtualization</div>
+                <div class="quarto-category">xcp-ng</div>
+              </div>
+                  </div>
+  </div>
+    
+  
+  <div class="quarto-title-meta">
+
+      
+      <div>
+      <div class="quarto-title-meta-heading">Published</div>
+      <div class="quarto-title-meta-contents">
+        <p class="date">November 12, 2023</p>
+      </div>
+    </div>
+    
+      
+    </div>
+    
+  
+  </header><div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#introduction" id="toc-introduction" class="nav-link active" data-scroll-target="#introduction">Introduction</a></li>
+  <li><a href="#initial-installation-experience" id="toc-initial-installation-experience" class="nav-link" data-scroll-target="#initial-installation-experience">Initial installation experience</a></li>
+  <li><a href="#first-experience" id="toc-first-experience" class="nav-link" data-scroll-target="#first-experience">First experience</a></li>
+  <li><a href="#adding-a-vm" id="toc-adding-a-vm" class="nav-link" data-scroll-target="#adding-a-vm">Adding a VM</a>
+  <ul class="collapse">
+  <li><a href="#figuring-out-how-to-add-vm-storage" id="toc-figuring-out-how-to-add-vm-storage" class="nav-link" data-scroll-target="#figuring-out-how-to-add-vm-storage">Figuring out how to add VM storage</a></li>
+  <li><a href="#back-to-adding-a-vm" id="toc-back-to-adding-a-vm" class="nav-link" data-scroll-target="#back-to-adding-a-vm">Back to adding a VM</a></li>
+  <li><a href="#have-to-reinstall" id="toc-have-to-reinstall" class="nav-link" data-scroll-target="#have-to-reinstall">Have to reinstall</a></li>
+  <li><a href="#management-tools" id="toc-management-tools" class="nav-link" data-scroll-target="#management-tools">Management tools</a></li>
+  <li><a href="#paste-to-console" id="toc-paste-to-console" class="nav-link" data-scroll-target="#paste-to-console">Paste to console</a></li>
+  </ul></li>
+  <li><a href="#xen-orchestra-in-an-actual-vm" id="toc-xen-orchestra-in-an-actual-vm" class="nav-link" data-scroll-target="#xen-orchestra-in-an-actual-vm">Xen Orchestra in an actual VM</a>
+  <ul class="collapse">
+  <li><a href="#check-the-log-file-for-issues" id="toc-check-the-log-file-for-issues" class="nav-link" data-scroll-target="#check-the-log-file-for-issues">Check the log file for issues</a></li>
+  <li><a href="#have-to-reinstall-1" id="toc-have-to-reinstall-1" class="nav-link" data-scroll-target="#have-to-reinstall-1">Have to reinstall</a></li>
+  <li><a href="#test-it-out" id="toc-test-it-out" class="nav-link" data-scroll-target="#test-it-out">Test it out</a></li>
+  </ul></li>
+  <li><a href="#figure-out-how-to-move-this-machine-back-to-my-rack" id="toc-figure-out-how-to-move-this-machine-back-to-my-rack" class="nav-link" data-scroll-target="#figure-out-how-to-move-this-machine-back-to-my-rack">Figure out how to move this machine back to my rack</a></li>
+  <li><a href="#add-a-couple-more-hosts" id="toc-add-a-couple-more-hosts" class="nav-link" data-scroll-target="#add-a-couple-more-hosts">Add a couple more hosts</a></li>
+  <li><a href="#test-things-with-a-vm" id="toc-test-things-with-a-vm" class="nav-link" data-scroll-target="#test-things-with-a-vm">Test things with a VM</a>
+  <ul class="collapse">
+  <li><a href="#host-migration" id="toc-host-migration" class="nav-link" data-scroll-target="#host-migration">Host migration</a></li>
+  <li><a href="#backups-and-snapshots" id="toc-backups-and-snapshots" class="nav-link" data-scroll-target="#backups-and-snapshots">Backups and snapshots</a></li>
+  </ul></li>
+  <li><a href="#alerting" id="toc-alerting" class="nav-link" data-scroll-target="#alerting">Alerting</a></li>
+  <li><a href="#cleanup" id="toc-cleanup" class="nav-link" data-scroll-target="#cleanup">Cleanup</a></li>
+  <li><a href="#next-steps" id="toc-next-steps" class="nav-link" data-scroll-target="#next-steps">Next steps</a></li>
+  <li><a href="#conclusion" id="toc-conclusion" class="nav-link" data-scroll-target="#conclusion">Conclusion</a></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content quarto-banner-title-block" id="quarto-document-content">
+
+
+
+
+<section id="introduction" class="level1">
+<h1>Introduction</h1>
+<p>I have enjoyed learning proxmox, and haven’t run into any deal breakers with it, but I also like to see if the grass is greener. After watching some videos from <a href="https://www.youtube.com/watch?v=xB22GKGJkHY">Tom at Lawrence Systems</a> I decided xcp-ng might be more to my liking. This post will document what I did to get it set up and my thoughts on using it.</p>
+</section>
+<section id="initial-installation-experience" class="level1">
+<h1>Initial installation experience</h1>
+<p>I did not get off to the best start, as shortly after booting the most recent stable release (8.2 at the time of this writing) I found myself looking at a blank screen and unable to proceed. After a bit of searching I found <a href="https://forums.lawrencesystems.com/t/xcp-ng-installer-fails-to-run/15197">this post</a> which led me to try the 8.3 beta release, which fixed my issue. I can see how that sort of thing would scare someone off, but I decided to press on. With the 8.3 installer I was able to get through the install process, which was quite straightforward. One thing I liked off the hop vs Proxmox was the option to use DHCP rather than static IPs. I prefer to handle IP assignment in pfsense with static leases, as that makes it easier to associate hosts with a DNS entry, persists IPs across reinstalls, and makes all my address information centrally accessible.</p>
+</section>
+<section id="first-experience" class="level1">
+<h1>First experience</h1>
+<p>Once the machine booted up I was in a pretty basic looking <a href="https://en.wikipedia.org/wiki/Text-based_user_interface">TUI</a>. In some ways that’s nicer than proxmox, which just drops you into a root prompt with a note to go to the web UI. It did allow some basic admin and provided system info. I didn’t really try to do any of the admin from the terminal, since I know that’s not the approach I really want to take. I know ultimately I’m going to want <a href="https://xen-orchestra.com/#!/xo-home">Xen Orchestra</a> but just for kicks I decided to open up the IP of my machine in a browser. This brought me to a <a href="https://xen-orchestra.com/blog/xen-orchestra-lite/">XO-lite</a> page. It looked sharp, but after a bit of digging around almost all of the functionality just took me to an “Under Construction” page. I assume this is something to do with me running a beta version of XCP-NG. Now I find myself in a bit of a chicken and egg situation. To really configure XCP-NG I want to host a Xen Orchestra server somewhere. The optimal place for it is a VM on XCP-NG, but I can’t figure out how to install VMs without Xen-Orchestra.</p>
+<p>It looks like I can launch a docker container of XO, so let’s try that until I can bootstrap a proper server. Obviously not a reliable long term solution, but I grabbed the compose spec from <a href="https://hub.docker.com/r/ronivay/xen-orchestra">here</a> and spun it up on my workstation. That loaded pretty easily and from there I was able to log in with the default credentials the container creates and add a host. Initially there was an issue adding the host but after I allowed it to use a self-signed cert the connection went smoothly.</p>
+</section>
+<section id="adding-a-vm" class="level1">
+<h1>Adding a VM</h1>
+<p>Getting meta again, let’s try loading a debian VM that I can load XO onto. Eventually if I decide to stick with this I’ll rebuild it with templates and other fun stuff but for now we’re mostly just testing out the system. The first thing I have to do is get a Debian ISO (most of the guides seem to do XO on Debian and I’m comfortable with that distro so why not?) onto the system. Per <a href="https://xcp-ng.org/docs/storage.html#storage-types">the docs</a> I first need to create an ISO SR (Storage Repository). Eventually I’ll want this to be an NFS share on my NAS, but while I’m just messing around let’s do a local one. I have to create a path on the local storage to contain the ISOs, and as near as I can tell there’s no way to do that from the XO UI. So I ssh into the host and <code>mkdir /isos</code>. Not the most creative name, but whatever. Back at the XO UI I hit “New” on the sidebar, then storage and fill in a local ISO storage setup for the directory I just made (it won’t auto create the directory if it doesn’t exist, I checked). Having created this SR now I have to get an ISO into it. It’s not super intuitive how to do that, but following <a href="https://xcp-ng.org/blog/2022/05/05/how-to-create-a-local-iso-repository-in-xcp-ng/">this post</a> I got it figured out. It does let me load ISOs directly from a URL which saves me downloading to my workstation only to immediately upload to XO, so that’s nice.</p>
+<p>With that I think I’m ready to add a VM. On the sidebar I click “New” and then “VM”. I choose Debian 12 as my template (this isn’t a full VM template, it just auto populates some settings). I give it 4 cores, the max this machine has, and 4GB of RAM, which is the minimum advised to run XO. I pick the ISO from the SR I just created for the boot medium. For network interfaces I put it on the pool wide network, at some point in the future I’ll mess around with different network interfaces too, but this is fine for now.</p>
+<p>Ahh, oops, I’ve hit another snag. I haven’t created a SR for disks. I think I could just make another folder like I did for the ISO, but this is seeming like an increasingly bad idea. From the terminal in the host I can see it’s made a root partition on my internal NVME drive of 18GB for XCP-NG itself, plus another few small ones like a 4GB logs partition. This leaves me with a 435GB unmounted partition on my NVME drive, plus my SSD. What’s the appropriate way to use the rest of this NVME storage for VMs? From looking at the docs it seems like I can just specify a partition and it will set it up for me. From running <code>lsblk</code> on the host when I was figuring out my storage availability I know the partition name. Let’s try it. Ok, I got an error.</p>
+<section id="figuring-out-how-to-add-vm-storage" class="level2">
+<h2 class="anchored" data-anchor-id="figuring-out-how-to-add-vm-storage">Figuring out how to add VM storage</h2>
+<p>The error that I see in the log is <code>SR_BACKEND_FAILURE_77(, Logical Volume group creation failed, )</code> The first result takes me to a <a href="https://www.reddit.com/r/XenServer/comments/d1nd4c/xcpng_sr_backend_failure_77/">reddit thread</a> that suggests this is an issue because I’d previously used this drive for zfs, which I had when it was running proxmox. Again from the terminal and following <a href="https://linuxconfig.org/wipefs-linux-command-tutorial-with-examples">this guide</a> <code>wipefs /dev/nvme0n1*</code> does return some <code>zfs_member</code> tags.</p>
+<p>After a little messing around I did a couple runs of <code>wipefs -o &lt;offset of ZFS tag&gt; /dev/&lt;device or partition of device&gt; -f</code> to get rid of the tags, I ran the command with the <code>-n</code> flag first to make sure it was removing the right tag.</p>
+<p>After doing that I got the same error. There’s either more tags I need to remove (the original post just dropped everything, I tried to be more surgical), or I need a reboot. Let’s try the reboot first. Reboot didn’t fix it. Let’s try the full wipe on both the device and its partitions. If that breaks something I’ll do a reinstall anyway, not like I’ve put much on this box at this point. That worked! <code>wipefs -a -f /dev/nvme0n1</code> and <code>wipefs -a -f /dev/nvme01p3</code> allowed me to create a SR for VM images. Well on my way now. <strong>DON’T ACTUALLY JUST DO THIS, SEE BELOW</strong></p>
+</section>
+<section id="back-to-adding-a-vm" class="level2">
+<h2 class="anchored" data-anchor-id="back-to-adding-a-vm">Back to adding a VM</h2>
+<p>The rest of the setup is pretty straightforward. I’m able to give the VM a disk in the storage location. There’s a bunch of advanced features that I’m skipping for now, but will definitely have to come back to at some point for future builds.</p>
+<p>After that the machine auto started and I was able to walk through the graphical installer from the “Console” tab on the VM. I saw some things in the docs about setting up VNC for a better full screen experience, but that’s definitely a step for a later date as well.</p>
+<p>The installation completed and at the end I had a running Debian install.</p>
+</section>
+<section id="have-to-reinstall" class="level2">
+<h2 class="anchored" data-anchor-id="have-to-reinstall">Have to reinstall</h2>
+<p>After I got the Debian VM set up I figured this was a good time to update the XCP-NG host to a static lease and give it a reboot. Unfortunately in doing that I discovered that my <code>wipefs</code> exploits had removed the boot flags from my drive as well. I’m sure there would be some clever way to carefully stitch those labels back on but I really don’t feel like it. Reinstall XCP-NG, add it back to the XO that’s still running in a container on my workstation. Interestingly my local VM storage repository showed up on a fresh install, albeit without any disks. Maybe that’s how it’s supposed to work by default if you don’t have any flags on your extra partition that blocks it. I recreate the ISO SR but just put it in <code>/media/</code> this time since that’s what the docs suggest and I don’t have to create a new folder. Still have to make some shared folders on my NAS to support this better eventually. I really don’t like how you add ISOs. I want to be able to add it from the SR page but instead I have to go to “Import” on the sidebar. I’m sure I’ll figure that out eventually but right now I find it quite unintuitive. After getting that going it’s relatively quick to get the VM reinstalled. Let’s try this again.</p>
+</section>
+<section id="management-tools" class="level2">
+<h2 class="anchored" data-anchor-id="management-tools">Management tools</h2>
+<p>Maybe not the obvious place to start, but I really like it when VM info is integrated into my UI. Looking at this machine I see “Management agent not detected”. For Ubuntu according to <a href="https://xcp-ng.org/docs/guests.html#linux">the docs</a> I’d install <code>xe-guest-utilities</code>, but I can’t find that in debian. Looking a little further down the docs I see how to mount and install from the guest utilities ISO that comes with my setup. That seems to work fine. After a reboot I can see all my information.</p>
+</section>
+<section id="paste-to-console" class="level2">
+<h2 class="anchored" data-anchor-id="paste-to-console">Paste to console</h2>
+<p>As little as I’m planning to use the virtual console in the web ui, I really do want to figure out how to paste into it. <code>ctrl+c</code>, <code>ctrl+shift+ins</code> etc do not seem to be working, nor is just right clicking for paste. From <a href="https://xcp-ng.org/forum/topic/5538/please-add-a-paste-option-into-the-console-in-xoa">this post</a> it’s not likely to be fixed in this version. From a look at the roadmap it’s in development (XO 6 that is) but I don’t see a release date and there’s nothing available for preview. I’ll stick with it for now. I think that was also the case for dark mode.</p>
+</section>
+</section>
+<section id="xen-orchestra-in-an-actual-vm" class="level1">
+<h1>Xen Orchestra in an actual VM</h1>
+<p>From the guides I’ve seen, the best way to do this is run the script in <a href="https://github.com/ronivay/XenOrchestraInstallerUpdater">this repo</a>. As discussed in the previous section, I can’t paste that URL into the web console. By default I can only ssh into this VM as my user account (root is disabled) and sudo isn’t installed, which is a bummer. From <a href="https://wiki.debian.org/sudo">the debian wiki</a> it looks like their preferred pattern is to run <code>su --login</code> to become root. I guess that’s fine too. At least I can paste into my terminal now that I’m not just in the web console.</p>
+<p>Following the instructions: I clone the repository, copy the <code>sample.xo-install.cfg</code> to <code>xo-install.cfg</code>, realize I don’t have <code>vim</code> installed, install <code>vim</code> and then edit my newly copied config. Reading through it I don’t see anything I want to change. There’s some stuff for certificate generation that I might want to deal with at some point, but not right now. By default it seems to install all possible plugins, I don’t see why I’d want to limit myself right now. Let’s give this a go. The script ran for a bit, but failed somewhere around the build/install step. The output points me to a log file so let’s see if I can figure out what went wrong.</p>
+<section id="check-the-log-file-for-issues" class="level2">
+<h2 class="anchored" data-anchor-id="check-the-log-file-for-issues">Check the log file for issues</h2>
+<p>Checking the logs it looks like a URL issue:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">An</span> unexpected error occurred: <span class="st">"https://registry.yarnpkg.com/css-parse/-/css-parse-2.0.0.tgz: Request failed </span><span class="dt">\"</span><span class="st">502 Bad Gateway</span><span class="dt">\</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>I seem to be able to download that fine from my workstation, I wonder if it was just an intermittent failure? Let’s give it one more run before we get too heavy into troubleshooting:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ex">WARNING:</span> free disk space in /opt seems to be less than 1GB. Install/update will most likely fail</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Did I just not make a big enough virtual disk for this? Let’s take a look. Oh yeah, root is almost entirely full. I didn’t really look at the default partition sizing but it gave almost all the disk to <code>/home</code> and left basically nothing. Do I want to resize or just reinstall? From a bit of reading I can’t resize active volumes, so I guess we’re doing a reinstall. What a fun learning experience! This is why I like having OS templates and automation for everything.</p>
+</section>
+<section id="have-to-reinstall-1" class="level2">
+<h2 class="anchored" data-anchor-id="have-to-reinstall-1">Have to reinstall</h2>
+<p>At least I have the presence of mind to manually give this new VM the same MAC as my old one so the static lease for it will persist. I’m only going to give it 10GB this time, but I’m going to be a lot more sensible about my allocation of storage, basically just one giant partition. After the reinstall I mount the guest utils ISO, reinstall guest utils and reboot. Reinstall <code>git</code> and <code>vim</code>. Clone the repo, copy over the template file, don’t bother editing it since I didn’t have to last time. Run the installer. This time it worked, must have just been a disk space problem last time.</p>
+</section>
+<section id="test-it-out" class="level2">
+<h2 class="anchored" data-anchor-id="test-it-out">Test it out</h2>
+<p>After a reboot I head to the address of my VM and there it is! I have to re-add my host but that works easily enough and now I can see my VM that’s running the orchestration server I’m looking at it through. How meta.</p>
+</section>
+</section>
+<section id="figure-out-how-to-move-this-machine-back-to-my-rack" class="level1">
+<h1>Figure out how to move this machine back to my rack</h1>
+<p>I’ve had this node sitting on my desk while I set it up, but now I want it back in my rack. I don’t think I can tell XO to shut down the host until the VMs running it are off, but one of the VMs running on it is XO. Good thing I still have that container version up I guess. From the container XO I shut down the VM XO and then the host. After moving it down to my rack I’m able to wake it with WOL from my router (I could have just hit the button but wanted to make sure I still had that working). From the container XO I see the host come back up, but the VM doesn’t. Looking at the settings I didn’t have it set to auto start. Update the settings to auto power on, but it looks like that maybe only applies when the host itself restarts, manually start it for now. Ok, I’m back up and running XO from my VM on my XCP-NG box!</p>
+</section>
+<section id="add-a-couple-more-hosts" class="level1">
+<h1>Add a couple more hosts</h1>
+<p>One hypervisor is cool, but a lot of what I’m going to want to test is going to require at least one more host. Given that I have 3 machines set aside for dev, and I just broke the proxmox cluster that was running on the other two by installing XCP-NG on this host without removing it from the cluster I might as well set up 3 nodes.</p>
+<p>There wasn’t much to this runthrough. I was smart and updated my static leases first, and I also hopped into a live boot environment and wiped the partition table on my drives before installing xcp-ng.</p>
+</section>
+<section id="test-things-with-a-vm" class="level1">
+<h1>Test things with a VM</h1>
+<p>There are lots of features of this hypervisor I’d like to try out, but there are very few of them I can realistically do without at least one VM to experiment on. I could do it with the XO VM I just created, but that seems excessively risky.</p>
+<p>One minor thing I’m going to test out first before I create this VM is setting up a remote storage repository (SR). I’ve created an NFS share on my NAS called xcp, and created an ISO subfolder under that. For each host I want to load ISOs I’m going to have to add that as a SR. For now I’ll only do one. After adding an NFS ISO type SR to my host pointing to the <code>iso</code> folder in that share that had a couple images uploaded to it, I was able to start up an Arch live boot environment and install Arch in a VM. Easy!</p>
+<section id="host-migration" class="level2">
+<h2 class="anchored" data-anchor-id="host-migration">Host migration</h2>
+<p>I don’t want to set up any of my hosts into a pool. I technically could with quite a few of my machines as they’re all the same gen of HP Prodesk. But I’ve got one newer gen Intel and will be adding an AMD machine in a bit. Anything I test I want to at least theoretically work across these hosts, so doing it without pools is more representative.</p>
+<p>Once my VM was booted up I made a “hello world” test text file in the home directory and hit the migrate button. I was able to choose the storage and network on the remote host, even though it was on another pool. Over on the tasks tab I could see the migration happening. It took a few minutes since it had to move the whole disk plus RAM over and I only have a gigabit connection at home, but after that time I could see the same VM running exactly as it had been on the new host, so that’s pretty slick!</p>
+</section>
+<section id="backups-and-snapshots" class="level2">
+<h2 class="anchored" data-anchor-id="backups-and-snapshots">Backups and snapshots</h2>
+<p>Arguably even more important than migration is a good backup and restore experience. To test this I need to create a “remote” in XO, which is fortunately not associated with a particular pool, so I only have to create it once. On the same shared NFS folder as I put the ISOs I make another for backups. On the XO sidebar I head to settings then Remotes. From there I just need to put in the server and path info and I’ve got a remote created. It even does a little speed test that shows I can write at about 100 MiB/s and read at 1.59 GiB/s. The write seems plausible since it’s a spinning disk setup, the read seems high though. At least I’m connected.</p>
+<p>Initially my first thought was to make a backup of my VM, but when I got there I noticed I could set up backups for XO config and my pool metadata. Since I’m actually doing stuff there too I decided to schedule a daily backup of that first.</p>
+<p>After that it’s back to doing some backups of the VM itself. I decided to give it a tag <code>test</code> so that I could use <a href="https://xen-orchestra.com/docs/backups.html#smart-backup">smart backup</a> for my configs. It’s overkill when I’m only doing one VM but I want to get in the habit.</p>
+<p>As a start I’ll test a snapshot creation. This isn’t a backup since it does it to the same storage that the VM is running on, but it’s still nice to have for rollbacks, so I’d like to learn how it works. I create a snapshot for just the test VM I’m working on and run it. I can see the successful run in the list of backups. Heading over to local storage for the host that’s running my VM I can see the snapshot as well. Next up I need to make a change on my VM and then try rolling back to the snapshot. Heading over to the VM console I create a <code>postsnapshot.txt</code> file and put in some text. Still on the VM page but over at the snapshot tab I hit revert. It prompts me to create a snapshot before I do the revert, which is handy so I accept that. It looks like I can also manually create snapshots from this tab, which is nice. I’m not sure I actually need scheduled snapshots, or if it’s more something I’ll take before I do a tricky operation on a host. Back at the console I’m at the login prompt, since I didn’t do a snapshot with RAM. That’s fine. Logging in I can see my <code>postsnapshot.txt</code> file isn’t there. Let’s revert to the previous one. Again I’m at the login prompt, and when I log back in <code>postsnapshot.txt</code> is there as expected. It’s worth noting that each of these snapshots appear to be full copies, not just deltas of other snapshots. That makes sense, but it something to be aware of, as I could pretty quickly fill up a disk with snapshots if I’m not careful. Let’s delete these two and the associated backup job and try actual backups. One nice little note here is that from the VM page I can connect to the associated backup, that’s a nice little UX feature.</p>
+<p>Now let’s try the more traditional backup. I’m going to do <a href="https://xen-orchestra.com/docs/incremental_backups.html">delta backups</a> so that I don’t have to store full snapshots for every backup I want. We still won’t do any scheduling yet, but it looks straightforward to do. I pick my remote as the location for the backup and hit save. Saving seems to take a while so I assume this is triggering a full backup immediately. I’ll just wait a bit to see what happens. Upon completion I’m back at the backup screen. I actually tried to just edit the existing “backup” I’d made of the snapshot job and when I look at the “modes” on the created backup it looks like it’s doing both now. That’s not what I want, let’s see how I can remove the snapshot feature. Ahhh, from the UI it’s hard to tell but clicking on each type of backup enables it and brings up its settings. Snapshots don’t really have settings so it’s not obvious from the window that you’ve enabled them. Let’s save again with snapshots disabled. This again takes a little while, which is a bit surprising, since I’d expect the backup to have been completed already. Looking at the backup page the backup shows as successful, but maybe that’s of the old snapshot type. When I do this for real I’m going to have to be more careful about making new backup jobs and separating them appropriately. Now that I’ve run a backup with the new setting it says by the status that it transferred 2.43GB. That seems realistic for the compressed size of my VM. Let’s make a change and run another backup. Following the pattern from the snapshot I add a <code>postdelta1.txt</code> and save the file. Heading over to the backups page I can see a new job running. After completion it says it transferred 2.43GB as well, which doesn’t seem right. Looking at the job run of the second backup there’s a warning about an “unused VHD”. Heading to that path on my NAS I can see a similarly named vhd file with an incrementally higher file name. The job mentions <code>20231119T190652Z.vhd</code> and the file name in the NAS is <code>20231119T190951Z.vhd</code>. Let’s try running one more backup and seeing if we get a delta this time, I’ll add one more file to be safe. This one is successful and transfers only 16MB. That’s a lot more than the size of the text file I created, but still very small in the scheme of things. Looking in the NAS folder I still only have one <code>.vhd</code> file, but it’s been modified at the time of the most recent backup. I guess I didn’t set a retention? I think to do retention I have to set some schedules. I suppose that makes sense. Let’s try and restore this backup. For the easiest option, that might not work since I still have the machine running I just head to “restore” under the backup sidebar in XO. When it comes to restore I can restore to any storage I have available, so presumably I could restore to a different host, but just to start let’s try restoring to the same host as the original machine. According to the run the restore was successful. Back in my VM list I still only see one copy of the test VM, so presumably it was overwritten. Let’s bring up the console and have a look. It appears to still be running and I see both the <code>postdelta</code> files I created. That’s odd. Ahh, I had my VM filter set to running (which it does by default). If I clear that filter I have my running VM as well as a halted VM named <code>archtest (20231119T191644Z)</code> which must be my restored copy. Let’s destroy the running one and start this one up. I stop and remove the old VM, I note that in addition to the fun name the new one also gets a “restored from backup” tag, which is interesting. This restored copy also has my second post delta text file, but I think that’s because I forgot to create a new one after running that extra delta backup, so that’s probably to be expected. Let’s stop and remove this machine and try restoring to a different host. Ok, with no running VMs I head back to the restore page, pick the same restore point to do, but point it to a different local storage on a different host than where I was originally running the VM. This time I tell it to start the VM on restore since I don’t have any alternative VMs for it to contend with. I’m up and running just fine on the new host now. In this case these hosts have the same CPU type and everything, so I don’t know if a cross environment restore would be more difficult, but the basic restore works just fine. Nice! There’s obviously a lot more to do in backups, but this is good for now.</p>
+</section>
+</section>
+<section id="alerting" class="level1">
+<h1>Alerting</h1>
+<p>It’s all well and good to have your backups running, but if they fail for whatever reason I want to know about it. On the backup config page there was a status reporting option, for either all or failure notifications, but I need to configure where to send those reports.</p>
+<p>We’ll go basic for now with email alerting. In the plugin settings there’s a <code>transport-email</code> plugin that’s installed but disabled by default. Enabling it gives me a “plugin not configured” error, so I guess I have to configure it first then enable it, which is a little counterintuitive, but whatever. In the config I plug in my settings for the GMX email I use for stuff like this (getting proper auth for my gmail is way too big a hassle). and send a test email.</p>
+<p>After spinning for a while the test icon comes back, but I don’t see an email. After double checking my spam folder I guess I have to do some troubleshooting. Logging into my GMX account I see a notification that my SMTP settings have been disabled due to inactivity. I suppose I should find a more reliable email provider at some point, but for now maybe I’ll just send myself emails on successful backups to keep things active.</p>
+<p>After enabling the setting in my account I get a plugin success message, although I don’t see an email in my inbox. Slightly suspicious. Ok, this time it was marked as spam. That’s fair. GMX emails are sketchy and I’m changing my outbound name to “XO admin”. I’ve marked the email as not spam, let’s send another test. That one worked.</p>
+<p>Let’s try running a backup with an email alert set and make sure that all goes ok. In the backup settings I see that <code>backup-reports</code> must be enabled as well as <code>transport-email</code>. The settings under <code>backup-reports</code> are a little weird. Under the config there’s a <code>mails</code> section and a little checkbox by something called “Fill information (optional)”. Once I check that I can add entries for emails to send alerts to, so that’s reasonable, just not the greatest naming. I can also specify report recipients in the backup setting, so maybe I didn’t have to add them in the plugin setting. Odd. The other thing that’s happened is my backup task is no longer pointing at anything, since I recreated my VM from a backup. Another good reason to use smart mode and tags. Having fixed that, added my email, and telling the job to report “Always” I run another backup. And I get an email! Neat.</p>
+</section>
+<section id="cleanup" class="level1">
+<h1>Cleanup</h1>
+<p>Let’s make sure I can get rid of this experimental stuff before moving on. Removing the backup job is easy, but I assume that doesn’t automatically delete the backups I’ve created with it. Right, over in the “Restore” tab of the backups section I can see my backups and delete them. For each backup I can select all the iterations to delete, so I just choose all of them. Looking in my NAS I have some empty directories, which is fine, but also one file that’s still there. Maybe that’s the snapshot I still have? I thought that was local to the host, but let’s delete it and see what happens. Hmmm, nope, that file is still there. Well that’s good that my understanding of snapshots is correct, bad that I’ve got this orphan snapshot file sitting on my NAS. I’m just going to manually delete it and assume it was something weird with backing up a backed up image or something.</p>
+</section>
+<section id="next-steps" class="level1">
+<h1>Next steps</h1>
+<p>This covered the basics of working with XCP-NG and Xen Orchestra. To do everything I want I still need to look into</p>
+<ul>
+<li>VM Template creation. Probably going to bite the bullet and learn <a href="https://developer.hashicorp.com/packer">packer</a>
+<ul>
+<li>Cloud init templates and applying them to VM templates. Looks straightforward, I just don’t have templates yet.</li>
+</ul></li>
+<li><a href="https://docs.xcp-ng.org/compute/">Hardware passthrough</a> for GPUs and SSDs</li>
+<li>Automation of shutdowns when on UPS power <a href="https://voice1.me/automated-shutdown-xenserver-7-x-with-network-ups-tool/">something like this</a></li>
+<li><a href="https://xcp-ng.org/docs/guests.html#all-vms">VNC</a> not that I plan to use it much, but it would be cool to have</li>
+<li>Actually run some workloads</li>
+</ul>
+</section>
+<section id="conclusion" class="level1">
+<h1>Conclusion</h1>
+<p>This post covered my first look at installing and using <a href="https://xcp-ng.org/">XCP-ng</a> and <a href="https://xen-orchestra.com/#!/">Xen Orchestra</a> to manage VMs across a few hosts.</p>
+<p>The configuration and initial setup was definitely more complex than my experience with <a href="https://www.proxmox.com/en/">proxmox</a>, but separating the management interface from the hypervisor, and the much more robust backup experience make me feel like this is a better solution for the work that I want to do. In future posts I’ll work through the next steps I described to really get this setup running the way I want.</p>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    text: function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+  });
+  clipboard.on('success', function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  });
+  function tippyHover(el, contentFn) {
+    const config = {
+      allowHTML: true,
+      content: contentFn,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start'
+    };
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      return note.innerHTML;
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+</body></html>
