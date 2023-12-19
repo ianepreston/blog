@@ -10,7 +10,375 @@
 <atom:link href="https://blog.ianpreston.ca/index.xml" rel="self" type="application/rss+xml"/>
 <description></description>
 <generator>quarto-1.3.450</generator>
-<lastBuildDate>Mon, 11 Dec 2023 00:00:00 GMT</lastBuildDate>
+<lastBuildDate>Tue, 19 Dec 2023 00:00:00 GMT</lastBuildDate>
+<item>
+  <title>Deploying and configuring machines in Xen-Orchestra</title>
+  <link>https://blog.ianpreston.ca/posts/2023-12-19-xcp-deployment.html</link>
+  <description><![CDATA[ 
+
+
+
+
+<section id="introduction" class="level1">
+<h1>Introduction</h1>
+<p>Having successfully <a href="../posts/2023-12-11-xcp-templates.html">built some template images</a> it’s time to provision and configure some machines using terraform and ansible. Honestly using terraform is way overkill for the number of machines I’m actually planning to deploy, but it’s a nice way to document what I’m doing, and I’m expecting it to be relatively straightforward to get going.</p>
+</section>
+<section id="set-up-terraform" class="level1">
+<h1>Set up terraform</h1>
+<p>Locally I configure the code to run in my IaC devcontainer, which has terraform, ansible etc. preinstalled. For state management in terraform I’m going to try terraform cloud. I’ve only used local and ADLS storage backends before, but for personal use the cloud backend is free. I’ll be doing local execution of course since terraform cloud runners don’t have access to my homelab.</p>
+<p>I set up a new <code>homelab</code> project in my account and then go to create a workspace. I go with CLI-Driven workflow since I won’t be doing any automated triggers of this provisioning. I’m just going to name the workspace <code>homelab</code> as well. Even though I will have dev and prod images they’re not going to match closely enough to have actual separate workspaces make sense (I don’t think, again, just using terraform for the handful of VMs I’m making seems excessive). After updating my organization default the workspace is set for local execution, which is what I want.</p>
+<p>Next I create a <code>backend.tf</code> file to store the workspace information. The workspace shows a sample block for terraform when I create it so I just add that. In the same block I add the required providers info for the <a href="https://registry.terraform.io/providers/terra-farm/xenorchestra/latest">XO provider</a>.</p>
+<p>After that I login with <code>terraform login</code>, I’m not sure if my devcontainer is going to persist the token I added so I may have to mess with this later, but let’s leave it for now.</p>
+<p>Next I run <code>terraform init</code>, which creates a local statefile, but it only points to my cloud backend, at least for now, so maybe that’s fine. It’s in <code>.terraform</code> and I’ve got that in <code>.gitignore</code> anyway. (Update, it only ever contained backend info)</p>
+<p>After that I need to set up the provider to connect to my specific XO instance. From the provider docs I can set environment variables for the host, username, and password. I’ll use my usual pattern to retrieve those from bitwarden and put them in a script that I can <code>eval $(cat &lt;secrets&gt;)</code> in other scripts. This keeps them out of my repo but means I don’t have to retrieve them every time. I then make a very sparse <code>provider.tf</code> file since I only have one provider and basically everything is set in environment variables. The only thing I have to specify is to not use SSL. At some point I will get around to generating proper certs for all this stuff, but that is not today. The exact way I got the environment vars set was from following <a href="https://xen-orchestra.com/blog/virtops1-xen-orchestra-terraform-provider/">this blog</a>. The way I was doing it before wasn’t making the variables show up for terraform even though I could see them in my shell. I really don’t get environment variable scoping in bash.</p>
+<p>As a first step let’s just try getting some data resources. I’ll need those anyway to create VMs, and it’s a nice way to make sure my setup is working. I create a <code>dev-data.tf</code> file and add info for my pools. After that running terraform plan shows no changes, which means that it’s at least connected and read the resources. Great!</p>
+</section>
+<section id="deploy-a-vm" class="level1">
+<h1>Deploy a VM</h1>
+<p>There’s a couple things I might eventually add to this, like configuring virtual networks, but let’s not get ahead of ourselves and try just deploying a VM.</p>
+<p>Setting up the data blocks felt a little repetitive. I have to create SRs and Network objects for each pool, but that’s on me for managing each host as its own pool. In the end with a little hacking it wasn’t that hard to do. I’ll show the examples of the components I created and describe them a bit below:</p>
+<pre class="hcl"><code>data "xenorchestra_pool" "dhpp3" {
+  name_label = "d-hpp-3"
+}</code></pre>
+<p>This is the pool I’m deploying to, it’s a 1:1 mapping between pools and hosts for me, but the VM cares about the pool it’s being deployed to so this is what I need to bring in.</p>
+<pre class="hcl"><code>data "xenorchestra_sr" "dhpp3" {
+  name_label = "Local storage"
+  pool_id    = data.xenorchestra_pool.dhpp3.id
+}
+
+data "xenorchestra_network" "dhpp3" {
+  name_label = "Pool-wide network associated with eth0"
+  pool_id    = data.xenorchestra_pool.dhpp3.id
+}
+
+data "xenorchestra_template" "arch-dhpp3" {
+  name_label = "archbase_template"
+  pool_id    = data.xenorchestra_pool.dhpp3.id
+}</code></pre>
+<p>Each host has local storage, which is where I want VMs deployed. Terraform needs the local storage for each host to be uniquely identified (it can’t infer it from which pool I’m deploying to) so I need to pass in the pool id and create one for each pool. The same goes for my network and template configs.</p>
+<pre class="hcl"><code>resource "xenorchestra_cloud_config" "d-mars" {
+  name = "d-mars-cloudconfig"
+  # Template the cloudinit if needed
+  template = templatefile("arch-cloud.tftpl", {
+    hostname = "d-mars"
+  })
+}</code></pre>
+<p>I can’t use the XO templating in my terraform cloud configs, so I have to create a new one for each VM if I want to dynamically assign the hostname. The template file I reference looks basically like the cloud config I created for manual template deployment, just with terraform variable substitution instead:</p>
+<div class="sourceCode" id="cb4" style="background: #f1f3f5;"><pre class="sourceCode yml code-with-copy"><code class="sourceCode yaml"><span id="cb4-1"><span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">#cloud-config</span></span>
+<span id="cb4-2"><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">hostname</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">:</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> ${hostname}</span></span>
+<span id="cb4-3"><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">runcmd</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">:</span></span>
+<span id="cb4-4"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> </span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">-</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> </span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"sudo /bin/bash /etc/ssh/sign_host.sh"</span></span></code></pre></div>
+<pre class="hcl"><code>resource "xenorchestra_vm" "d-mars" {
+  memory_max       = 4294967296
+  cpus             = 2
+  cloud_config     = xenorchestra_cloud_config.d-mars.template
+  name_label       = "d-mars"
+  name_description = "Dev VM for Docker host machine"
+  template         = data.xenorchestra_template.arch-dhpp3.id
+  exp_nested_hvm   = false
+  auto_poweron     = true
+  wait_for_ip      = true
+
+
+  # Prefer to run the VM on the primary pool instance
+  affinity_host = data.xenorchestra_pool.dhpp3.master
+  network {
+    network_id = data.xenorchestra_network.dhpp3.id
+  }
+
+  disk {
+    sr_id      = data.xenorchestra_sr.dhpp3.id
+    name_label = "d-mars"
+    size       = 21474836480
+  }
+
+  tags = [
+    "dev",
+    "arch",
+  ]
+}</code></pre>
+<p>Finally I can create the actual VM. Most of the hard work is done in the data blocks above. Specifying disk and RAM in bytes is a bit of apain, but otherwise it’s quite straightforward. The deploy was actually pretty quick. I definitely remember this step hanging forever when I was messing around with it in proxmox, but this machine got up and running about as fast as if I’d manually provisioned it, so that was great.</p>
+</section>
+<section id="set-up-ansible" class="level1">
+<h1>Set up ansible</h1>
+<p>Now that I’ve deployed a VM I need to configure it.</p>
+<section id="dynamic-inventory" class="level2">
+<h2 class="anchored" data-anchor-id="dynamic-inventory">Dynamic inventory</h2>
+<p>I could just hard code in inventory entries for the VMs I create, but where’s the fun in that? There’s a <a href="https://docs.ansible.com/ansible/latest/collections/community/general/xen_orchestra_inventory.html">xen-orchestra-inventory</a> plugin that looks like what I want.</p>
+<section id="run-into-issues" class="level3">
+<h3 class="anchored" data-anchor-id="run-into-issues">Run into issues</h3>
+<p>I create a dynamic inventory file similar to what’s shown in the docs and <a href="https://xen-orchestra.com/blog/virtops3-ansible-with-xen-orchestra/">this blog</a> from xen-orchestra. I get an error about failing to parse it though when I run <code>ansible-inventory -i inventory.xen_orchestra.yml --list</code>. Running again with the <code>-vvv</code> flag for max verbosity I get a slightly more descriptive error about <code>declined parsing /workspaces/homelab/ansible/inventory.xen_orchestra.yml as it did not pass its verify_file() method</code></p>
+<p>Reading a little more carefully the issue is actually this part:</p>
+<div class="sourceCode" id="cb6" style="background: #f1f3f5;"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb6-1"><span class="ex" style="color: null;
+background-color: null;
+font-style: inherit;">[WARNING]:</span>  <span class="pp" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">*</span> Failed to parse /workspaces/homelab/ansible/inventory.xen_orchestra.yml with auto plugin: This plugin requires websocket-client 1.0.0 or higher:</span>
+<span id="cb6-2"><span class="ex" style="color: null;
+background-color: null;
+font-style: inherit;">https://github.com/websocket-client/websocket-client.</span></span></code></pre></div>
+<p>I think maybe this is why the ansible docs recommend installing it with pip. Maybe I’ll rework my devcontainer later. For now I’ll try the following:</p>
+<div class="sourceCode" id="cb7" style="background: #f1f3f5;"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb7-1"><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">sudo</span> apt update</span>
+<span id="cb7-2"><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">sudo</span> apt install python3-pip</span>
+<span id="cb7-3"><span class="ex" style="color: null;
+background-color: null;
+font-style: inherit;">pip3</span> install websocket-client</span></code></pre></div>
+<p>Ok, that fixed it. I’ll clean up my devcontainer later to address this.</p>
+</section>
+<section id="hide-sensitive-info" class="level3">
+<h3 class="anchored" data-anchor-id="hide-sensitive-info">Hide sensitive info</h3>
+<p>During initial testing while I was figuring out the inventory plugin I just hard coded my username and password into the inventory spec. That clearly won’t cut it long term. I tried creating an ansible-vault encrypted variable with my username and password, setting the plugin variables to pull from there, and then running the inventory command with <code>--extra-vars variables/secrets.yml</code>, but it didn’t like that. Fortunately the plugin will accept environment variables, so I did the same basic approach as I did with terraform to pull the info from Bitwarden, put it in a gitignored shell file, and then export those variables before calling ansible.</p>
+</section>
+</section>
+<section id="ping-hosts" class="level2">
+<h2 class="anchored" data-anchor-id="ping-hosts">Ping hosts</h2>
+<p>The dynamic inventory also picks up my actual xcp-ng hosts, which I don’t really want to interact with via ansible. I’d like to figure out how to just connect with the VMs I actually care about, so let’s try a few things with a basic playbook that just uses the <code>ping</code> module to establish connectivity. I can add some groups to my inventory selecting based on tags. I can’t figure out how to do it based on hostname for specific stuff though, so I’m going back to terraform to update and just add an actual hostname tag to the machine I provisioned. This also happens to be a nice way to make sure I can modify a VM non-destructively with terraform.</p>
+<p>With that set up I make a basic playbook with one ping task for the group that I identified (which only has one member) above. It works!</p>
+</section>
+<section id="summarize-the-ansible-setup" class="level2">
+<h2 class="anchored" data-anchor-id="summarize-the-ansible-setup">Summarize the ansible setup</h2>
+<p>Doing actual configuration stuff is out of scope for what I want to cover in this post, so let’s wrap up with the pieces I put together to get this working</p>
+<p>I make sure the collection that contains the XO inventory plugin I need is installed by making a file in <code>./collections/requirements.yml</code>:</p>
+<div class="sourceCode" id="cb8" style="background: #f1f3f5;"><pre class="sourceCode yml code-with-copy"><code class="sourceCode yaml"><span id="cb8-1"><span class="pp" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">---</span></span>
+<span id="cb8-2"><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">collections</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">:</span></span>
+<span id="cb8-3"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">  </span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">-</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">name</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">:</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> community.general</span></span></code></pre></div>
+<p>I can update that later with additional plugins for specific provisioning tasks.</p>
+<p>I call it at the top of deployment scripts to be safe with <code>ansible-galaxy collection install -r ./collections/requirements.yml</code> although that should only have to be done once.</p>
+<p>The credentials to XO is the same as I documented in terraform so I’ll leave that out.</p>
+<p>I have a few pieces in <code>ansible.cfg</code> to set up the environment:</p>
+<div class="sourceCode" id="cb9" style="background: #f1f3f5;"><pre class="sourceCode ini code-with-copy"><code class="sourceCode ini"><span id="cb9-1"><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">[defaults]</span></span>
+<span id="cb9-2"><span class="dt" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">remote_user </span><span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">=</span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;"> ipreston</span></span>
+<span id="cb9-3"><span class="dt" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">interpreter_python </span><span class="ot" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">=</span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;"> /usr/bin/python3</span></span></code></pre></div>
+<p>The last line isn’t strictly necessary but it silences a warning I get otherwise.</p>
+<p>The dynamic inventory file looks like this:</p>
+<div class="sourceCode" id="cb10" style="background: #f1f3f5;"><pre class="sourceCode yml code-with-copy"><code class="sourceCode yaml"><span id="cb10-1"><span class="pp" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">---</span></span>
+<span id="cb10-2"><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">plugin</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">:</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> </span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"community.general.xen_orchestra"</span></span>
+<span id="cb10-3"><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">validate_certs</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">:</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> </span><span class="ch" style="color: #20794D;
+background-color: null;
+font-style: inherit;">false</span></span>
+<span id="cb10-4"><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">use_ssl</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">:</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> </span><span class="ch" style="color: #20794D;
+background-color: null;
+font-style: inherit;">false</span></span>
+<span id="cb10-5"><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">groups</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">:</span></span>
+<span id="cb10-6"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">  </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">arch</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">:</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> </span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"'arch' in tags"</span></span>
+<span id="cb10-7"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">  </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">dev</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">:</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> </span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"'dev' in tags"</span></span>
+<span id="cb10-8"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">  </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">dmars</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">:</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> </span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"'d-mars' in tags"</span></span></code></pre></div>
+<p>Again, gotta set up ssl eventually, but not today.</p>
+<p>The actual playbook looks like this:</p>
+<div class="sourceCode" id="cb11" style="background: #f1f3f5;"><pre class="sourceCode yml code-with-copy"><code class="sourceCode yaml"><span id="cb11-1"><span class="pp" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">---</span></span>
+<span id="cb11-2"><span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># Playbook for my dev mars box</span></span>
+<span id="cb11-3"></span>
+<span id="cb11-4"><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">-</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">name</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">:</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> Example from an Ansible Playbook</span></span>
+<span id="cb11-5"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">  </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">hosts</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">:</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> dmars</span></span>
+<span id="cb11-6"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">  </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">tasks</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">:</span></span>
+<span id="cb11-7"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">    </span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">-</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">name</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">:</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> Just ping it</span></span>
+<span id="cb11-8"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">      </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">ansible.builtin.ping</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-style: inherit;">:</span></span></code></pre></div>
+<p>Finally, the bash script that ties it all together and is what I actually run to configure the deployed machine is this</p>
+<div class="sourceCode" id="cb12" style="background: #f1f3f5;"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb12-1"><span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">#!/bin/env bash</span></span>
+<span id="cb12-2"><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">bash</span> _requirements.sh</span>
+<span id="cb12-3"><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">bash</span> _get_creds.sh</span>
+<span id="cb12-4"><span class="bu" style="color: null;
+background-color: null;
+font-style: inherit;">eval</span> <span class="va" style="color: #111111;
+background-color: null;
+font-style: inherit;">$(</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">cat</span> creds.sh<span class="va" style="color: #111111;
+background-color: null;
+font-style: inherit;">)</span></span>
+<span id="cb12-5"><span class="ex" style="color: null;
+background-color: null;
+font-style: inherit;">ansible-playbook</span> <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">-i</span> inventory.xen_orchestra.yml d-mars.yml</span></code></pre></div>
+</section>
+</section>
+<section id="look-into-hooking-terraform-and-ansible-together" class="level1">
+<h1>Look into hooking terraform and ansible together</h1>
+<p>This is definitely overkill but it seems fun to look into, what if I want to have ansible run a playbook on a resource as soon as it’s provisioned by terraform?</p>
+<p>There is an <a href="https://registry.terraform.io/providers/ansible/ansible/latest/docs">ansible provider for terraform</a> and a <a href="https://github.com/ansible-collections/cloud.terraform">terraform provider for ansible</a></p>
+<p>The ideas seem interesting, but the terraform provider for ansible seems to want to create its inventory from terraform, which conflicts with the XO inventory I just set up, and I don’t really understand how the terraform provider works. I think this is well into overkill territory for now so I’m going to leave it alone.</p>
+</section>
+<section id="conclusion" class="level1">
+<h1>Conclusion</h1>
+<p>In this post I went over the basics of deploying machines on xen-orchestra using terraform and then configuring those deployed machines with ansible, although not in a 100% end to end integrated fashion.</p>
+
+
+</section>
+
+ ]]></description>
+  <category>linux</category>
+  <category>virtualization</category>
+  <category>xcp-ng</category>
+  <category>terraform</category>
+  <category>ansible</category>
+  <guid>https://blog.ianpreston.ca/posts/2023-12-19-xcp-deployment.html</guid>
+  <pubDate>Tue, 19 Dec 2023 00:00:00 GMT</pubDate>
+</item>
 <item>
   <title>Working Templates in Xen-Orchestra</title>
   <link>https://blog.ianpreston.ca/posts/2023-12-11-xcp-templates.html</link>
@@ -10725,45 +11093,6 @@ font-style: inherit;">docker</span> run hello-world</span></code></pre></div>
   <category>configuration</category>
   <category>linux</category>
   <guid>https://blog.ianpreston.ca/posts/2022-12-30-rootless-docker.html</guid>
-  <pubDate>Fri, 30 Dec 2022 00:00:00 GMT</pubDate>
-</item>
-<item>
-  <title>Building my own devcontainers</title>
-  <link>https://blog.ianpreston.ca/posts/2022-12-30-devcontainers.html</link>
-  <description><![CDATA[ 
-
-
-
-
-<section id="introduction" class="level1">
-<h1>Introduction</h1>
-<p>Microsoft has created the <a href="https://code.visualstudio.com/docs/devcontainers/containers">devcontainer</a> standard for packaging up your development environment into a docker image and I love it.</p>
-<p>Even though I have a fairly automated environment setup at home, it’s still a hassle whenever I want to start a new project or pick up an old one to make sure I have all the dependencies in place. It’s even trickier if I’m trying to help another person contribute to a project of mine. Devcontainers solve both these issues. Microsoft publishes a number of out of the box images and templates in their GitHub <a href="https://github.com/devcontainers">devcontainers project</a>.</p>
-<p>These work quite well, but I’m picky and want things set up in a certain way. For instance, I want <a href="https://github.com/thoughtbot/rcm">rcm</a> installed for dotfile management, and <a href="https://starship.rs/">starship prompt</a> in any environment I work in. On top of that, for python development I like the <a href="https://cjolowicz.github.io/posts/hypermodern-python-01-setup/">hypermodern</a> suite of tools to be installed. It would be relatively easy to make a dockerfile that has these features installed and put it in every project, but I want to overengineer things. This isn’t entirely just me liking to hack on things. The build time for my python environment is actually quite long thanks to compiling several different versions of python, so while a Dockerfile would work, it would be annoying to maintain and take quite a while to build.</p>
-<p>In light of this, I decided to make my own copy of the <a href="https://github.com/devcontainers/images">images repository</a> that Microsoft uses to build their devcontainers and make my own. This post chronicles some of the challenges I had doing that.</p>
-</section>
-<section id="figuring-out-the-code" class="level1">
-<h1>Figuring out the code</h1>
-<p>To start I just copied the entire <a href="https://github.com/devcontainers/images">images</a> repository and poked around. It’s a beast of a repo (at least compared to the personal or small organization projects I’m used to working on) so it took quite a while just to get a sense of what was there. At a high level there’s a <code>.github</code> folder which contains the CI/CD workflows, a <code>build</code> folder that contains node scripts that build the images, and a <code>src</code> folder that contains the devcontainer specs. I started by deleting all but the <code>base-ubuntu</code> image from <code>src</code> so I could focus on getting one container built without extensive build times. After that I tried to get the build script working locally. Fortunately there are pretty good README files included in each section of the codebase, so I could get a general sense of what was going on.</p>
-<p>The next two difficult parts that went together were figuring out how to navigate and understand the node codebase, since I’ve never written node or any javascript before, and figuring out what I’d need to modify to get things working in my repository. Some things were relatively straightforward, like the GitHub actions were calling for secrets like <code>REPOSITORY_NAME</code> and <code>REPOSITORY_SECRET</code> that I’d have to swap out for my image registry name and credentials. Once I got past that surface level understanding though, it got trickier. One fairly easy example was that the original GitHub action wanted to be run on some custom Microsoft <code>devcontainer-image-builder-ubuntu</code> VM that I didn’t have access to. It seemed to work fine if I changed that to <code>ubuntu-latest</code>, I just had to notice the issue and change it. Other things were more embedded. Microsoft is publishing their images to <a href="https://azure.microsoft.com/en-us/products/container-registry/">Azure container registry</a> whereas I want to use <a href="https://hub.docker.com/">Docker hub</a>. Again, some of this was as simple as switching out <code>az login</code> with <code>docker login</code> in the scripts, but some of it was a little more complicated. Part of the node code queries the registry to see what images are there and what tags they have to make sure published image tags aren’t overwritten accidentally. This is a great feature, but it relied heavily on calling the <code>acr</code> command prompt to retrieve that info. I had to find those sections in the code, figure out what sort of data they’d be returning, figure out what request to send to the docker hub API to get similar data, and then modify the node code to parse it the same way. Since I’d never worked with the docker hub API, or node, or seen the actual output of the <code>acr</code> commands I was trying to reproduce, this took some trial and error.</p>
-<p>An additional challenge was separating out the nice features of the Microsoft code base from the stuff that I didn’t want and that just made things more complicated. The two main things in the latter category were the secondary registry logic and the stubs repository logic. In both cases, Microsoft is publishing lots of extra stuff besides the built devcontainer image, either because they have two repositories to publish to (I think this relates to them moving the devcontainer spec outside of VS Code into its own project) or they want to publish stub files that other developers can extend for their own purposes. Neither applies to me, but since that logic is embedded in the GitHub actions and the node code that publishes regular images I had to find and strip out all that logic before I could publish my own images.</p>
-</section>
-<section id="building-my-own-devcontainers" class="level1">
-<h1>Building my own devcontainers</h1>
-<p>Prior to going to all the trouble of setting up this build infrastructure, I’d already spent quite a bit of time building devcontainer images, primarily for python. In light of that, once I got the build infrastructure going it wasn’t a huge leap to get my own devcontainers building. There were some growing pains though. The Microsoft image builder builds multiple variants of images, namely basing them off different Ubuntu releases or architectures (x86/64 vs arm). I definitely ran into situations where things seemed to be building fine but then I realized some combo of release and architecture was failing and stopping the whole pipeline from completing. There are ways to test those things locally in the repository, but I didn’t have any comprehensive workflow set up so it was easy to miss things. Some stuff I just didn’t bother fixing and removed the troublesome build. For instance, there were a fair number of issues building images based on Ubuntu 18.04LTS (one of the default variants from Microsoft) and I just decided there was no point spending time fixing issues with a release that was about to be EOL from Ubuntu and just dropped it. Similarly, my Infrastructure as Code image didn’t want to install Terraform on the arm build. I’m not currently planning to run that on an arm system so I just dropped it, maybe I’ll put it back later if I want to run it off a raspberry pi but for now it’s not worth the effort.</p>
-</section>
-<section id="conclusion" class="level1">
-<h1>Conclusion</h1>
-<p>This was quite likely more effort than it was objectively worth compared to just building an image and pushing it manually with some tags using the <a href="https://containers.dev/supporting#devcontainer-cli">devcontainer cli</a> at least for my personal projects. I did learn a fair bit going through the exercise though, and since I also intend to adopt devcontainers at work (for myself and other people writing at least python code) knowing how to build images in a more automated and versioned manner will be useful.</p>
-<p>My repository is <a href="https://github.com/ianepreston/devcontainers">here</a>, the original Microsoft one is <a href="https://github.com/devcontainers/images">here</a>. My repo is definitely a bit of a mess with ugly commits just testing out CI/CD outcomes and a lot of failed releases since I’d never used GitHub directly to release software before, but that’s all part of the learning experience.</p>
-
-
-</section>
-
- ]]></description>
-  <category>configuration</category>
-  <category>linux</category>
-  <guid>https://blog.ianpreston.ca/posts/2022-12-30-devcontainers.html</guid>
   <pubDate>Fri, 30 Dec 2022 00:00:00 GMT</pubDate>
 </item>
 </channel>

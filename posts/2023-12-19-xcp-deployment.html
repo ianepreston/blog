@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.3.450">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="dcterms.date" content="2023-12-19">
+<meta name="description" content="Deploy and configure some images from my hard fought templates">
+
+<title>Ian’s blog - Deploying and configuring machines in Xen-Orchestra</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../">
+<script src="../site_libs/quarto-html/quarto.js"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../site_libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 20,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+
+<link rel="stylesheet" href="../styles.css">
+</head>
+
+<body class="nav-fixed">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg navbar-dark ">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container">
+    <a class="navbar-brand" href="../index.html">
+    <span class="navbar-title">Ian’s blog</span>
+    </a>
+  </div>
+            <div id="quarto-search" class="" title="Search"></div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll ms-auto">
+  <li class="nav-item">
+    <a class="nav-link" href="../about.html" rel="" target="">
+ <span class="menu-text">about</span></a>
+  </li>  
+  <li class="nav-item compact">
+    <a class="nav-link" href="https://github.com/ianepreston" rel="" target=""><i class="bi bi-github" role="img">
+</i> 
+ <span class="menu-text"></span></a>
+  </li>  
+</ul>
+            <div class="quarto-navbar-tools">
+</div>
+          </div> <!-- /navcollapse -->
+      </div> <!-- /container-fluid -->
+    </nav>
+</header>
+<!-- content -->
+<header id="title-block-header" class="quarto-title-block default page-columns page-full">
+  <div class="quarto-title-banner page-columns page-full">
+    <div class="quarto-title column-body">
+      <h1 class="title">Deploying and configuring machines in Xen-Orchestra</h1>
+                  <div>
+        <div class="description">
+          Deploy and configure some images from my hard fought templates
+        </div>
+      </div>
+                          <div class="quarto-categories">
+                <div class="quarto-category">linux</div>
+                <div class="quarto-category">virtualization</div>
+                <div class="quarto-category">xcp-ng</div>
+                <div class="quarto-category">terraform</div>
+                <div class="quarto-category">ansible</div>
+              </div>
+                  </div>
+  </div>
+    
+  
+  <div class="quarto-title-meta">
+
+      
+      <div>
+      <div class="quarto-title-meta-heading">Published</div>
+      <div class="quarto-title-meta-contents">
+        <p class="date">December 19, 2023</p>
+      </div>
+    </div>
+    
+      
+    </div>
+    
+  
+  </header><div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#introduction" id="toc-introduction" class="nav-link active" data-scroll-target="#introduction">Introduction</a></li>
+  <li><a href="#set-up-terraform" id="toc-set-up-terraform" class="nav-link" data-scroll-target="#set-up-terraform">Set up terraform</a></li>
+  <li><a href="#deploy-a-vm" id="toc-deploy-a-vm" class="nav-link" data-scroll-target="#deploy-a-vm">Deploy a VM</a></li>
+  <li><a href="#set-up-ansible" id="toc-set-up-ansible" class="nav-link" data-scroll-target="#set-up-ansible">Set up ansible</a>
+  <ul class="collapse">
+  <li><a href="#dynamic-inventory" id="toc-dynamic-inventory" class="nav-link" data-scroll-target="#dynamic-inventory">Dynamic inventory</a>
+  <ul class="collapse">
+  <li><a href="#run-into-issues" id="toc-run-into-issues" class="nav-link" data-scroll-target="#run-into-issues">Run into issues</a></li>
+  <li><a href="#hide-sensitive-info" id="toc-hide-sensitive-info" class="nav-link" data-scroll-target="#hide-sensitive-info">Hide sensitive info</a></li>
+  </ul></li>
+  <li><a href="#ping-hosts" id="toc-ping-hosts" class="nav-link" data-scroll-target="#ping-hosts">Ping hosts</a></li>
+  <li><a href="#summarize-the-ansible-setup" id="toc-summarize-the-ansible-setup" class="nav-link" data-scroll-target="#summarize-the-ansible-setup">Summarize the ansible setup</a></li>
+  </ul></li>
+  <li><a href="#look-into-hooking-terraform-and-ansible-together" id="toc-look-into-hooking-terraform-and-ansible-together" class="nav-link" data-scroll-target="#look-into-hooking-terraform-and-ansible-together">Look into hooking terraform and ansible together</a></li>
+  <li><a href="#conclusion" id="toc-conclusion" class="nav-link" data-scroll-target="#conclusion">Conclusion</a></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content quarto-banner-title-block" id="quarto-document-content">
+
+
+
+
+<section id="introduction" class="level1">
+<h1>Introduction</h1>
+<p>Having successfully <a href="../posts/2023-12-11-xcp-templates.html">built some template images</a> it’s time to provision and configure some machines using terraform and ansible. Honestly using terraform is way overkill for the number of machines I’m actually planning to deploy, but it’s a nice way to document what I’m doing, and I’m expecting it to be relatively straightforward to get going.</p>
+</section>
+<section id="set-up-terraform" class="level1">
+<h1>Set up terraform</h1>
+<p>Locally I configure the code to run in my IaC devcontainer, which has terraform, ansible etc. preinstalled. For state management in terraform I’m going to try terraform cloud. I’ve only used local and ADLS storage backends before, but for personal use the cloud backend is free. I’ll be doing local execution of course since terraform cloud runners don’t have access to my homelab.</p>
+<p>I set up a new <code>homelab</code> project in my account and then go to create a workspace. I go with CLI-Driven workflow since I won’t be doing any automated triggers of this provisioning. I’m just going to name the workspace <code>homelab</code> as well. Even though I will have dev and prod images they’re not going to match closely enough to have actual separate workspaces make sense (I don’t think, again, just using terraform for the handful of VMs I’m making seems excessive). After updating my organization default the workspace is set for local execution, which is what I want.</p>
+<p>Next I create a <code>backend.tf</code> file to store the workspace information. The workspace shows a sample block for terraform when I create it so I just add that. In the same block I add the required providers info for the <a href="https://registry.terraform.io/providers/terra-farm/xenorchestra/latest">XO provider</a>.</p>
+<p>After that I login with <code>terraform login</code>, I’m not sure if my devcontainer is going to persist the token I added so I may have to mess with this later, but let’s leave it for now.</p>
+<p>Next I run <code>terraform init</code>, which creates a local statefile, but it only points to my cloud backend, at least for now, so maybe that’s fine. It’s in <code>.terraform</code> and I’ve got that in <code>.gitignore</code> anyway. (Update, it only ever contained backend info)</p>
+<p>After that I need to set up the provider to connect to my specific XO instance. From the provider docs I can set environment variables for the host, username, and password. I’ll use my usual pattern to retrieve those from bitwarden and put them in a script that I can <code>eval $(cat &lt;secrets&gt;)</code> in other scripts. This keeps them out of my repo but means I don’t have to retrieve them every time. I then make a very sparse <code>provider.tf</code> file since I only have one provider and basically everything is set in environment variables. The only thing I have to specify is to not use SSL. At some point I will get around to generating proper certs for all this stuff, but that is not today. The exact way I got the environment vars set was from following <a href="https://xen-orchestra.com/blog/virtops1-xen-orchestra-terraform-provider/">this blog</a>. The way I was doing it before wasn’t making the variables show up for terraform even though I could see them in my shell. I really don’t get environment variable scoping in bash.</p>
+<p>As a first step let’s just try getting some data resources. I’ll need those anyway to create VMs, and it’s a nice way to make sure my setup is working. I create a <code>dev-data.tf</code> file and add info for my pools. After that running terraform plan shows no changes, which means that it’s at least connected and read the resources. Great!</p>
+</section>
+<section id="deploy-a-vm" class="level1">
+<h1>Deploy a VM</h1>
+<p>There’s a couple things I might eventually add to this, like configuring virtual networks, but let’s not get ahead of ourselves and try just deploying a VM.</p>
+<p>Setting up the data blocks felt a little repetitive. I have to create SRs and Network objects for each pool, but that’s on me for managing each host as its own pool. In the end with a little hacking it wasn’t that hard to do. I’ll show the examples of the components I created and describe them a bit below:</p>
+<pre class="hcl"><code>data "xenorchestra_pool" "dhpp3" {
+  name_label = "d-hpp-3"
+}</code></pre>
+<p>This is the pool I’m deploying to, it’s a 1:1 mapping between pools and hosts for me, but the VM cares about the pool it’s being deployed to so this is what I need to bring in.</p>
+<pre class="hcl"><code>data "xenorchestra_sr" "dhpp3" {
+  name_label = "Local storage"
+  pool_id    = data.xenorchestra_pool.dhpp3.id
+}
+
+data "xenorchestra_network" "dhpp3" {
+  name_label = "Pool-wide network associated with eth0"
+  pool_id    = data.xenorchestra_pool.dhpp3.id
+}
+
+data "xenorchestra_template" "arch-dhpp3" {
+  name_label = "archbase_template"
+  pool_id    = data.xenorchestra_pool.dhpp3.id
+}</code></pre>
+<p>Each host has local storage, which is where I want VMs deployed. Terraform needs the local storage for each host to be uniquely identified (it can’t infer it from which pool I’m deploying to) so I need to pass in the pool id and create one for each pool. The same goes for my network and template configs.</p>
+<pre class="hcl"><code>resource "xenorchestra_cloud_config" "d-mars" {
+  name = "d-mars-cloudconfig"
+  # Template the cloudinit if needed
+  template = templatefile("arch-cloud.tftpl", {
+    hostname = "d-mars"
+  })
+}</code></pre>
+<p>I can’t use the XO templating in my terraform cloud configs, so I have to create a new one for each VM if I want to dynamically assign the hostname. The template file I reference looks basically like the cloud config I created for manual template deployment, just with terraform variable substitution instead:</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode yml code-with-copy"><code class="sourceCode yaml"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co">#cloud-config</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="fu">hostname</span><span class="kw">:</span><span class="at"> ${hostname}</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="fu">runcmd</span><span class="kw">:</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="at"> </span><span class="kw">-</span><span class="at"> </span><span class="st">"sudo /bin/bash /etc/ssh/sign_host.sh"</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<pre class="hcl"><code>resource "xenorchestra_vm" "d-mars" {
+  memory_max       = 4294967296
+  cpus             = 2
+  cloud_config     = xenorchestra_cloud_config.d-mars.template
+  name_label       = "d-mars"
+  name_description = "Dev VM for Docker host machine"
+  template         = data.xenorchestra_template.arch-dhpp3.id
+  exp_nested_hvm   = false
+  auto_poweron     = true
+  wait_for_ip      = true
+
+
+  # Prefer to run the VM on the primary pool instance
+  affinity_host = data.xenorchestra_pool.dhpp3.master
+  network {
+    network_id = data.xenorchestra_network.dhpp3.id
+  }
+
+  disk {
+    sr_id      = data.xenorchestra_sr.dhpp3.id
+    name_label = "d-mars"
+    size       = 21474836480
+  }
+
+  tags = [
+    "dev",
+    "arch",
+  ]
+}</code></pre>
+<p>Finally I can create the actual VM. Most of the hard work is done in the data blocks above. Specifying disk and RAM in bytes is a bit of apain, but otherwise it’s quite straightforward. The deploy was actually pretty quick. I definitely remember this step hanging forever when I was messing around with it in proxmox, but this machine got up and running about as fast as if I’d manually provisioned it, so that was great.</p>
+</section>
+<section id="set-up-ansible" class="level1">
+<h1>Set up ansible</h1>
+<p>Now that I’ve deployed a VM I need to configure it.</p>
+<section id="dynamic-inventory" class="level2">
+<h2 class="anchored" data-anchor-id="dynamic-inventory">Dynamic inventory</h2>
+<p>I could just hard code in inventory entries for the VMs I create, but where’s the fun in that? There’s a <a href="https://docs.ansible.com/ansible/latest/collections/community/general/xen_orchestra_inventory.html">xen-orchestra-inventory</a> plugin that looks like what I want.</p>
+<section id="run-into-issues" class="level3">
+<h3 class="anchored" data-anchor-id="run-into-issues">Run into issues</h3>
+<p>I create a dynamic inventory file similar to what’s shown in the docs and <a href="https://xen-orchestra.com/blog/virtops3-ansible-with-xen-orchestra/">this blog</a> from xen-orchestra. I get an error about failing to parse it though when I run <code>ansible-inventory -i inventory.xen_orchestra.yml --list</code>. Running again with the <code>-vvv</code> flag for max verbosity I get a slightly more descriptive error about <code>declined parsing /workspaces/homelab/ansible/inventory.xen_orchestra.yml as it did not pass its verify_file() method</code></p>
+<p>Reading a little more carefully the issue is actually this part:</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="ex">[WARNING]:</span>  <span class="pp">*</span> Failed to parse /workspaces/homelab/ansible/inventory.xen_orchestra.yml with auto plugin: This plugin requires websocket-client 1.0.0 or higher:</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="ex">https://github.com/websocket-client/websocket-client.</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>I think maybe this is why the ansible docs recommend installing it with pip. Maybe I’ll rework my devcontainer later. For now I’ll try the following:</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> apt update</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="fu">sudo</span> apt install python3-pip</span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="ex">pip3</span> install websocket-client</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Ok, that fixed it. I’ll clean up my devcontainer later to address this.</p>
+</section>
+<section id="hide-sensitive-info" class="level3">
+<h3 class="anchored" data-anchor-id="hide-sensitive-info">Hide sensitive info</h3>
+<p>During initial testing while I was figuring out the inventory plugin I just hard coded my username and password into the inventory spec. That clearly won’t cut it long term. I tried creating an ansible-vault encrypted variable with my username and password, setting the plugin variables to pull from there, and then running the inventory command with <code>--extra-vars variables/secrets.yml</code>, but it didn’t like that. Fortunately the plugin will accept environment variables, so I did the same basic approach as I did with terraform to pull the info from Bitwarden, put it in a gitignored shell file, and then export those variables before calling ansible.</p>
+</section>
+</section>
+<section id="ping-hosts" class="level2">
+<h2 class="anchored" data-anchor-id="ping-hosts">Ping hosts</h2>
+<p>The dynamic inventory also picks up my actual xcp-ng hosts, which I don’t really want to interact with via ansible. I’d like to figure out how to just connect with the VMs I actually care about, so let’s try a few things with a basic playbook that just uses the <code>ping</code> module to establish connectivity. I can add some groups to my inventory selecting based on tags. I can’t figure out how to do it based on hostname for specific stuff though, so I’m going back to terraform to update and just add an actual hostname tag to the machine I provisioned. This also happens to be a nice way to make sure I can modify a VM non-destructively with terraform.</p>
+<p>With that set up I make a basic playbook with one ping task for the group that I identified (which only has one member) above. It works!</p>
+</section>
+<section id="summarize-the-ansible-setup" class="level2">
+<h2 class="anchored" data-anchor-id="summarize-the-ansible-setup">Summarize the ansible setup</h2>
+<p>Doing actual configuration stuff is out of scope for what I want to cover in this post, so let’s wrap up with the pieces I put together to get this working</p>
+<p>I make sure the collection that contains the XO inventory plugin I need is installed by making a file in <code>./collections/requirements.yml</code>:</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode yml code-with-copy"><code class="sourceCode yaml"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="pp">---</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="fu">collections</span><span class="kw">:</span></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> community.general</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>I can update that later with additional plugins for specific provisioning tasks.</p>
+<p>I call it at the top of deployment scripts to be safe with <code>ansible-galaxy collection install -r ./collections/requirements.yml</code> although that should only have to be done once.</p>
+<p>The credentials to XO is the same as I documented in terraform so I’ll leave that out.</p>
+<p>I have a few pieces in <code>ansible.cfg</code> to set up the environment:</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode ini code-with-copy"><code class="sourceCode ini"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="kw">[defaults]</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a><span class="dt">remote_user </span><span class="ot">=</span><span class="st"> ipreston</span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a><span class="dt">interpreter_python </span><span class="ot">=</span><span class="st"> /usr/bin/python3</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>The last line isn’t strictly necessary but it silences a warning I get otherwise.</p>
+<p>The dynamic inventory file looks like this:</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode yml code-with-copy"><code class="sourceCode yaml"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="pp">---</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a><span class="fu">plugin</span><span class="kw">:</span><span class="at"> </span><span class="st">"community.general.xen_orchestra"</span></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a><span class="fu">validate_certs</span><span class="kw">:</span><span class="at"> </span><span class="ch">false</span></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a><span class="fu">use_ssl</span><span class="kw">:</span><span class="at"> </span><span class="ch">false</span></span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a><span class="fu">groups</span><span class="kw">:</span></span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">arch</span><span class="kw">:</span><span class="at"> </span><span class="st">"'arch' in tags"</span></span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">dev</span><span class="kw">:</span><span class="at"> </span><span class="st">"'dev' in tags"</span></span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">dmars</span><span class="kw">:</span><span class="at"> </span><span class="st">"'d-mars' in tags"</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Again, gotta set up ssl eventually, but not today.</p>
+<p>The actual playbook looks like this:</p>
+<div class="sourceCode" id="cb11"><pre class="sourceCode yml code-with-copy"><code class="sourceCode yaml"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="pp">---</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="co"># Playbook for my dev mars box</span></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> Example from an Ansible Playbook</span></span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">hosts</span><span class="kw">:</span><span class="at"> dmars</span></span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">tasks</span><span class="kw">:</span></span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> Just ping it</span></span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">ansible.builtin.ping</span><span class="kw">:</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Finally, the bash script that ties it all together and is what I actually run to configure the deployed machine is this</p>
+<div class="sourceCode" id="cb12"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="co">#!/bin/env bash</span></span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a><span class="fu">bash</span> _requirements.sh</span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="fu">bash</span> _get_creds.sh</span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a><span class="bu">eval</span> <span class="va">$(</span><span class="fu">cat</span> creds.sh<span class="va">)</span></span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a><span class="ex">ansible-playbook</span> <span class="at">-i</span> inventory.xen_orchestra.yml d-mars.yml</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</section>
+</section>
+<section id="look-into-hooking-terraform-and-ansible-together" class="level1">
+<h1>Look into hooking terraform and ansible together</h1>
+<p>This is definitely overkill but it seems fun to look into, what if I want to have ansible run a playbook on a resource as soon as it’s provisioned by terraform?</p>
+<p>There is an <a href="https://registry.terraform.io/providers/ansible/ansible/latest/docs">ansible provider for terraform</a> and a <a href="https://github.com/ansible-collections/cloud.terraform">terraform provider for ansible</a></p>
+<p>The ideas seem interesting, but the terraform provider for ansible seems to want to create its inventory from terraform, which conflicts with the XO inventory I just set up, and I don’t really understand how the terraform provider works. I think this is well into overkill territory for now so I’m going to leave it alone.</p>
+</section>
+<section id="conclusion" class="level1">
+<h1>Conclusion</h1>
+<p>In this post I went over the basics of deploying machines on xen-orchestra using terraform and then configuring those deployed machines with ansible, although not in a 100% end to end integrated fashion.</p>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    text: function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+  });
+  clipboard.on('success', function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  });
+  function tippyHover(el, contentFn) {
+    const config = {
+      allowHTML: true,
+      content: contentFn,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start'
+    };
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      return note.innerHTML;
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+</body></html>
