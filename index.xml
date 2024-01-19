@@ -10,7 +10,50 @@
 <atom:link href="https://blog.ianpreston.ca/index.xml" rel="self" type="application/rss+xml"/>
 <description></description>
 <generator>quarto-1.3.450</generator>
-<lastBuildDate>Tue, 26 Dec 2023 00:00:00 GMT</lastBuildDate>
+<lastBuildDate>Thu, 18 Jan 2024 00:00:00 GMT</lastBuildDate>
+<item>
+  <title>Unifi Controller setup in docker (across VLANs)</title>
+  <link>https://blog.ianpreston.ca/posts/2024-01-18-unifi.html</link>
+  <description><![CDATA[ 
+
+
+
+
+<section id="introduction" class="level1">
+<h1>Introduction</h1>
+<p>This post is about how I set up a Unifi network controller for my wireless access points in docker, dealing with VLANs along the way.</p>
+</section>
+<section id="background" class="level1">
+<h1>Background</h1>
+<p>I have a couple of Unifi Wireless Access points for Wifi in my house. Configuration of all Unifi network devices is done through a web portal. I think if you have one of their routers it’s hosted on the router itself, but I use pfsense for my router. You can also buy a standalone “cloud key” but they’re like $200 and that seems silly. You can also host the controller service in a docker container. I’ve been doing that for quite a while without issue, but some recent changes in my setup led to me modifying how I do that, and also this post.</p>
+<p>Previously, my docker host machine was on the same subnet as my access points and I happily ran the <code>unifi-controller</code> container from <a href="https://www.linuxserver.io/">linuxserver</a> with a bunch of ports exposed and everything worked fine. As part of the <a href="../posts/2023-11-12-xcp-ng.html">virtualization</a> and <a href="../posts/2023-04-09-network-rework.html">network segmentation</a> adventure I’ve been on I’ve been rebuilding my container host in a VM, and I’ve moved that VM to a different VLAN than my Access points. This has surfaced some issues.</p>
+</section>
+<section id="first-issue---outdated-containers" class="level1">
+<h1>First issue - outdated containers</h1>
+<p>As part of my migration I took a look to see if there were any updates to my controller container. This turns out to have been timely, as it had been <a href="https://info.linuxserver.io/issues/2023-09-06-unifi-controller/">deprecated</a> not too long before I took this project up. The good news is there’s a new <a href="https://github.com/linuxserver/docker-unifi-network-application">unifi-network-application</a> container. The bad news is it’s a real pain to set up, at least for me.</p>
+<p>As per the docs I performed a backup from my old <code>unifi-controller</code> and shut it down. That part went fine. When it came to standing up the new container I had a nightmare of a time getting the mongodb container it needs (which is also pinned to a very outdated version thanks to Unifi) to start up with a proper database and credentials. There are a bunch of open and closed <a href="https://github.com/linuxserver/docker-unifi-network-application/issues">issues</a> with people having varying degrees of success getting things working. For the life of me I couldn’t get it stood up in a fully automated way. I attached the correct init scripts to the container, validated they were visible in it etc, but nothing worked. Eventually I stood up the mongo container, remoted into it and just ran <code>mongo unifi /docker-entrypoint-initdb.d/init-mongo.js</code>, which worked. Why it didn’t correctly pick that up and run it at instantiation like it was supposed to is beyond me. Whatever.</p>
+<p>After that I got the network application container up and running easily and restored my config. I even remembered to update the <code>inform host</code> setting to my new IP since otherwise it just gives the docker container’s IP, which is not visible to the rest of the network. But at this point I hit my second issue.</p>
+</section>
+<section id="second-issue---device-discovery-across-networks" class="level1">
+<h1>Second issue - device discovery across networks</h1>
+<p>Now for the next issue. My APs are on my infra network, but this VM is on my services network. Apparently device discovery does not work across subnets. I looked this up and there are some ways to address this while keeping things on different networks. I could have ssh’d into each of my APs and hard coded the controller IP. That probably would have worked, and I only have a couple APs so it would have been scalable, but I wanted to find a better way.</p>
+<p>My first attempt was to create an <a href="https://docs.docker.com/network/drivers/ipvlan/">IPvlan</a> docker network and attach the container to that. Everything ran, but I couldn’t connect to the container at the address I assigned. I’m pretty sure that’s because the network interface I created for the VM running the container in XCP-NG was set with a VLAN tag so it’s automatically stripping all other VLAN tags and adding in the assigned one.</p>
+<p>To address that I modified the machine’s config in terraform to add another network interface that was associated with my infra network. After that I was able to create an IPvlan network (without specifying the VLAN tag at the docker level) associated with that interface and give the container an IP. With that working my APs were adopted and I was good to go, happy ending!</p>
+</section>
+<section id="conclusion" class="level1">
+<h1>Conclusion</h1>
+<p>I had a bit of a hassle getting my Unifi access points to talk to my reinstalled Unifi controller. I wanted to document what I went through here as either a reference to myself in the future, or to help others.</p>
+
+
+</section>
+
+ ]]></description>
+  <category>linux</category>
+  <category>networking</category>
+  <category>docker</category>
+  <guid>https://blog.ianpreston.ca/posts/2024-01-18-unifi.html</guid>
+  <pubDate>Thu, 18 Jan 2024 00:00:00 GMT</pubDate>
+</item>
 <item>
   <title>Setting up internal name resolution in Windows and WSL (probably Linux too)</title>
   <link>https://blog.ianpreston.ca/posts/2023-12-26-dns.html</link>
@@ -10622,376 +10665,6 @@ font-style: inherit;">"cd {{ install_dir }} &amp;&amp; ./build_image.sh"</span><
   <category>proxmox</category>
   <guid>https://blog.ianpreston.ca/posts/2023-01-21-proxmox3.html</guid>
   <pubDate>Sat, 21 Jan 2023 00:00:00 GMT</pubDate>
-</item>
-<item>
-  <title>Home cluster part 2 - Configuring Proxmox</title>
-  <link>https://blog.ianpreston.ca/posts/2022-12-31-proxmox2.html</link>
-  <description><![CDATA[ 
-
-
-
-
-<section id="introduction" class="level1">
-<h1>Introduction</h1>
-<p>In <a href="../posts/2022-11-21-proxmox.html">part 1</a> of this series I laid out the rationale for building a homelab cluster, walked through my hardware selection, and ran through the proxmox installer. In this post I’ll document the further configuration of the cluster and its nodes. The actual implementation will be done in ansible and tracked in my <a href="https://github.com/ianepreston/recipes">recipes</a> repository, so I will keep it light on code in this post. What I’m going to try and document here is the steps I took, why I took them, and any weird edge cases or other fun learning opportunities I encounter in the process.</p>
-</section>
-<section id="the-goals-for-this-post" class="level1">
-<h1>The goals for this post</h1>
-<p>By the end of this post I’d like to have accomplished the following things with my cluster:</p>
-<ul>
-<li>Set up their entries in ansible and be able to connect to each node individually or address them as a group</li>
-<li>Turn off the enterprise repository and add the non-enterprise one</li>
-<li>Make each node aware of my UPS state (one directly and the other two as clients)</li>
-<li>Set up email alerting</li>
-<li>Configure locale settings</li>
-<li>Set up my NAS as a storage target</li>
-</ul>
-</section>
-<section id="what-im-working-on" class="level1">
-<h1>What I’m working on</h1>
-<p>Just for kicks, let’s include an actual picture of these nodes I’m working on in this post:</p>
-<div class="quarto-figure quarto-figure-center">
-<figure class="figure">
-<p><img src="https://blog.ianpreston.ca/posts/proxmox2/nodes.jpg" title="Proxmox nodes" class="img-fluid figure-img"></p>
-<figcaption class="figure-caption">Nodes</figcaption>
-</figure>
-</div>
-<p>Here they are, sitting in my utility room near the rest of my gear. So cute!</p>
-</section>
-<section id="the-code" class="level1">
-<h1>The code</h1>
-<p>The playbook I built for this is available <a href="https://github.com/ianepreston/recipes/blob/master/ansible/pve.yml">here</a>. That link points to the main playbook, and the repository more generally has the custom roles and other configs I made to get everything set up.</p>
-</section>
-<section id="ansible-connectivity" class="level1">
-<h1>Ansible connectivity</h1>
-<p>I haven’t set up these hosts to use key based authentication yet, and decided to just try password auth. I ended up getting some host key errors, which I didn’t quite understand. At first I thought it was something with the devcontainer config I was using, but I tried the same thing on the host system and got the same error. After that I realized it was because I’d reinstalled that host and the key I had saved in <code>~/.ssh/known_hosts</code> was from the old install. After clearing out that record I was able to ssh to all three hosts from my main system. I then had to refresh the devcontainer so it would copy in an updated copy of my <code>~/.ssh/known_hosts</code> file. I’m not sure how frequently devcontainers normally refresh that, but it’s a config alignment issue I’ll have to keep in mind for future problems. Anyway, beside that little known hosts config issue, adding all three hosts and addressing them in the <code>pve</code> group all worked fine.</p>
-</section>
-<section id="set-up-the-non-subscription-repository" class="level1">
-<h1>Set up the non-subscription repository</h1>
-<p>Proxmox has two repositories for package updates, one for Enterprise subscribers, and one for non-subscribers. By default it comes with the enterprise repository enabled, but since I’m not a subscriber I want to switch repos. Ansible comes with a built in <a href="https://docs.ansible.com/ansible/latest/collections/ansible/builtin/apt_repository_module.html">apt repository</a> module so that was an easy way to ensure the enterprise repo was absent from my sources list and that all the recommended ones (including for CEPH) were included. I set that role to also update my repository list and upgrade all installed packages for good measure as well using the <a href="https://docs.ansible.com/ansible/latest/collections/ansible/builtin/apt_module.html">apt</a> module.</p>
-</section>
-<section id="set-up-ups-state-alerting" class="level1">
-<h1>Set up UPS state alerting</h1>
-<section id="failed-first-attempt" class="level2">
-<h2 class="anchored" data-anchor-id="failed-first-attempt">Failed first attempt</h2>
-<p>I made a good amount of progress trying to set this up a certain way, but eventually hit a wall. Some of what I tried originally is still interesting, it just didn’t work. The core issue is that I was dynamically identifying which host had the UPS attached to it based on the output of a locally run command on each host. This worked fine in terms of setting conditionals to only do server setup stuff on the node with the UPS attached, but ran into troubles configuring the clients. The clients need to know the hostname of the server, but I couldn’t figure out any way to dynamically identify that host in an ansible playbook. Registered variables from commands (what I was using to identify which host was connected to the UPS) are host variables only, so the other hosts didn’t have access to it. From the look of it you can’t really make a host variable a global variable based on a condition. There might be a way to concatenate all host variables in a way that would let me get <code>&lt;server host&gt; + '' + '' == &lt;server host&gt;</code> as the output for all hosts, but that felt pretty hacky. Based on this I’m just going to hard code which host is directly connected to the UPS and build my playbook from that.</p>
-<section id="borked-attempt-write-up" class="level3">
-<h3 class="anchored" data-anchor-id="borked-attempt-write-up">Borked attempt write up</h3>
-<p>One node in my cluster is connected via USB to my UPS. In the event of a power failure I want it to be alerted via that USB connection, and then pass that alert on to the other nodes via <a href="https://networkupstools.org/">NUT</a>. I’m largely relying on the <a href="https://wiki.archlinux.org/title/Network_UPS_Tools">Arch wiki</a> to set this up, even though proxmox is Debian based, just because that wiki is amazing. I also found <a href="https://github.com/ykuksenko/ansible.nut">this repository</a> which has a role configured for setting up nut. It’s set up in a different way than I want, and also has a lot more abstraction that’s good for portability but bad for interpretability, so I won’t use it directly.</p>
-<p>The first thing I want to do is install the <code>nut</code> utility on all the systems, as with the previous section this is easily accomplished with the apt module in ansible.</p>
-<p>Next I need to identify which system has the UPS USB cable connected to it, as this one will be the NUT server, and the others will be NUT clients. Realistically this is not going to change and I could just hard code it, but I thought it would be fun to figure out how to automate it.</p>
-<p>The <code>nut</code> package comes with a <code>nut-scanner</code> utility which can be used to identify compatible devices. I can register the output of that command in ansible and then set a <a href="https://docs.ansible.com/ansible/latest/playbook_guide/playbooks_conditionals.html#conditions-based-on-registered-variables">conditional</a> to only perform certain operations if the output of the command listed a USB device. To test this before I actually applied anything with conditionals I used the <a href="https://docs.ansible.com/ansible/latest/collections/ansible/builtin/debug_module.html">debug</a> module to output which host had the UPS attached. I won’t keep that debug in my final playbook, so I’ll reproduce that part here:</p>
-<div class="sourceCode" id="cb1" style="background: #f1f3f5;"><pre class="sourceCode yml code-with-copy"><code class="sourceCode yaml"><span id="cb1-1"><span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">-</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">name</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">:</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> Check if USB for UPS is connected to this host</span></span>
-<span id="cb1-2"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">  </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">ansible.builtin.shell</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">:</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> nut-scanner -U -P</span></span>
-<span id="cb1-3"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">  </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">register</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">:</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> ups_driver</span></span>
-<span id="cb1-4"></span>
-<span id="cb1-5"><span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">-</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">name</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">:</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> Show me which host has the UPS connected</span></span>
-<span id="cb1-6"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">  </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">ansible.builtin.debug</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">:</span></span>
-<span id="cb1-7"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">    </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">msg</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">:</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> System {{ inventory_hostname }} has UPS driver {{ ups_driver }}</span></span>
-<span id="cb1-8"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">  </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">when</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">:</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> ups_driver.stdout.find('usbhid-ups') != -1</span></span></code></pre></div>
-<p>Next is to configure the driver on connected system. To do this I copy over a <code>ups.conf</code> file based on the output of the <code>nut-scanner</code> command. After copying over the template I test it by sshing into the machine and running <code>upsdrvctl start</code>. Since that looked good I enable the <code>nut-driver</code> service with ansible’s systemd module.</p>
-<p>After that it’s time to set up the nut server for clients (both the local machine and the other nodes in the cluster) to connect to. Following the Arch wiki I created a <code>upsd.users</code> file with user configuration for the clients and then tried to enable and start the nut server. I didn’t get an error from ansible for this, but when I tried to check the server I got nothing, and checking the state of the service I saw that it was dead. The relevant lines in the service status seemed to be:</p>
-<div class="sourceCode" id="cb2" style="background: #f1f3f5;"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb2-1"><span class="ex" style="color: null;
-background-color: null;
-font-style: inherit;">upsd</span> disabled, please adjust the configuration to your needs</span>
-<span id="cb2-2"><span class="ex" style="color: null;
-background-color: null;
-font-style: inherit;">Then</span> set MODE to a suitable value in /etc/nut/nut.conf to enable it</span></code></pre></div>
-<p>Taking a look at that file I see this:</p>
-<div class="sourceCode" id="cb3" style="background: #f1f3f5;"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb3-1"><span class="co" style="color: #5E5E5E;
-background-color: null;
-font-style: inherit;">##############################################################################</span></span>
-<span id="cb3-2"><span class="co" style="color: #5E5E5E;
-background-color: null;
-font-style: inherit;"># The MODE determines which part of the NUT is to be started, and which</span></span>
-<span id="cb3-3"><span class="co" style="color: #5E5E5E;
-background-color: null;
-font-style: inherit;"># configuration files must be modified.</span></span>
-<span id="cb3-4"><span class="co" style="color: #5E5E5E;
-background-color: null;
-font-style: inherit;">#</span></span>
-<span id="cb3-5"><span class="co" style="color: #5E5E5E;
-background-color: null;
-font-style: inherit;"># This file try to standardize the various files being found in the field, like</span></span>
-<span id="cb3-6"><span class="co" style="color: #5E5E5E;
-background-color: null;
-font-style: inherit;"># /etc/default/nut on Debian based systems, /etc/sysconfig/ups on RedHat based</span></span>
-<span id="cb3-7"><span class="co" style="color: #5E5E5E;
-background-color: null;
-font-style: inherit;"># systems, ... Distribution's init script should source this file to see which</span></span>
-<span id="cb3-8"><span class="co" style="color: #5E5E5E;
-background-color: null;
-font-style: inherit;"># component(s) has to be started.</span></span>
-<span id="cb3-9"><span class="co" style="color: #5E5E5E;
-background-color: null;
-font-style: inherit;">#</span></span>
-<span id="cb3-10"><span class="co" style="color: #5E5E5E;
-background-color: null;
-font-style: inherit;"># The values of MODE can be:</span></span>
-<span id="cb3-11"><span class="co" style="color: #5E5E5E;
-background-color: null;
-font-style: inherit;"># - none: NUT is not configured, or use the Integrated Power Management, or use</span></span>
-<span id="cb3-12"><span class="co" style="color: #5E5E5E;
-background-color: null;
-font-style: inherit;">#   some external system to startup NUT components. So nothing is to be started.</span></span>
-<span id="cb3-13"><span class="co" style="color: #5E5E5E;
-background-color: null;
-font-style: inherit;"># - standalone: This mode address a local only configuration, with 1 UPS</span></span>
-<span id="cb3-14"><span class="co" style="color: #5E5E5E;
-background-color: null;
-font-style: inherit;">#   protecting the local system. This implies to start the 3 NUT layers (driver,</span></span>
-<span id="cb3-15"><span class="co" style="color: #5E5E5E;
-background-color: null;
-font-style: inherit;">#   upsd and upsmon) and the matching configuration files. This mode can also</span></span>
-<span id="cb3-16"><span class="co" style="color: #5E5E5E;
-background-color: null;
-font-style: inherit;">#   address UPS redundancy.</span></span>
-<span id="cb3-17"><span class="co" style="color: #5E5E5E;
-background-color: null;
-font-style: inherit;"># - netserver: same as for the standalone configuration, but also need</span></span>
-<span id="cb3-18"><span class="co" style="color: #5E5E5E;
-background-color: null;
-font-style: inherit;">#   some more network access controls (firewall, tcp-wrappers) and possibly a</span></span>
-<span id="cb3-19"><span class="co" style="color: #5E5E5E;
-background-color: null;
-font-style: inherit;">#   specific LISTEN directive in upsd.conf.</span></span>
-<span id="cb3-20"><span class="co" style="color: #5E5E5E;
-background-color: null;
-font-style: inherit;">#   Since this MODE is opened to the network, a special care should be applied</span></span>
-<span id="cb3-21"><span class="co" style="color: #5E5E5E;
-background-color: null;
-font-style: inherit;">#   to security concerns.</span></span>
-<span id="cb3-22"><span class="co" style="color: #5E5E5E;
-background-color: null;
-font-style: inherit;"># - netclient: this mode only requires upsmon.</span></span>
-<span id="cb3-23"><span class="co" style="color: #5E5E5E;
-background-color: null;
-font-style: inherit;">#</span></span>
-<span id="cb3-24"><span class="co" style="color: #5E5E5E;
-background-color: null;
-font-style: inherit;"># IMPORTANT </span><span class="al" style="color: #AD0000;
-background-color: null;
-font-style: inherit;">NOTE</span><span class="co" style="color: #5E5E5E;
-background-color: null;
-font-style: inherit;">:</span></span>
-<span id="cb3-25"><span class="co" style="color: #5E5E5E;
-background-color: null;
-font-style: inherit;">#  This file is intended to be sourced by shell scripts.</span></span>
-<span id="cb3-26"><span class="co" style="color: #5E5E5E;
-background-color: null;
-font-style: inherit;">#  You MUST NOT use spaces around the equal sign!</span></span>
-<span id="cb3-27"></span>
-<span id="cb3-28"><span class="va" style="color: #111111;
-background-color: null;
-font-style: inherit;">MODE</span><span class="op" style="color: #5E5E5E;
-background-color: null;
-font-style: inherit;">=</span>none</span></code></pre></div>
-<p>So based on this I think I need ansible to remove the <code>MODE=none</code> line and change it to <code>MODE=netserver</code> on the server. Probably it will have to be <code>MODE=netclient</code> on the clients, but let’s leave that alone for now. I can handle this using the <a href="https://docs.ansible.com/ansible/latest/collections/ansible/builtin/lineinfile_module.html">lineinfile</a> module. After doing this and restarting the <code>nut-server</code> service I ran <code>upsc pveups</code> and had the state of the UPS returned, indicating the config was good for the directly connected node. <strong>This is where I got stuck, see the write up above</strong></p>
-</section>
-</section>
-<section id="working-second-attempt" class="level2">
-<h2 class="anchored" data-anchor-id="working-second-attempt">Working second attempt</h2>
-<p>Don’t reinvent the wheel folks. I vendored in <a href="https://github.com/ykuksenko/ansible.nut">this role</a> and got everything working pretty much right away. I did have to hard code which host was attached to the UPS, but that’s a small price to pay. Problem solved!</p>
-</section>
-</section>
-<section id="setup-email-alerting" class="level1">
-<h1>Setup email alerting</h1>
-<p>The next thing I want is to set up an outbound email configuration, so I can receive email alerts for things like backups or drive issues. The general idea for configuring this comes from <a href="https://docs.technotim.live/posts/proxmox-alerts/">Techno Tim</a>. I’m learning my lesson from NUT and not trying to roll my own ansible role, instead I’m using <a href="https://github.com/Oefenweb/ansible-postfix">this role</a> I found on GitHub.</p>
-<p>I set up the playbook to run, ansible indicated it had made some changes, so I tried sending an email from the command line with</p>
-<div class="sourceCode" id="cb4" style="background: #f1f3f5;"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb4-1"><span class="bu" style="color: null;
-background-color: null;
-font-style: inherit;">echo</span> <span class="st" style="color: #20794D;
-background-color: null;
-font-style: inherit;">"This is a test message sent from postfix on my Proxmox Server"</span> <span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">|</span> <span class="ex" style="color: null;
-background-color: null;
-font-style: inherit;">mail</span> <span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">-s</span> <span class="st" style="color: #20794D;
-background-color: null;
-font-style: inherit;">"Test Email from Proxmox"</span> <span class="op" style="color: #5E5E5E;
-background-color: null;
-font-style: inherit;">&lt;</span>my.email@address.com<span class="op" style="color: #5E5E5E;
-background-color: null;
-font-style: inherit;">&gt;</span></span></code></pre></div>
-<p>But nothing went out. Ok, time to troubleshoot.</p>
-<ul>
-<li><p>Check if postfix service is up with <code>systemctl status postfix</code>. It looks fine</p></li>
-<li><p>Check if I have a correct looking config in <code>/etc/postfix/sasl_passwd</code>. I do and there’s the <code>sasl_passwd.db</code> file in that folder as well that I’d expect</p></li>
-<li><p>Check <code>/etc/postfix/main.cf</code>. Config looks ok</p></li>
-<li><p>Check <code>/var/log/mail.log</code>. Pertinent error seems to be around this:</p>
-<div class="sourceCode" id="cb5" style="background: #f1f3f5;"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb5-1"> <span class="va" style="color: #111111;
-background-color: null;
-font-style: inherit;">status</span><span class="op" style="color: #5E5E5E;
-background-color: null;
-font-style: inherit;">=</span>bounced <span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">(</span><span class="ex" style="color: null;
-background-color: null;
-font-style: inherit;">host</span> smtp.gmx.com<span class="pp" style="color: #AD0000;
-background-color: null;
-font-style: inherit;">[</span><span class="ss" style="color: #20794D;
-background-color: null;
-font-style: inherit;">212.227.17.184</span><span class="pp" style="color: #AD0000;
-background-color: null;
-font-style: inherit;">]</span> said: 550-Requested action not taken: mailbox unavailable 550 invalid DNS MX or A/AAAA resource record <span class="er" style="color: #AD0000;
-background-color: null;
-font-style: inherit;">(in</span> <span class="ex" style="color: null;
-background-color: null;
-font-style: inherit;">reply</span> to MAIL FROM command<span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">))</span></span></code></pre></div></li>
-<li><p>Figure I probably set up <code>postfix_aliases</code> wrong in the role variables, so change that and try again. Slightly different error</p>
-<div class="sourceCode" id="cb6" style="background: #f1f3f5;"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb6-1"><span class="va" style="color: #111111;
-background-color: null;
-font-style: inherit;">status</span><span class="op" style="color: #5E5E5E;
-background-color: null;
-font-style: inherit;">=</span>bounced <span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">(</span><span class="ex" style="color: null;
-background-color: null;
-font-style: inherit;">host</span> smtp.gmx.com<span class="pp" style="color: #AD0000;
-background-color: null;
-font-style: inherit;">[</span><span class="ss" style="color: #20794D;
-background-color: null;
-font-style: inherit;">212.227.17.174</span><span class="pp" style="color: #AD0000;
-background-color: null;
-font-style: inherit;">]</span> said: 550-Requested action not taken: mailbox unavailable 550 Sender address is not allowed. <span class="er" style="color: #AD0000;
-background-color: null;
-font-style: inherit;">(in</span> <span class="ex" style="color: null;
-background-color: null;
-font-style: inherit;">reply</span> to MAIL FROM command<span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">))</span></span></code></pre></div></li>
-<li><p>Realize that I was using <code>postfix_aliases</code> the way I should have been using <code>postfix_sender_canonical_maps</code>. Redo that part.</p></li>
-</ul>
-<p>Email sent! Right now they all show up as just coming from <code>root</code>. Per the Techno Tim docs linked above I know there’s a way to make that a more informative name. This would work, but I’d like it to say which host it’s actually coming from.</p>
-<p>I took a guess from the Techno Tim post and figured the config I needed to change in the playbook would be <code>postfix_header_checks</code> and after poking around in the related jinja templates and looking at what the Techno Tim post said to write I got a config together that at least didn’t blow up. Sent a test email again and:</p>
-<div class="sourceCode" id="cb7" style="background: #f1f3f5;"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb7-1"> <span class="va" style="color: #111111;
-background-color: null;
-font-style: inherit;">status</span><span class="op" style="color: #5E5E5E;
-background-color: null;
-font-style: inherit;">=</span>bounced <span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">(</span><span class="ex" style="color: null;
-background-color: null;
-font-style: inherit;">host</span> smtp.gmx.com<span class="pp" style="color: #AD0000;
-background-color: null;
-font-style: inherit;">[</span><span class="ss" style="color: #20794D;
-background-color: null;
-font-style: inherit;">212.227.17.184</span><span class="pp" style="color: #AD0000;
-background-color: null;
-font-style: inherit;">]</span> said: 554-Transaction failed 554-Reject due to policy restrictions. 554 For explanation visit https://postmaster.gmx.net/en/error-messages<span class="pp" style="color: #AD0000;
-background-color: null;
-font-style: inherit;">?</span>ip=24.64.146.237<span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">&amp;</span><span class="va" style="color: #111111;
-background-color: null;
-font-style: inherit;">c</span><span class="op" style="color: #5E5E5E;
-background-color: null;
-font-style: inherit;">=</span>hi <span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">(</span><span class="er" style="color: #AD0000;
-background-color: null;
-font-style: inherit;">in</span> <span class="ex" style="color: null;
-background-color: null;
-font-style: inherit;">reply</span> to end of DATA command<span class="kw" style="color: #003B4F;
-background-color: null;
-font-style: inherit;">))</span></span></code></pre></div>
-<p>Ok, this isn’t a critical feature, but I can handle hacking at it for a bit before I give up.</p>
-<ul>
-<li>Compare what’s in my <code>/etc/postfix/header_checks</code> to what the guide showed: It looks mostly the same, although I’ve got <code>.</code>s in my name since I used the <code>{{ ansible_hostname }}</code> variable to define it. Maybe that’s it? Nope. Same error.</li>
-<li>Techno Tim blog installed <code>postfix-pcre</code> to enable this. Playbook didn’t by default. Add that to the <code>postfix_install</code> var and try again: Still bounced.</li>
-<li>Notice that in the Techno Tim post he didn’t bother including a real email in the replacement line because it wasn’t supposed to matter. Maybe GMX actually cares ( his example had been for gmail). Update the variable so it keeps my real email for that part and just changes the name: It works!</li>
-</ul>
-</section>
-<section id="configure-locale-settings" class="level1">
-<h1>Configure locale settings</h1>
-<p>Around this time I noticed I was getting some error messages when I would connect to a shell on the nodes: <code>perl: warning: Please check that your locale settings:</code>. I already had a role created to set up locales for previously configured hosts, so this was an easy fix, I just had to add it to the playbook for these hosts. Not much to say about this, just noting it here for completeness.</p>
-</section>
-<section id="set-up-nfs-shares" class="level1">
-<h1>Set up NFS shares</h1>
-<p>I already configured this manually, but now I’d like to make sure it stays configured if I rebuild, so I’ll move it into ansible.</p>
-<p>According to the <a href="https://pve.proxmox.com/wiki/Storage:_NFS">proxmox docs</a> the configuration is stored in <code>/etc/pve/storage.cfg</code>.</p>
-<p>Taking a look in there I can see that I do have a NFS share configured there, along with my local and zfs storage.</p>
-<p>This seems like a great use case for the <a href="https://docs.ansible.com/ansible/latest/collections/ansible/builtin/blockinfile_module.html">blockinfile</a> module in ansible.</p>
-<p>Well this is weird. After removing the original block from that file and having ansible add it, I can access the mount point from the terminal on all my hosts, but it no longer shows up as a storage option in the UI.</p>
-<p>After doing a reboot and some further testing I confirmed that removing that entry should remove it from the mount point and the UI (and it does). Adding the entry back does not seem to add the storage either to the mount point or the UI. I’m not sure why that would be, so let’s see what else there is to do.</p>
-<p>Looking more through the proxmox docs I see there’s a <a href="https://pve.proxmox.com/pve-docs/chapter-pvesm.html">pve storage manager</a> command. Maybe what I should do instead is check if that share is in the config file, and if it’s not run a shell command to add it.</p>
-<p>In doing some testing for the shell command, I confirmed that all the shell command does is fill in an entry in the file mentioned above. After some further testing, the issue seems to be related to the <code>#Ansible Managed Block</code> comments the ansible function places around the entry. Something about needing blank lines around entries. By modifying the block marker to have newlines on either side of the comment I was able to use blockinfile to set up the share. Easier than parsing shell output and sending a big long command. I could have set this to be applied to all hosts, but since this is in <code>/etc/pve</code> the cluster manager will handle replication across hosts for me.</p>
-</section>
-<section id="conclusion" class="level1">
-<h1>Conclusion</h1>
-<p>In this post I covered a bunch of configuration I wanted to have in place on my proxmox nodes before I got into the business of actually deploying anything. Stay tuned for my next post in this series where maybe I’ll actually use the cluster for what it was intended for and spin up some VMs.</p>
-
-
-</section>
-
- ]]></description>
-  <category>configuration</category>
-  <category>linux</category>
-  <category>proxmox</category>
-  <guid>https://blog.ianpreston.ca/posts/2022-12-31-proxmox2.html</guid>
-  <pubDate>Sat, 31 Dec 2022 00:00:00 GMT</pubDate>
 </item>
 </channel>
 </rss>
