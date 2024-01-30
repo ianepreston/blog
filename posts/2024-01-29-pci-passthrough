@@ -1,0 +1,21 @@
+---
+title: "PCI Passthrough with XCP-NG"
+date: '2024-01-29'
+description: "Making things hard on myself."
+layout: post
+toc: true
+categories: [linux, xcp-ng, virtualization]
+---
+
+# Introduction
+
+I'm using some mini PCs as my XCP-NG hosts and I want to pass their integrated Intel
+graphics through to a VM so I can use it for transcoding. Wish me luck!
+
+# Reference material
+
+[The official docs](https://docs.xcp-ng.org/compute/#pci-passthrough)
+[A blog where someone else got it working](https://jasonloong.com/blog/migrated-a-plex-intel-nuc-to-xcp-ng-xenserver-with-igpu-passthrough)
+[A forum post where they got it working from the GUI but not CLI](https://xcp-ng.org/forum/topic/6211/intel-gpu-passthrough-question/4?_=1662834738963)
+
+# Try the GUI
