@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.3.450">
+<meta name="generator" content="quarto-1.4.553">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
@@ -24,7 +24,7 @@ ul.task-list li input[type="checkbox"] {
 }
 /* CSS for syntax highlighting */
 pre > code.sourceCode { white-space: pre; position: relative; }
-pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span { line-height: 1.25; }
 pre > code.sourceCode > span:empty { height: 1.2em; }
 .sourceCode { overflow: visible; }
 code.sourceCode > span { color: inherit; text-decoration: inherit; }
@@ -59,7 +59,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </style>
 
 
-<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js" integrity="sha512-bLT0Qm9VnAYZDflyKcBaQ2gg0hSYNQrJ8RilYldYQ1FxQYoCLtUjuuRuZo+fjqhx/qtq/1itJ0C2ejDxltZVFg==" crossorigin="anonymous"></script><script src="../site_libs/quarto-nav/quarto-nav.js"></script>
 <script src="../site_libs/quarto-nav/headroom.min.js"></script>
 <script src="../site_libs/clipboard/clipboard.min.js"></script>
 <script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
@@ -81,7 +81,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   "collapse-after": 3,
   "panel-placement": "end",
   "type": "overlay",
-  "limit": 20,
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
   "language": {
     "search-no-results-text": "No results",
     "search-matching-documents-text": "matching documents",
@@ -90,13 +96,14 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     "search-more-match-text": "more match in this document",
     "search-more-matches-text": "more matches in this document",
     "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
     "search-detached-cancel-button-title": "Cancel",
     "search-submit-button-title": "Submit",
     "search-label": "Search"
   }
 }</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" integrity="sha512-c3Nl8+7g4LMSTdrm621y7kf9v3SDPnhxLNhcjFJbKECVnmZHTdo+IRO05sNLTH/D3vA6u1X32ehoLC7WFVdheg==" crossorigin="anonymous"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js" integrity="sha512-bLT0Qm9VnAYZDflyKcBaQ2gg0hSYNQrJ8RilYldYQ1FxQYoCLtUjuuRuZo+fjqhx/qtq/1itJ0C2ejDxltZVFg==" crossorigin="anonymous"></script>
+
 <script type="application/javascript">define('jquery', [],function() {return window.jQuery;})</script>
 
 
@@ -106,10 +113,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <body class="nav-fixed">
 
 <div id="quarto-search-results"></div>
-  <header id="quarto-header" class="headroom fixed-top">
-    <nav class="navbar navbar-expand-lg navbar-dark ">
+  <header id="quarto-header" class="headroom fixed-top quarto-banner">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
       <div class="navbar-container container-fluid">
-      <div class="navbar-brand-container">
+      <div class="navbar-brand-container mx-auto">
     <a class="navbar-brand" href="../index.html">
     <span class="navbar-title">Ian’s blog</span>
     </a>
@@ -121,18 +128,18 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
           <div class="collapse navbar-collapse" id="navbarCollapse">
             <ul class="navbar-nav navbar-nav-scroll ms-auto">
   <li class="nav-item">
-    <a class="nav-link" href="../about.html" rel="" target="">
- <span class="menu-text">about</span></a>
+    <a class="nav-link" href="../about.html"> 
+<span class="menu-text">about</span></a>
   </li>  
   <li class="nav-item compact">
-    <a class="nav-link" href="https://github.com/ianepreston" rel="" target=""><i class="bi bi-github" role="img">
+    <a class="nav-link" href="https://github.com/ianepreston"> <i class="bi bi-github" role="img">
 </i> 
- <span class="menu-text"></span></a>
+<span class="menu-text"></span></a>
   </li>  
 </ul>
-            <div class="quarto-navbar-tools">
-</div>
           </div> <!-- /navcollapse -->
+          <div class="quarto-navbar-tools">
+</div>
       </div> <!-- /container-fluid -->
     </nav>
 </header>
@@ -201,10 +208,11 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#conclusion" id="toc-conclusion" class="nav-link" data-scroll-target="#conclusion">Conclusion</a></li>
   <li><a href="#appendix-raw-tables" id="toc-appendix-raw-tables" class="nav-link" data-scroll-target="#appendix-raw-tables">Appendix: Raw tables</a></li>
   </ul>
-</nav>
+<div class="quarto-code-links"><h2>Code Links</h2><ul><li><a href="https://mybinder.org/v2/gh/ianepreston/blog/HEAD" target="_blank"><i class="bi bi-journals"></i>Launch Binder</a></li></ul></div></nav>
     </div>
 <!-- main -->
 <main class="content quarto-banner-title-block" id="quarto-document-content">
+
 
 
 
@@ -222,7 +230,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="setup-and-data-acquisition" class="level2">
 <h2 class="anchored" data-anchor-id="setup-and-data-acquisition">Setup and data acquisition</h2>
 <p>This section of the code loads required modules, downloads the required data sets, and reads them into DataFrames.</p>
-<div class="cell" data-execution_count="1">
+<div id="cell-3" class="cell" data-execution_count="1">
 <div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> datetime <span class="im">as</span> dt</span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> itertools <span class="im">import</span> chain</span>
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> pathlib <span class="im">import</span> Path</span>
@@ -260,8 +268,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="historical-budget-data" class="level3">
 <h3 class="anchored" data-anchor-id="historical-budget-data">Historical budget data</h3>
 <p>Functions in this section are concerned with acquiring historical Alberta budget data and reading it into a DataFrame</p>
-<div class="cell" data-execution_count="2">
-<details>
+<div id="cell-6" class="cell" data-execution_count="2">
+<details class="code-fold">
 <summary>Code</summary>
 <div class="sourceCode cell-code" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> download_budget_data() <span class="op">-&gt;</span> Path:</span>
 <span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""Download the excel file for the analysis from the policy school page.</span></span>
@@ -491,8 +499,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="real-per-capita-budget" class="level3">
 <h3 class="anchored" data-anchor-id="real-per-capita-budget">Real Per Capita budget</h3>
 <p>All of the analysis in the paper is done in terms of real per-capita data. Functions in this section transform the nominal total budget numbers acquired in the previous section into real per-capita figures.</p>
-<div class="cell" data-execution_count="3">
-<details>
+<div id="cell-8" class="cell" data-execution_count="3">
+<details class="code-fold">
 <summary>Code</summary>
 <div class="sourceCode cell-code" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> periodic_to_budget_annual(df: pd.DataFrame, index_name: <span class="bu">str</span>, year_periods: <span class="bu">int</span> <span class="op">=</span> <span class="dv">4</span>) <span class="op">-&gt;</span> pd.DataFrame:</span>
 <span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""Take a monthly or quarterly indexed dataframe and annualize it by budget period.</span></span>
@@ -638,8 +646,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="exogenous-factors" class="level3">
 <h3 class="anchored" data-anchor-id="exogenous-factors">Exogenous factors</h3>
 <p>The paper lists the Alberta employment rate, the Alberta unemployment rate, and the CAD/USD exchange rate as exogenous factors included in the model. Functions in this section acquire that data. I had to do some fiddling to get long enough historical series for some of the factors as you’ll note in the code. It’s hard to say for sure how the original author sourced this data. I’ll just have to compare my tables and charts to his to see if I got close enough.</p>
-<div class="cell" data-execution_count="4">
-<details>
+<div id="cell-10" class="cell" data-execution_count="4">
+<details class="code-fold">
 <summary>Code</summary>
 <div class="sourceCode cell-code" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> download_historical_cad_usd() <span class="op">-&gt;</span> pd.DataFrame:</span>
 <span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""Get exchange rates from before 1971.</span></span>
@@ -839,8 +847,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="figure-1" class="level3">
 <h3 class="anchored" data-anchor-id="figure-1">Figure 1</h3>
 <p>Page 5 of the report charts Non-renewable Resource Revenue, Total Expenditure, and Total Revenue. All are in per-capita 2017 dollars. Reproducing this chart will be a good starting check that my data extraction and transformation matches the original author’s strategy.</p>
-<div class="cell" data-execution_count="5">
-<details>
+<div id="cell-12" class="cell" data-execution_count="5">
+<details class="code-fold">
 <summary>Code</summary>
 <div class="sourceCode cell-code" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> fig1(df: pd.DataFrame) <span class="op">-&gt;</span> alt.Chart:</span>
 <span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""Reproduce Figure 1 from the paper.</span></span>
@@ -877,18 +885,26 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </details>
 </div>
 <p>Here’s the original chart from the paper:</p>
-<div class="cell" data-execution_count="6">
+<div id="cell-14" class="cell" data-execution_count="6">
 <div class="sourceCode cell-code" id="cb6"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>Image(filename<span class="op">=</span><span class="st">"img/ferede_fig_1.png"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-display" data-execution_count="6">
-<p><img src="2021-02-26-ferede_files/figure-html/cell-7-output-1.png" class="img-fluid"></p>
+<div>
+<figure class="figure">
+<p><img src="2021-02-26-ferede_files/figure-html/cell-7-output-1.png" class="img-fluid figure-img"></p>
+</figure>
+</div>
 </div>
 </div>
 <p>And here’s mine:</p>
-<div class="cell" data-execution_count="7">
+<div id="cell-16" class="cell" data-execution_count="7">
 <div class="sourceCode cell-code" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>df <span class="op">=</span> budget_real_per_capita()</span>
 <span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>fig1(df)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-display" data-execution_count="7">
-<p><img src="2021-02-26-ferede_files/figure-html/cell-8-output-1.png" class="img-fluid"></p>
+<div>
+<figure class="figure">
+<p><img src="2021-02-26-ferede_files/figure-html/cell-8-output-1.png" class="img-fluid figure-img"></p>
+</figure>
+</div>
 </div>
 </div>
 <p>This graph looks very similar to the chart in the paper, with a notable exception of the 1976/1977 budget year. My chart shows Non-renewable Resource Revenue as slightly negative, whereas the original chart has it largely in line with 1975/1976 and 1977/1978. NRR is negative in my chart because I have netted out contributions to the Alberta Heritage Savings Trust Fund (AHSTF). To the best of my understanding, the original paper does the same, and the consistent values between the two in all other years supports that. Quoting the original paper:</p>
@@ -896,7 +912,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <p>The part of resource revenue that is saved in the AHSTF is not expected to influence the provincial government’s spending and revenue-raising choices. For this reason, in our analysis, we exclude the part of the resource revenue that is saved in the AHSTF from the non-renewable-resource revenue data.</p>
 </blockquote>
 <p>For comparison, here is the same chart, but without netting AHSTF contributions from revenue:</p>
-<div class="cell" data-execution_count="9">
+<div id="cell-18" class="cell" data-execution_count="9">
 <div class="sourceCode cell-code" id="cb8"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>no_net_df <span class="op">=</span> (</span>
 <span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>    df</span>
 <span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>    .assign(total_revenue<span class="op">=</span><span class="kw">lambda</span> df: df[<span class="st">"total_revenue"</span>] <span class="op">+</span> df[<span class="st">"total_heritage"</span>])</span>
@@ -905,11 +921,15 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>)</span>
 <span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>fig1(no_net_df)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-display" data-execution_count="9">
-<p><img src="2021-02-26-ferede_files/figure-html/cell-9-output-1.png" class="img-fluid"></p>
+<div>
+<figure class="figure">
+<p><img src="2021-02-26-ferede_files/figure-html/cell-9-output-1.png" class="img-fluid figure-img"></p>
+</figure>
+</div>
 </div>
 </div>
 <p>1976/1977 more closely matches the original chart in the paper, but the remaining years in the period of mid 70s to mid 80s when there were significant contributions clearly do not match. Let’s try one more where I just substitute that one year.</p>
-<div class="cell" data-execution_count="10">
+<div id="cell-20" class="cell" data-execution_count="10">
 <div class="sourceCode cell-code" id="cb9"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>error_df <span class="op">=</span> df.copy()</span>
 <span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>heritage_76 <span class="op">=</span> error_df.loc[<span class="st">"1976"</span>, <span class="st">"total_heritage"</span>]</span>
 <span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>error_df.loc[<span class="st">"1976"</span>, <span class="st">"natural_resource_revenue"</span>] <span class="op">+=</span> heritage_76</span>
@@ -917,14 +937,22 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>error_df.loc[<span class="st">"1976"</span>, <span class="st">"deficit"</span>] <span class="op">-=</span> heritage_76</span>
 <span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>fig1(error_df)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-display" data-execution_count="10">
-<p><img src="2021-02-26-ferede_files/figure-html/cell-10-output-1.png" class="img-fluid"></p>
+<div>
+<figure class="figure">
+<p><img src="2021-02-26-ferede_files/figure-html/cell-10-output-1.png" class="img-fluid figure-img"></p>
+</figure>
+</div>
 </div>
 </div>
 <p>Here’s the original figure again for easier comparison</p>
-<div class="cell" data-execution_count="11">
+<div id="cell-22" class="cell" data-execution_count="11">
 <div class="sourceCode cell-code" id="cb10"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>Image(filename<span class="op">=</span><span class="st">"img/ferede_fig_1.png"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-display" data-execution_count="11">
-<p><img src="2021-02-26-ferede_files/figure-html/cell-11-output-1.png" class="img-fluid"></p>
+<div>
+<figure class="figure">
+<p><img src="2021-02-26-ferede_files/figure-html/cell-11-output-1.png" class="img-fluid figure-img"></p>
+</figure>
+</div>
 </div>
 </div>
 <p>From eyeballing it that looks exactly like Figure 1 in the paper. It appears there’s a data error in the original paper. For the rest of this analysis I’ll compare both my base implementation of the data, as well as the one with the data error.</p>
@@ -932,8 +960,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="figure-2" class="level3">
 <h3 class="anchored" data-anchor-id="figure-2">Figure 2</h3>
 <p>Page 6 of the paper produces a scatter plot of Real per capita non-renewable resource revenue on the X axis vs.&nbsp;Real per capita budget balance on the Y, along with a linear trend fit.</p>
-<div class="cell" data-execution_count="12">
-<details>
+<div id="cell-25" class="cell" data-execution_count="12">
+<details class="code-fold">
 <summary>Code</summary>
 <div class="sourceCode cell-code" id="cb11"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> fig2(df: pd.DataFrame) <span class="op">-&gt;</span> <span class="va">None</span>:</span>
 <span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""Reproduce Figure 2 from the paper.</span></span>
@@ -959,24 +987,36 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </details>
 </div>
 <p>Here’s the original figure</p>
-<div class="cell" data-execution_count="13">
+<div id="cell-27" class="cell" data-execution_count="13">
 <div class="sourceCode cell-code" id="cb12"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>Image(filename<span class="op">=</span><span class="st">"img/ferede_fig_2.png"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-display" data-execution_count="13">
-<p><img src="2021-02-26-ferede_files/figure-html/cell-13-output-1.png" class="img-fluid"></p>
+<div>
+<figure class="figure">
+<p><img src="2021-02-26-ferede_files/figure-html/cell-13-output-1.png" class="img-fluid figure-img"></p>
+</figure>
+</div>
 </div>
 </div>
 <p>Here’s the figure using my original data:</p>
-<div class="cell" data-execution_count="14">
+<div id="cell-29" class="cell" data-execution_count="14">
 <div class="sourceCode cell-code" id="cb13"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>fig2(df)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-display">
-<p><img src="2021-02-26-ferede_files/figure-html/cell-14-output-1.png" class="img-fluid"></p>
+<div>
+<figure class="figure">
+<p><img src="2021-02-26-ferede_files/figure-html/cell-14-output-1.png" class="img-fluid figure-img"></p>
+</figure>
+</div>
 </div>
 </div>
 <p>And here’s the figure using the version with a data error:</p>
-<div class="cell" data-execution_count="15">
+<div id="cell-31" class="cell" data-execution_count="15">
 <div class="sourceCode cell-code" id="cb14"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>fig2(error_df)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-display">
-<p><img src="2021-02-26-ferede_files/figure-html/cell-15-output-1.png" class="img-fluid"></p>
+<div>
+<figure class="figure">
+<p><img src="2021-02-26-ferede_files/figure-html/cell-15-output-1.png" class="img-fluid figure-img"></p>
+</figure>
+</div>
 </div>
 </div>
 <p>Again, this chart is more consistent with the dataframe where I don’t net heritage fund contributions out of 1976 but do for all other years</p>
@@ -985,7 +1025,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="model-specification-and-estimation" class="level2">
 <h2 class="anchored" data-anchor-id="model-specification-and-estimation">Model Specification and estimation</h2>
 <p>This section combines the previously specified data extraction with transformations necessary to produce summary statistics, statistical tests, and the VAR model itself.</p>
-<div class="cell" data-execution_count="16">
+<div id="cell-34" class="cell" data-execution_count="16">
 <div class="sourceCode cell-code" id="cb15"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> model_df_levels(budg: pd.DataFrame) <span class="op">-&gt;</span> pd.DataFrame:</span>
 <span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""Combine real per capita budget data to get model data in levels.</span></span>
 <span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a></span>
@@ -1016,17 +1056,17 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb15-28"><a href="#cb15-28" aria-hidden="true" tabindex="-1"></a>    )</span>
 <span id="cb15-29"><a href="#cb15-29" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> df</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<div class="cell" data-execution_count="17">
+<div id="cell-35" class="cell" data-execution_count="17">
 <div class="sourceCode cell-code" id="cb16"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>mdfl <span class="op">=</span> model_df_levels(df)</span>
 <span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>mdfl_err <span class="op">=</span> model_df_levels(error_df)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <section id="sumary-statistics-for-key-variables-1970-71-2016-17-in-levels" class="level3">
 <h3 class="anchored" data-anchor-id="sumary-statistics-for-key-variables-1970-71-2016-17-in-levels">Sumary statistics for key variables, 1970-71, 2016-17 in levels</h3>
 <p>Prior to any modeling, let’s compare the summary statistics for the data sets I’ve created against those in the paper:</p>
-<div class="cell" data-execution_count="18">
-<details>
+<div id="cell-37" class="cell" data-execution_count="18">
+<details class="code-fold">
 <summary>Code</summary>
-<div class="sourceCode cell-code" id="cb17"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>number <span class="op">=</span> <span class="st">"{:0&lt;4,.1f}"</span></span>
+<div class="sourceCode cell-code" id="cb17"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>number <span class="op">=</span> <span class="st">"</span><span class="sc">{:0&lt;4,.1f}</span><span class="st">"</span></span>
 <span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>percent <span class="op">=</span> <span class="st">'</span><span class="sc">{:.1%}</span><span class="st">'</span></span>
 <span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>count <span class="op">=</span> <span class="st">"</span><span class="sc">{:0.0f}</span><span class="st">"</span></span>
 <span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a></span>
@@ -1071,16 +1111,21 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </details>
 </div>
 <p>Here’s Table 1 from the paper:</p>
-<div class="cell" data-execution_count="19">
+<div id="cell-39" class="cell" data-execution_count="19">
 <div class="sourceCode cell-code" id="cb18"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a>Image(filename<span class="op">=</span><span class="st">"img/ferede_tbl_1.png"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-display" data-execution_count="19">
-<p><img src="2021-02-26-ferede_files/figure-html/cell-19-output-1.png" class="img-fluid"></p>
+<div>
+<figure class="figure">
+<p><img src="2021-02-26-ferede_files/figure-html/cell-19-output-1.png" class="img-fluid figure-img"></p>
+</figure>
+</div>
 </div>
 </div>
 <p>Here’s my summary of the top half</p>
-<div class="cell" data-execution_count="20">
+<div id="cell-41" class="cell" data-execution_count="20">
 <div class="sourceCode cell-code" id="cb19"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a>tbl1_level(mdfl)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-display" data-execution_count="20">
+<div>
 <style type="text/css">
 </style>
 <table id="T_16831_" data-quarto-postprocess="true" class="table table-sm table-striped small">
@@ -1212,10 +1257,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </table>
 </div>
 </div>
+</div>
 <p>And the same summary on the data with the introduced error</p>
-<div class="cell" data-execution_count="21">
+<div id="cell-43" class="cell" data-execution_count="21">
 <div class="sourceCode cell-code" id="cb20"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a>tbl1_level(mdfl_err)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-display" data-execution_count="21">
+<div>
 <style type="text/css">
 </style>
 <table id="T_a9fa3_" data-quarto-postprocess="true" class="table table-sm table-striped small">
@@ -1347,13 +1394,14 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </table>
 </div>
 </div>
+</div>
 <p>All the figures that I can validate against (exogenous variables aren’t reported in the paper) are reasonably close. The one noted difference is the previously described outlier in natural resource revenue which leads to my minimum for that variable being significantly lower than in the paper. That large one goes away again if I introduce the same data error described above. My guess for the remaining small discrepancies are differences in calculating population or CPI.</p>
 </section>
 <section id="sumary-statistics-for-key-variables-1970-71-2016-17-first-difference" class="level3">
 <h3 class="anchored" data-anchor-id="sumary-statistics-for-key-variables-1970-71-2016-17-first-difference">Sumary statistics for key variables, 1970-71, 2016-17, first difference</h3>
 <p>Reproduce the bottom half of table 1 from the paper</p>
-<div class="cell" data-execution_count="22">
-<details>
+<div id="cell-46" class="cell" data-execution_count="22">
+<details class="code-fold">
 <summary>Code</summary>
 <div class="sourceCode cell-code" id="cb21"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> model_df_first_diff(mdfl: pd.DataFrame) <span class="op">-&gt;</span> pd.DataFrame:</span>
 <span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""Produce the first difference of the level model df.</span></span>
@@ -1387,8 +1435,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb21-30"><a href="#cb21-30" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> df</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 </div>
-<div class="cell" data-execution_count="23">
-<details>
+<div id="cell-47" class="cell" data-execution_count="23">
+<details class="code-fold">
 <summary>Code</summary>
 <div class="sourceCode cell-code" id="cb22"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> tbl1_diff(model_df: pd.DataFrame) <span class="op">-&gt;</span> pd.io.formats.style.Styler:</span>
 <span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""Produce summary statistics of the first differenced data set.</span></span>
@@ -1424,16 +1472,21 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </details>
 </div>
 <p>Here’s Table 1 from the paper again:</p>
-<div class="cell" data-execution_count="24">
+<div id="cell-49" class="cell" data-execution_count="24">
 <div class="sourceCode cell-code" id="cb23"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a>Image(filename<span class="op">=</span><span class="st">"img/ferede_tbl_1.png"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-display" data-execution_count="24">
-<p><img src="2021-02-26-ferede_files/figure-html/cell-24-output-1.png" class="img-fluid"></p>
+<div>
+<figure class="figure">
+<p><img src="2021-02-26-ferede_files/figure-html/cell-24-output-1.png" class="img-fluid figure-img"></p>
+</figure>
+</div>
 </div>
 </div>
 <p>Here’s mine:</p>
-<div class="cell" data-execution_count="25">
+<div id="cell-51" class="cell" data-execution_count="25">
 <div class="sourceCode cell-code" id="cb24"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a>tbl1_diff(mdfl)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-display" data-execution_count="25">
+<div>
 <style type="text/css">
 </style>
 <table id="T_dfab2_" data-quarto-postprocess="true" class="table table-sm table-striped small">
@@ -1587,10 +1640,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </table>
 </div>
 </div>
+</div>
 <p>And with the data error:</p>
-<div class="cell" data-execution_count="26">
+<div id="cell-53" class="cell" data-execution_count="26">
 <div class="sourceCode cell-code" id="cb25"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a>tbl1_diff(mdfl_err)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-display" data-execution_count="26">
+<div>
 <style type="text/css">
 </style>
 <table id="T_e3dc6_" data-quarto-postprocess="true" class="table table-sm table-striped small">
@@ -1744,12 +1799,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </table>
 </div>
 </div>
+</div>
 <p>As with everything so far, the data overall matches, and Natural Resource Revenue matches a lot better if I neglect to net out the heritage fund in 1976.</p>
 </section>
 <section id="unit-root-tests" class="level3">
 <h3 class="anchored" data-anchor-id="unit-root-tests">Unit-Root Tests</h3>
 <p>Table A1 in the paper shows the results of unit root tests for both the level and first differenced variables in the model. This section will reproduce those tables</p>
-<div class="cell" data-execution_count="27">
+<div id="cell-56" class="cell" data-execution_count="27">
 <div class="sourceCode cell-code" id="cb26"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> stationarity_tests(df: pd.DataFrame, first_diff: <span class="bu">bool</span> <span class="op">=</span> <span class="va">False</span>) <span class="op">-&gt;</span> pd.DataFrame:</span>
 <span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""Compute stationarity test statistics.</span></span>
 <span id="cb26-3"><a href="#cb26-3" aria-hidden="true" tabindex="-1"></a></span>
@@ -1802,16 +1858,21 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb26-50"><a href="#cb26-50" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> tests_df</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>Here’s the table from the paper:</p>
-<div class="cell" data-execution_count="28">
+<div id="cell-58" class="cell" data-execution_count="28">
 <div class="sourceCode cell-code" id="cb27"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a>Image(filename<span class="op">=</span><span class="st">"img/ferede_tbl_a1.png"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-display" data-execution_count="28">
-<p><img src="2021-02-26-ferede_files/figure-html/cell-28-output-1.png" class="img-fluid"></p>
+<div>
+<figure class="figure">
+<p><img src="2021-02-26-ferede_files/figure-html/cell-28-output-1.png" class="img-fluid figure-img"></p>
+</figure>
+</div>
 </div>
 </div>
 <p>Here is mine with my data set</p>
-<div class="cell" data-execution_count="29">
+<div id="cell-60" class="cell" data-execution_count="29">
 <div class="sourceCode cell-code" id="cb28"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a>stationarity_tests(mdfl, first_diff<span class="op">=</span><span class="va">False</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-display" data-execution_count="29">
+<div>
 <div>
 
 
@@ -1891,9 +1952,11 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </div>
 </div>
-<div class="cell" data-execution_count="30">
+</div>
+<div id="cell-61" class="cell" data-execution_count="30">
 <div class="sourceCode cell-code" id="cb29"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a>stationarity_tests(mdfl, first_diff<span class="op">=</span><span class="va">True</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-display" data-execution_count="30">
+<div>
 <div>
 
 
@@ -1985,10 +2048,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </div>
 </div>
+</div>
 <p>And with the error data set:</p>
-<div class="cell" data-execution_count="31">
+<div id="cell-63" class="cell" data-execution_count="31">
 <div class="sourceCode cell-code" id="cb30"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a>stationarity_tests(mdfl_err, first_diff<span class="op">=</span><span class="va">False</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-display" data-execution_count="31">
+<div>
 <div>
 
 
@@ -2068,9 +2133,11 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </div>
 </div>
-<div class="cell" data-execution_count="32">
+</div>
+<div id="cell-64" class="cell" data-execution_count="32">
 <div class="sourceCode cell-code" id="cb31"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a>stationarity_tests(mdfl_err, first_diff<span class="op">=</span><span class="va">True</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-display" data-execution_count="32">
+<div>
 <div>
 
 
@@ -2162,6 +2229,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </div>
 </div>
+</div>
 <p>Documentation on the test tools I used can be found <a href="https://arch.readthedocs.io/en/latest/unitroot/tests.html">here</a></p>
 <p>There are some interesting differences. Most notable is that on the levels of the deficit series I reject the null hypothesis of a unit root using all three tests at a significance level &lt; 1%. The paper specifically notes that if the deficit is stationary in levels then a Vector Error Correction model can be applied. As the original author’s fails to reject the null he implements a Vector AutoRegression model on the first differenced data. In levels the only other series that I find to be stationary is natural resource revenue. ADF on program expenditure would also reject the null at 5% significance, but would fail to reject it using the other two tests.</p>
 <p>Looking at the first differenced series, since that’s what the paper ultimately ends up using, I also reject the null hypothesis of a unit root for all variables using all tests at a 1% significant <em>except</em> program expenditure and deficit using Augmented Dickey Fuller. Those last two tests differ from what’s reported in the paper.</p>
@@ -2171,7 +2239,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="the-model" class="level3">
 <h3 class="anchored" data-anchor-id="the-model">The Model</h3>
 <p>The conclusions from the paper are based on fitting a <a href="https://en.wikipedia.org/wiki/Vector_autoregression">VAR</a> to the first differenced data set we’ve been analyzing above. Let’s do that now and compare the results to the paper.</p>
-<div class="cell" data-execution_count="33">
+<div id="cell-67" class="cell" data-execution_count="33">
 <div class="sourceCode cell-code" id="cb32"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> fit_var(mdfl: pd.DataFrame) <span class="op">-&gt;</span> statsmodels.tsa.vector_ar.var_model.VARResults:</span>
 <span id="cb32-2"><a href="#cb32-2" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""Fit a VAR to the model data.</span></span>
 <span id="cb32-3"><a href="#cb32-3" aria-hidden="true" tabindex="-1"></a></span>
@@ -2200,8 +2268,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb32-26"><a href="#cb32-26" aria-hidden="true" tabindex="-1"></a>    results <span class="op">=</span> model.fit(<span class="dv">2</span>)</span>
 <span id="cb32-27"><a href="#cb32-27" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> results</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<div class="cell" data-execution_count="34">
-<details>
+<div id="cell-68" class="cell" data-execution_count="34">
+<details class="code-fold">
 <summary>Code</summary>
 <div class="sourceCode cell-code" id="cb33"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> highlight_significance(val):</span>
 <span id="cb33-2"><a href="#cb33-2" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""Colour code statistical significance.</span></span>
@@ -2234,27 +2302,32 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb33-29"><a href="#cb33-29" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> <span class="ss">f'color: </span><span class="sc">{</span>color<span class="sc">}</span><span class="ss">'</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </details>
 </div>
-<div class="cell" data-execution_count="35">
+<div id="cell-69" class="cell" data-execution_count="35">
 <div class="sourceCode cell-code" id="cb34"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a>results <span class="op">=</span> fit_var(mdfl)</span>
 <span id="cb34-2"><a href="#cb34-2" aria-hidden="true" tabindex="-1"></a>results_err <span class="op">=</span> fit_var(mdfl_err)</span>
 <span id="cb34-3"><a href="#cb34-3" aria-hidden="true" tabindex="-1"></a>summary <span class="op">=</span> results.summary()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<div class="cell" data-execution_count="36">
+<div id="cell-70" class="cell" data-execution_count="36">
 <div class="sourceCode cell-code" id="cb35"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Set up the rows and columns of my parameters to match the paper</span></span>
 <span id="cb35-2"><a href="#cb35-2" aria-hidden="true" tabindex="-1"></a>reindex_cols <span class="op">=</span> [<span class="st">"program_expenditure"</span>, <span class="st">"debt_service"</span>, <span class="st">"corporate_income_tax"</span>, <span class="st">"personal_income_tax"</span>, <span class="st">"other_revenue"</span>, <span class="st">"nrri"</span>, <span class="st">"nrrd"</span>]</span>
 <span id="cb35-3"><a href="#cb35-3" aria-hidden="true" tabindex="-1"></a>index_order <span class="op">=</span> [<span class="st">"nrri"</span>, <span class="st">"nrrd"</span>, <span class="st">"program_expenditure"</span>, <span class="st">"debt_service"</span>, <span class="st">"corporate_income_tax"</span>, <span class="st">"personal_income_tax"</span>, <span class="st">"other_revenue"</span>]</span>
 <span id="cb35-4"><a href="#cb35-4" aria-hidden="true" tabindex="-1"></a>reindex_rows <span class="op">=</span> <span class="bu">list</span>(chain.from_iterable((<span class="ss">f"L1.</span><span class="sc">{</span>row<span class="sc">}</span><span class="ss">"</span>, <span class="ss">f"L2.</span><span class="sc">{</span>row<span class="sc">}</span><span class="ss">"</span>) <span class="cf">for</span> row <span class="kw">in</span> index_order))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>Here’s the table from the paper:</p>
-<div class="cell" data-execution_count="37">
+<div id="cell-72" class="cell" data-execution_count="37">
 <div class="sourceCode cell-code" id="cb36"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb36-1"><a href="#cb36-1" aria-hidden="true" tabindex="-1"></a>Image(filename<span class="op">=</span><span class="st">"img/ferede_tbl_a2.png"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-display" data-execution_count="37">
-<p><img src="2021-02-26-ferede_files/figure-html/cell-37-output-1.png" class="img-fluid"></p>
+<div>
+<figure class="figure">
+<p><img src="2021-02-26-ferede_files/figure-html/cell-37-output-1.png" class="img-fluid figure-img"></p>
+</figure>
 </div>
 </div>
-<div class="cell" data-execution_count="38">
+</div>
+<div id="cell-73" class="cell" data-execution_count="38">
 <div class="sourceCode cell-code" id="cb37"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb37-1"><a href="#cb37-1" aria-hidden="true" tabindex="-1"></a>results.params.reindex(index<span class="op">=</span>reindex_rows, columns<span class="op">=</span>reindex_cols)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-display" data-execution_count="38">
+<div>
 <div>
 
 
@@ -2418,9 +2491,11 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </div>
 </div>
-<div class="cell" data-execution_count="39">
+</div>
+<div id="cell-74" class="cell" data-execution_count="39">
 <div class="sourceCode cell-code" id="cb38"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb38-1"><a href="#cb38-1" aria-hidden="true" tabindex="-1"></a>results.pvalues.reindex(index<span class="op">=</span>reindex_rows, columns<span class="op">=</span>reindex_cols).style.applymap(highlight_significance).<span class="bu">format</span>(<span class="st">"</span><span class="sc">{:.2%}</span><span class="st">"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-display" data-execution_count="39">
+<div>
 <style type="text/css">
 #T_b41d0_row0_col0,#T_b41d0_row0_col1,#T_b41d0_row0_col2,#T_b41d0_row0_col3,#T_b41d0_row0_col4,#T_b41d0_row0_col5,#T_b41d0_row0_col6,#T_b41d0_row1_col1,#T_b41d0_row1_col2,#T_b41d0_row1_col3,#T_b41d0_row1_col4,#T_b41d0_row1_col5,#T_b41d0_row1_col6,#T_b41d0_row2_col0,#T_b41d0_row2_col1,#T_b41d0_row2_col2,#T_b41d0_row2_col4,#T_b41d0_row2_col5,#T_b41d0_row2_col6,#T_b41d0_row3_col1,#T_b41d0_row3_col2,#T_b41d0_row3_col3,#T_b41d0_row3_col4,#T_b41d0_row3_col5,#T_b41d0_row3_col6,#T_b41d0_row4_col0,#T_b41d0_row4_col1,#T_b41d0_row4_col2,#T_b41d0_row4_col3,#T_b41d0_row4_col4,#T_b41d0_row4_col5,#T_b41d0_row4_col6,#T_b41d0_row5_col0,#T_b41d0_row5_col1,#T_b41d0_row5_col2,#T_b41d0_row5_col3,#T_b41d0_row5_col5,#T_b41d0_row6_col0,#T_b41d0_row6_col2,#T_b41d0_row6_col3,#T_b41d0_row6_col4,#T_b41d0_row6_col6,#T_b41d0_row7_col1,#T_b41d0_row7_col2,#T_b41d0_row7_col3,#T_b41d0_row7_col4,#T_b41d0_row7_col5,#T_b41d0_row7_col6,#T_b41d0_row8_col0,#T_b41d0_row8_col1,#T_b41d0_row8_col2,#T_b41d0_row8_col3,#T_b41d0_row8_col4,#T_b41d0_row8_col6,#T_b41d0_row9_col0,#T_b41d0_row9_col2,#T_b41d0_row9_col3,#T_b41d0_row9_col4,#T_b41d0_row9_col5,#T_b41d0_row9_col6,#T_b41d0_row10_col0,#T_b41d0_row10_col1,#T_b41d0_row10_col4,#T_b41d0_row10_col5,#T_b41d0_row10_col6,#T_b41d0_row11_col0,#T_b41d0_row11_col1,#T_b41d0_row11_col2,#T_b41d0_row11_col3,#T_b41d0_row11_col4,#T_b41d0_row11_col5,#T_b41d0_row11_col6,#T_b41d0_row12_col0,#T_b41d0_row12_col1,#T_b41d0_row12_col2,#T_b41d0_row12_col3,#T_b41d0_row12_col4,#T_b41d0_row12_col5,#T_b41d0_row12_col6,#T_b41d0_row13_col0,#T_b41d0_row13_col1,#T_b41d0_row13_col2,#T_b41d0_row13_col3,#T_b41d0_row13_col6{
             color:  black;
@@ -2587,9 +2662,11 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </table>
 </div>
 </div>
-<div class="cell" data-execution_count="40">
+</div>
+<div id="cell-75" class="cell" data-execution_count="40">
 <div class="sourceCode cell-code" id="cb39"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb39-1"><a href="#cb39-1" aria-hidden="true" tabindex="-1"></a>results_err.params.reindex(index<span class="op">=</span>reindex_rows, columns<span class="op">=</span>reindex_cols)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-display" data-execution_count="40">
+<div>
 <div>
 
 
@@ -2753,9 +2830,11 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </div>
 </div>
-<div class="cell" data-execution_count="41">
+</div>
+<div id="cell-76" class="cell" data-execution_count="41">
 <div class="sourceCode cell-code" id="cb40"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb40-1"><a href="#cb40-1" aria-hidden="true" tabindex="-1"></a>results_err.pvalues.reindex(index<span class="op">=</span>reindex_rows, columns<span class="op">=</span>reindex_cols).style.applymap(highlight_significance).<span class="bu">format</span>(<span class="st">"</span><span class="sc">{:.2%}</span><span class="st">"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-display" data-execution_count="41">
+<div>
 <style type="text/css">
 #T_e8301_row0_col0,#T_e8301_row6_col5,#T_e8301_row8_col5,#T_e8301_row10_col3,#T_e8301_row13_col4{
             color:  orange;
@@ -2922,13 +3001,14 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </table>
 </div>
 </div>
+</div>
 <p>Once again, my results with the data error included are much closer to the original paper results. Note that without the data error, program spending is shown to rise in response to an increase <em>or</em> decrease in natural resource revenue, but only on the second lag (at least at a statistically significant level. That’s completely contrary to the main thesis of the paper. Now, given that I’ve shown with the corrected data set that budget deficits are stationary in levels, maybe a more appropriate form of analysis would have been to use a VECM as the paper states it would have been, but from this I can say that the data error has led to a significant change in the outcome of the analysis.</p>
 </section>
 <section id="impulse-response-functions" class="level3">
 <h3 class="anchored" data-anchor-id="impulse-response-functions">Impulse Response Functions</h3>
 <p>The actual results of the paper involve taking the estimated impulse response functions derived from the VAR model and examining their implications. Given the results above I’m not sure there’s a lot of value in reproducing all of the other results of this model, but I do want to at least reproduce the IRFs.</p>
-<div class="cell" data-execution_count="42">
-<details>
+<div id="cell-79" class="cell" data-execution_count="42">
+<details class="code-fold">
 <summary>Code</summary>
 <div class="sourceCode cell-code" id="cb41"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb41-1"><a href="#cb41-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> irf_tbl(result: statsmodels.tsa.vector_ar.var_model.VARResults, impulse: <span class="bu">str</span>) <span class="op">-&gt;</span> pd.DataFrame:</span>
 <span id="cb41-2"><a href="#cb41-2" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""Show the IRF as in table 3 of the paper.</span></span>
@@ -2982,15 +3062,20 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="table-3" class="level4">
 <h4 class="anchored" data-anchor-id="table-3">Table 3</h4>
 <p>IMPACTS ON ALBERTA’S BUDGET OF A ONE-DOLLAR INNOVATION IN NON-RENEWABLE-RESOURCE REVENUE (ASYMMETRIC CASE), 1970/71–2016/17</p>
-<div class="cell" data-execution_count="43">
+<div id="cell-81" class="cell" data-execution_count="43">
 <div class="sourceCode cell-code" id="cb42"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb42-1"><a href="#cb42-1" aria-hidden="true" tabindex="-1"></a>Image(filename<span class="op">=</span><span class="st">"img/ferede_tbl_3.png"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-display" data-execution_count="43">
-<p><img src="2021-02-26-ferede_files/figure-html/cell-43-output-1.png" class="img-fluid"></p>
+<div>
+<figure class="figure">
+<p><img src="2021-02-26-ferede_files/figure-html/cell-43-output-1.png" class="img-fluid figure-img"></p>
+</figure>
 </div>
 </div>
-<div class="cell" data-execution_count="44">
+</div>
+<div id="cell-82" class="cell" data-execution_count="44">
 <div class="sourceCode cell-code" id="cb43"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb43-1"><a href="#cb43-1" aria-hidden="true" tabindex="-1"></a>irf_tbl(results, <span class="st">"nrrd"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-display" data-execution_count="44">
+<div>
 <div>
 
 
@@ -3070,9 +3155,11 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </div>
 </div>
-<div class="cell" data-execution_count="45">
+</div>
+<div id="cell-83" class="cell" data-execution_count="45">
 <div class="sourceCode cell-code" id="cb44"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb44-1"><a href="#cb44-1" aria-hidden="true" tabindex="-1"></a>irf_tbl(results, <span class="st">"nrri"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-display" data-execution_count="45">
+<div>
 <div>
 
 
@@ -3152,9 +3239,11 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </div>
 </div>
-<div class="cell" data-execution_count="46">
+</div>
+<div id="cell-84" class="cell" data-execution_count="46">
 <div class="sourceCode cell-code" id="cb45"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb45-1"><a href="#cb45-1" aria-hidden="true" tabindex="-1"></a>irf_tbl(results_err, <span class="st">"nrrd"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-display" data-execution_count="46">
+<div>
 <div>
 
 
@@ -3234,9 +3323,11 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </div>
 </div>
-<div class="cell" data-execution_count="47">
+</div>
+<div id="cell-85" class="cell" data-execution_count="47">
 <div class="sourceCode cell-code" id="cb46"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb46-1"><a href="#cb46-1" aria-hidden="true" tabindex="-1"></a>irf_tbl(results_err, <span class="st">"nrri"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-display" data-execution_count="47">
+<div>
 <div>
 
 
@@ -3316,39 +3407,60 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </div>
 </div>
+</div>
 <p>Same patters as we’ve seen above, the results with the data error included are pretty close to what the paper reports.</p>
 </section>
 <section id="plot-the-irfs" class="level4">
 <h4 class="anchored" data-anchor-id="plot-the-irfs">Plot the IRFs</h4>
 <p>Ok, this is the last bit I want to reproduce, just because IRF charts look cool so it would be a shame to leave them out.</p>
-<div class="cell" data-execution_count="48">
+<div id="cell-88" class="cell" data-execution_count="48">
 <div class="sourceCode cell-code" id="cb47"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb47-1"><a href="#cb47-1" aria-hidden="true" tabindex="-1"></a>Image(filename<span class="op">=</span><span class="st">"img/ferede_fig_3.png"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-display" data-execution_count="48">
-<p><img src="2021-02-26-ferede_files/figure-html/cell-48-output-1.png" class="img-fluid"></p>
+<div>
+<figure class="figure">
+<p><img src="2021-02-26-ferede_files/figure-html/cell-48-output-1.png" class="img-fluid figure-img"></p>
+</figure>
 </div>
 </div>
-<div class="cell" data-execution_count="49">
+</div>
+<div id="cell-89" class="cell" data-execution_count="49">
 <div class="sourceCode cell-code" id="cb48"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb48-1"><a href="#cb48-1" aria-hidden="true" tabindex="-1"></a>results.irf().plot(impulse<span class="op">=</span><span class="st">'nrri'</span>, response<span class="op">=</span><span class="st">'program_expenditure'</span>)<span class="op">;</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-display">
-<p><img src="2021-02-26-ferede_files/figure-html/cell-49-output-1.png" class="img-fluid"></p>
+<div>
+<figure class="figure">
+<p><img src="2021-02-26-ferede_files/figure-html/cell-49-output-1.png" class="img-fluid figure-img"></p>
+</figure>
 </div>
 </div>
-<div class="cell" data-execution_count="50">
+</div>
+<div id="cell-90" class="cell" data-execution_count="50">
 <div class="sourceCode cell-code" id="cb49"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb49-1"><a href="#cb49-1" aria-hidden="true" tabindex="-1"></a>results.irf().plot(impulse<span class="op">=</span><span class="st">'nrrd'</span>, response<span class="op">=</span><span class="st">'program_expenditure'</span>)<span class="op">;</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-display">
-<p><img src="2021-02-26-ferede_files/figure-html/cell-50-output-1.png" class="img-fluid"></p>
+<div>
+<figure class="figure">
+<p><img src="2021-02-26-ferede_files/figure-html/cell-50-output-1.png" class="img-fluid figure-img"></p>
+</figure>
 </div>
 </div>
-<div class="cell" data-execution_count="51">
+</div>
+<div id="cell-91" class="cell" data-execution_count="51">
 <div class="sourceCode cell-code" id="cb50"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb50-1"><a href="#cb50-1" aria-hidden="true" tabindex="-1"></a>results_err.irf().plot(impulse<span class="op">=</span><span class="st">'nrri'</span>, response<span class="op">=</span><span class="st">'program_expenditure'</span>)<span class="op">;</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-display">
-<p><img src="2021-02-26-ferede_files/figure-html/cell-51-output-1.png" class="img-fluid"></p>
+<div>
+<figure class="figure">
+<p><img src="2021-02-26-ferede_files/figure-html/cell-51-output-1.png" class="img-fluid figure-img"></p>
+</figure>
 </div>
 </div>
-<div class="cell" data-execution_count="52">
+</div>
+<div id="cell-92" class="cell" data-execution_count="52">
 <div class="sourceCode cell-code" id="cb51"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb51-1"><a href="#cb51-1" aria-hidden="true" tabindex="-1"></a>results_err.irf().plot(impulse<span class="op">=</span><span class="st">'nrrd'</span>, response<span class="op">=</span><span class="st">'program_expenditure'</span>)<span class="op">;</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-display">
-<p><img src="2021-02-26-ferede_files/figure-html/cell-52-output-1.png" class="img-fluid"></p>
+<div>
+<figure class="figure">
+<p><img src="2021-02-26-ferede_files/figure-html/cell-52-output-1.png" class="img-fluid figure-img"></p>
+</figure>
+</div>
 </div>
 </div>
 <p>These are harder to eyeball because I’m showing the individual responses and the paper is showing the cumulative ones. But again, if I think about what adding up the points in my charts would look like, they end up closer to the data set with the error.</p>
@@ -3362,9 +3474,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="appendix-raw-tables" class="level2">
 <h2 class="anchored" data-anchor-id="appendix-raw-tables">Appendix: Raw tables</h2>
 <p>For the purposes of validation, here are the full tables I used to produce both the summary statistics above, as well as all statistical models and tests below</p>
-<div class="cell" data-execution_count="53">
+<div id="cell-96" class="cell" data-execution_count="53">
 <div class="sourceCode cell-code" id="cb52"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb52-1"><a href="#cb52-1" aria-hidden="true" tabindex="-1"></a>mdfl</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-display" data-execution_count="53">
+<div>
 <div>
 
 
@@ -4176,9 +4289,11 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </div>
 </div>
-<div class="cell" data-execution_count="54">
+</div>
+<div id="cell-97" class="cell" data-execution_count="54">
 <div class="sourceCode cell-code" id="cb53"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb53-1"><a href="#cb53-1" aria-hidden="true" tabindex="-1"></a>model_df_first_diff(mdfl)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-display" data-execution_count="54">
+<div>
 <div>
 
 
@@ -5025,9 +5140,11 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </div>
 </div>
-<div class="cell" data-execution_count="55">
+</div>
+<div id="cell-98" class="cell" data-execution_count="55">
 <div class="sourceCode cell-code" id="cb54"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb54-1"><a href="#cb54-1" aria-hidden="true" tabindex="-1"></a>mdfl_err</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-display" data-execution_count="55">
+<div>
 <div>
 
 
@@ -5839,9 +5956,11 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </div>
 </div>
-<div class="cell" data-execution_count="56">
+</div>
+<div id="cell-99" class="cell" data-execution_count="56">
 <div class="sourceCode cell-code" id="cb55"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb55-1"><a href="#cb55-1" aria-hidden="true" tabindex="-1"></a>model_df_first_diff(mdfl_err)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-display" data-execution_count="56">
+<div>
 <div>
 
 
@@ -6688,6 +6807,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </div>
 </div>
+</div>
 
 
 </section>
@@ -6772,10 +6892,27 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
     // clear code selection
     e.clearSelection();
   });
-  function tippyHover(el, contentFn) {
+    var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+    var mailtoRegex = new RegExp(/^mailto:/);
+      var filterRegex = new RegExp("https:\/\/blog\.ianpreston\.ca");
+    var isInternal = (href) => {
+        return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+    }
+    // Inspect non-navigation links and adorn them if external
+ 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool)');
+    for (var i=0; i<links.length; i++) {
+      const link = links[i];
+      if (!isInternal(link.href)) {
+        // undo the damage that might have been done by quarto-nav.js in the case of
+        // links that we want to consider external
+        if (link.dataset.originalHref !== undefined) {
+          link.href = link.dataset.originalHref;
+        }
+      }
+    }
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
     const config = {
       allowHTML: true,
-      content: contentFn,
       maxWidth: 500,
       delay: 100,
       arrow: false,
@@ -6785,8 +6922,17 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
       interactive: true,
       interactiveBorder: 10,
       theme: 'quarto',
-      placement: 'bottom-start'
+      placement: 'bottom-start',
     };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
     window.tippy(el, config); 
   }
   const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
@@ -6798,7 +6944,130 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
       try { href = new URL(href).hash; } catch {}
       const id = href.replace(/^#\/?/, "");
       const note = window.document.getElementById(id);
-      return note.innerHTML;
+      if (note) {
+        return note.innerHTML;
+      } else {
+        return "";
+      }
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(container);
+        }
+        return container.innerHTML
+      } else {
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(note);
+      }
+      // TODO in 1.5, we should make sure this works without a callout special case
+      if (note.classList.contains("callout")) {
+        return note.outerHTML;
+      } else {
+        return note.innerHTML;
+      }
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
     });
   }
       let selectedAnnoteEl;
@@ -6842,6 +7111,7 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
             }
             div.style.top = top - 2 + "px";
             div.style.height = height + 4 + "px";
+            div.style.left = 0;
             let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
             if (gutterDiv === null) {
               gutterDiv = window.document.createElement("div");
@@ -6867,6 +7137,32 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
         });
         selectedAnnoteEl = undefined;
       };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
       // Attach click handler to the DT
       const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
       for (const annoteDlNode of annoteDls) {
@@ -6927,6 +7223,7 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
 });
 </script>
 </div> <!-- /content -->
+
 
 
 

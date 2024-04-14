@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.3.450">
+<meta name="generator" content="quarto-1.4.553">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
@@ -47,7 +47,13 @@ ul.task-list li input[type="checkbox"] {
   "collapse-after": 3,
   "panel-placement": "end",
   "type": "overlay",
-  "limit": 20,
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
   "language": {
     "search-no-results-text": "No results",
     "search-matching-documents-text": "matching documents",
@@ -56,6 +62,7 @@ ul.task-list li input[type="checkbox"] {
     "search-more-match-text": "more match in this document",
     "search-more-matches-text": "more matches in this document",
     "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
     "search-detached-cancel-button-title": "Cancel",
     "search-submit-button-title": "Submit",
     "search-label": "Search"
@@ -95,16 +102,43 @@ ul.task-list li input[type="checkbox"] {
   <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
   <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
 
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN") {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
 <link rel="stylesheet" href="styles.css">
-<link rel="alternate" type="application/rss+xml" title="Ian's blog" href="index.xml"></head>
+<link rel="alternate" type="application/rss+xml" title="Ian's blog" href="index.xml" data-external="1"></head>
 
 <body class="nav-fixed">
 
 <div id="quarto-search-results"></div>
   <header id="quarto-header" class="headroom fixed-top">
-    <nav class="navbar navbar-expand-lg navbar-dark ">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
       <div class="navbar-container container-fluid">
-      <div class="navbar-brand-container">
+      <div class="navbar-brand-container mx-auto">
     <a class="navbar-brand" href="./index.html">
     <span class="navbar-title">Ian’s blog</span>
     </a>
@@ -116,18 +150,18 @@ ul.task-list li input[type="checkbox"] {
           <div class="collapse navbar-collapse" id="navbarCollapse">
             <ul class="navbar-nav navbar-nav-scroll ms-auto">
   <li class="nav-item">
-    <a class="nav-link" href="./about.html" rel="" target="">
- <span class="menu-text">about</span></a>
+    <a class="nav-link" href="./about.html"> 
+<span class="menu-text">about</span></a>
   </li>  
   <li class="nav-item compact">
-    <a class="nav-link" href="https://github.com/ianepreston" rel="" target=""><i class="bi bi-github" role="img">
+    <a class="nav-link" href="https://github.com/ianepreston"> <i class="bi bi-github" role="img">
 </i> 
- <span class="menu-text"></span></a>
+<span class="menu-text"></span></a>
   </li>  
 </ul>
-            <div class="quarto-navbar-tools">
-</div>
           </div> <!-- /navcollapse -->
+          <div class="quarto-navbar-tools">
+</div>
       </div> <!-- /container-fluid -->
     </nav>
 </header>
@@ -138,6 +172,7 @@ ul.task-list li input[type="checkbox"] {
     
 <!-- main -->
 <main class="content column-page" id="quarto-document-content">
+
 
 
 
@@ -169,22 +204,20 @@ ul.task-list li input[type="checkbox"] {
     </div>
 </div>
 <div class="list quarto-listing-default">
-<div class="quarto-post image-right" data-index="0" data-categories="linux,networking,docker" data-listing-date-sort="1705536000000" data-listing-file-modified-sort="1705632869668" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="4">
+<div class="quarto-post image-right" data-index="0" data-categories="linux,networking,docker" data-listing-date-sort="1705536000000" data-listing-file-modified-sort="1713131589653" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="4" data-listing-word-count-sort="701">
 <div class="body">
-<a href="./posts/2024-01-18-unifi.html">
 <h3 class="no-anchor listing-title">
-Unifi Controller setup in docker (across VLANs)
+<a href="./posts/2024-01-18-unifi.html" class="no-external">Unifi Controller setup in docker (across VLANs)</a>
 </h3>
 <div class="listing-subtitle">
-
+<a href="./posts/2024-01-18-unifi.html" class="no-external"></a>
 </div>
 <div class="listing-description">
-<p>Making things hard on myself.</p>
+<a href="./posts/2024-01-18-unifi.html" class="no-external">Making things hard on myself.</a>
 </div>
-</a>
 </div>
 <div class="metadata">
-<a href="./posts/2024-01-18-unifi.html">
+<a href="./posts/2024-01-18-unifi.html" class="no-external">
 <div class="listing-date">
 Jan 18, 2024
 </div>
@@ -194,22 +227,20 @@ Jan 18, 2024
 </a>
 </div>
 </div>
-<div class="quarto-post image-right" data-index="1" data-categories="linux,WSL,DNS" data-listing-date-sort="1703548800000" data-listing-file-modified-sort="1705632869668" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="4">
+<div class="quarto-post image-right" data-index="1" data-categories="linux,WSL,DNS" data-listing-date-sort="1703548800000" data-listing-file-modified-sort="1713131589653" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="4" data-listing-word-count-sort="660">
 <div class="body">
-<a href="./posts/2023-12-26-dns.html">
 <h3 class="no-anchor listing-title">
-Setting up internal name resolution in Windows and WSL (probably Linux too)
+<a href="./posts/2023-12-26-dns.html" class="no-external">Setting up internal name resolution in Windows and WSL (probably Linux too)</a>
 </h3>
 <div class="listing-subtitle">
-
+<a href="./posts/2023-12-26-dns.html" class="no-external"></a>
 </div>
 <div class="listing-description">
-<p>Tiny little quality of life hack</p>
+<a href="./posts/2023-12-26-dns.html" class="no-external">Tiny little quality of life hack</a>
 </div>
-</a>
 </div>
 <div class="metadata">
-<a href="./posts/2023-12-26-dns.html">
+<a href="./posts/2023-12-26-dns.html" class="no-external">
 <div class="listing-date">
 Dec 26, 2023
 </div>
@@ -219,22 +250,20 @@ Dec 26, 2023
 </a>
 </div>
 </div>
-<div class="quarto-post image-right" data-index="2" data-categories="linux,virtualization,xcp-ng,terraform,ansible" data-listing-date-sort="1702944000000" data-listing-file-modified-sort="1705632869668" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="10">
+<div class="quarto-post image-right" data-index="2" data-categories="linux,virtualization,xcp-ng,terraform,ansible" data-listing-date-sort="1702944000000" data-listing-file-modified-sort="1713131589649" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="10" data-listing-word-count-sort="1854">
 <div class="body">
-<a href="./posts/2023-12-19-xcp-deployment.html">
 <h3 class="no-anchor listing-title">
-Deploying and configuring machines in Xen-Orchestra
+<a href="./posts/2023-12-19-xcp-deployment.html" class="no-external">Deploying and configuring machines in Xen-Orchestra</a>
 </h3>
 <div class="listing-subtitle">
-
+<a href="./posts/2023-12-19-xcp-deployment.html" class="no-external"></a>
 </div>
 <div class="listing-description">
-<p>Deploy and configure some images from my hard fought templates</p>
+<a href="./posts/2023-12-19-xcp-deployment.html" class="no-external">Deploy and configure some images from my hard fought templates</a>
 </div>
-</a>
 </div>
 <div class="metadata">
-<a href="./posts/2023-12-19-xcp-deployment.html">
+<a href="./posts/2023-12-19-xcp-deployment.html" class="no-external">
 <div class="listing-date">
 Dec 19, 2023
 </div>
@@ -244,22 +273,20 @@ Dec 19, 2023
 </a>
 </div>
 </div>
-<div class="quarto-post image-right" data-index="3" data-categories="linux,virtualization,xcp-ng" data-listing-date-sort="1702252800000" data-listing-file-modified-sort="1705632869668" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="5">
+<div class="quarto-post image-right" data-index="3" data-categories="linux,virtualization,xcp-ng" data-listing-date-sort="1702252800000" data-listing-file-modified-sort="1713131589649" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="5" data-listing-word-count-sort="953">
 <div class="body">
-<a href="./posts/2023-12-11-xcp-templates.html">
 <h3 class="no-anchor listing-title">
-Working Templates in Xen-Orchestra
+<a href="./posts/2023-12-11-xcp-templates.html" class="no-external">Working Templates in Xen-Orchestra</a>
 </h3>
 <div class="listing-subtitle">
-
+<a href="./posts/2023-12-11-xcp-templates.html" class="no-external"></a>
 </div>
 <div class="listing-description">
-<p>That last post sure didn’t work. Let’s try this</p>
+<a href="./posts/2023-12-11-xcp-templates.html" class="no-external">That last post sure didn’t work. Let’s try this</a>
 </div>
-</a>
 </div>
 <div class="metadata">
-<a href="./posts/2023-12-11-xcp-templates.html">
+<a href="./posts/2023-12-11-xcp-templates.html" class="no-external">
 <div class="listing-date">
 Dec 11, 2023
 </div>
@@ -269,22 +296,20 @@ Dec 11, 2023
 </a>
 </div>
 </div>
-<div class="quarto-post image-right" data-index="4" data-categories="linux,virtualization,packer,xcp-ng" data-listing-date-sort="1701043200000" data-listing-file-modified-sort="1705632869668" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="34">
+<div class="quarto-post image-right" data-index="4" data-categories="linux,virtualization,packer,xcp-ng" data-listing-date-sort="1701043200000" data-listing-file-modified-sort="1713131589649" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="34" data-listing-word-count-sort="6784">
 <div class="body">
-<a href="./posts/2023-11-27-packer.html">
 <h3 class="no-anchor listing-title">
-(Failing to build) Templates in Xen-Orchestra
+<a href="./posts/2023-11-27-packer.html" class="no-external">(Failing to build) Templates in Xen-Orchestra</a>
 </h3>
 <div class="listing-subtitle">
-
+<a href="./posts/2023-11-27-packer.html" class="no-external"></a>
 </div>
 <div class="listing-description">
-<p>Let’s (fail to) build some golden images</p>
+<a href="./posts/2023-11-27-packer.html" class="no-external">Let’s (fail to) build some golden images</a>
 </div>
-</a>
 </div>
 <div class="metadata">
-<a href="./posts/2023-11-27-packer.html">
+<a href="./posts/2023-11-27-packer.html" class="no-external">
 <div class="listing-date">
 Nov 27, 2023
 </div>
@@ -294,22 +319,20 @@ Nov 27, 2023
 </a>
 </div>
 </div>
-<div class="quarto-post image-right" data-index="5" data-categories="databricks,terraform" data-listing-date-sort="1700352000000" data-listing-file-modified-sort="1705632869668" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="2">
+<div class="quarto-post image-right" data-index="5" data-categories="databricks,terraform" data-listing-date-sort="1700352000000" data-listing-file-modified-sort="1713131589649" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="2" data-listing-word-count-sort="289">
 <div class="body">
-<a href="./posts/2023-11-19-terraform-workspaceconf.html">
 <h3 class="no-anchor listing-title">
-Databricks workspace config in terraform
+<a href="./posts/2023-11-19-terraform-workspaceconf.html" class="no-external">Databricks workspace config in terraform</a>
 </h3>
 <div class="listing-subtitle">
-
+<a href="./posts/2023-11-19-terraform-workspaceconf.html" class="no-external"></a>
 </div>
 <div class="listing-description">
-<p>Expanding the limited examples I could find online</p>
+<a href="./posts/2023-11-19-terraform-workspaceconf.html" class="no-external">Expanding the limited examples I could find online</a>
 </div>
-</a>
 </div>
 <div class="metadata">
-<a href="./posts/2023-11-19-terraform-workspaceconf.html">
+<a href="./posts/2023-11-19-terraform-workspaceconf.html" class="no-external">
 <div class="listing-date">
 Nov 19, 2023
 </div>
@@ -319,22 +342,20 @@ Nov 19, 2023
 </a>
 </div>
 </div>
-<div class="quarto-post image-right" data-index="6" data-categories="databricks,terraform" data-listing-date-sort="1700265600000" data-listing-file-modified-sort="1705632869668" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="8">
+<div class="quarto-post image-right" data-index="6" data-categories="databricks,terraform" data-listing-date-sort="1700265600000" data-listing-file-modified-sort="1713131589649" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="8" data-listing-word-count-sort="1508">
 <div class="body">
-<a href="./posts/2023-11-18-terraform-cluster.html">
 <h3 class="no-anchor listing-title">
-Databricks cluster policies in terraform
+<a href="./posts/2023-11-18-terraform-cluster.html" class="no-external">Databricks cluster policies in terraform</a>
 </h3>
 <div class="listing-subtitle">
-
+<a href="./posts/2023-11-18-terraform-cluster.html" class="no-external"></a>
 </div>
 <div class="listing-description">
-<p>Expanding the limited examples I could find online</p>
+<a href="./posts/2023-11-18-terraform-cluster.html" class="no-external">Expanding the limited examples I could find online</a>
 </div>
-</a>
 </div>
 <div class="metadata">
-<a href="./posts/2023-11-18-terraform-cluster.html">
+<a href="./posts/2023-11-18-terraform-cluster.html" class="no-external">
 <div class="listing-date">
 Nov 18, 2023
 </div>
@@ -344,22 +365,20 @@ Nov 18, 2023
 </a>
 </div>
 </div>
-<div class="quarto-post image-right" data-index="7" data-categories="linux,virtualization,xcp-ng" data-listing-date-sort="1699747200000" data-listing-file-modified-sort="1705632869668" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="24">
+<div class="quarto-post image-right" data-index="7" data-categories="linux,virtualization,xcp-ng" data-listing-date-sort="1699747200000" data-listing-file-modified-sort="1713131589649" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="24" data-listing-word-count-sort="4781">
 <div class="body">
-<a href="./posts/2023-11-12-xcp-ng.html">
 <h3 class="no-anchor listing-title">
-Checking out XCP-NG
+<a href="./posts/2023-11-12-xcp-ng.html" class="no-external">Checking out XCP-NG</a>
 </h3>
 <div class="listing-subtitle">
-
+<a href="./posts/2023-11-12-xcp-ng.html" class="no-external"></a>
 </div>
 <div class="listing-description">
-<p>Hypervisor hopping is the new distro hopping</p>
+<a href="./posts/2023-11-12-xcp-ng.html" class="no-external">Hypervisor hopping is the new distro hopping</a>
 </div>
-</a>
 </div>
 <div class="metadata">
-<a href="./posts/2023-11-12-xcp-ng.html">
+<a href="./posts/2023-11-12-xcp-ng.html" class="no-external">
 <div class="listing-date">
 Nov 12, 2023
 </div>
@@ -369,22 +388,20 @@ Nov 12, 2023
 </a>
 </div>
 </div>
-<div class="quarto-post image-right" data-index="8" data-categories="networking" data-listing-date-sort="1688601600000" data-listing-file-modified-sort="1705632869668" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="16">
+<div class="quarto-post image-right" data-index="8" data-categories="networking" data-listing-date-sort="1688601600000" data-listing-file-modified-sort="1713131589649" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="16" data-listing-word-count-sort="3123">
 <div class="body">
-<a href="./posts/2023-07-06-network-automation.html">
 <h3 class="no-anchor listing-title">
-Automating my network
+<a href="./posts/2023-07-06-network-automation.html" class="no-external">Automating my network</a>
 </h3>
 <div class="listing-subtitle">
-
+<a href="./posts/2023-07-06-network-automation.html" class="no-external"></a>
 </div>
 <div class="listing-description">
-<p>Overengineering at its finest</p>
+<a href="./posts/2023-07-06-network-automation.html" class="no-external">Overengineering at its finest</a>
 </div>
-</a>
 </div>
 <div class="metadata">
-<a href="./posts/2023-07-06-network-automation.html">
+<a href="./posts/2023-07-06-network-automation.html" class="no-external">
 <div class="listing-date">
 Jul 6, 2023
 </div>
@@ -394,72 +411,20 @@ Jul 6, 2023
 </a>
 </div>
 </div>
-<div class="quarto-post image-right" data-index="9" data-categories="docker,Linux" data-listing-date-sort="1685836800000" data-listing-file-modified-sort="1705632869668" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="10">
+<div class="quarto-post image-right" data-index="9" data-categories="ansible,Linux" data-listing-date-sort="1685836800000" data-listing-file-modified-sort="1713131589649" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="14" data-listing-word-count-sort="2652">
 <div class="body">
-<a href="./posts/2023-06-04-rootless-docker.html">
 <h3 class="no-anchor listing-title">
-Configuring Rootless docker with ansible
+<a href="./posts/2023-06-04-ansible-ad-users.html" class="no-external">Finding all AD group users with ansible</a>
 </h3>
 <div class="listing-subtitle">
-
+<a href="./posts/2023-06-04-ansible-ad-users.html" class="no-external"></a>
 </div>
 <div class="listing-description">
-<p>Rootless docker is nice and more secure, but it’s a hassle to set up</p>
+<a href="./posts/2023-06-04-ansible-ad-users.html" class="no-external">LDAP search is your friend, but you’ll have to do some string parsing</a>
 </div>
-</a>
 </div>
 <div class="metadata">
-<a href="./posts/2023-06-04-rootless-docker.html">
-<div class="listing-date">
-Jun 4, 2023
-</div>
-<div class="listing-reading-time">
-10 min
-</div>
-</a>
-</div>
-</div>
-<div class="quarto-post image-right" data-index="10" data-categories="docker,Linux,nvidia" data-listing-date-sort="1685836800000" data-listing-file-modified-sort="1705632869668" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="4">
-<div class="body">
-<a href="./posts/2023-06-04-nvidia-notes.html">
-<h3 class="no-anchor listing-title">
-A couple notes on working with Nvidia cards
-</h3>
-<div class="listing-subtitle">
-
-</div>
-<div class="listing-description">
-<p>I figured some stuff out at work and wanted to save it here</p>
-</div>
-</a>
-</div>
-<div class="metadata">
-<a href="./posts/2023-06-04-nvidia-notes.html">
-<div class="listing-date">
-Jun 4, 2023
-</div>
-<div class="listing-reading-time">
-4 min
-</div>
-</a>
-</div>
-</div>
-<div class="quarto-post image-right" data-index="11" data-categories="ansible,Linux" data-listing-date-sort="1685836800000" data-listing-file-modified-sort="1705632869668" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="14">
-<div class="body">
-<a href="./posts/2023-06-04-ansible-ad-users.html">
-<h3 class="no-anchor listing-title">
-Finding all AD group users with ansible
-</h3>
-<div class="listing-subtitle">
-
-</div>
-<div class="listing-description">
-<p>LDAP search is your friend, but you’ll have to do some string parsing</p>
-</div>
-</a>
-</div>
-<div class="metadata">
-<a href="./posts/2023-06-04-ansible-ad-users.html">
+<a href="./posts/2023-06-04-ansible-ad-users.html" class="no-external">
 <div class="listing-date">
 Jun 4, 2023
 </div>
@@ -469,47 +434,20 @@ Jun 4, 2023
 </a>
 </div>
 </div>
-<div class="quarto-post image-right" data-index="12" data-categories="Linux,ansible" data-listing-date-sort="1685836800000" data-listing-file-modified-sort="1705632869668" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="2">
+<div class="quarto-post image-right" data-index="10" data-categories="ansible,Linux" data-listing-date-sort="1685836800000" data-listing-file-modified-sort="1713131589649" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="4" data-listing-word-count-sort="772">
 <div class="body">
-<a href="./posts/2023-06-04-odbc-drivers-ansible.html">
 <h3 class="no-anchor listing-title">
-Install Microsoft ODBC drivers with ansible
+<a href="./posts/2023-06-04-ansible-autofs.html" class="no-external">Configuring autofs for CIFS mounts with ansible</a>
 </h3>
 <div class="listing-subtitle">
-
+<a href="./posts/2023-06-04-ansible-autofs.html" class="no-external"></a>
 </div>
 <div class="listing-description">
-<p>There’s a couple small tricks</p>
+<a href="./posts/2023-06-04-ansible-autofs.html" class="no-external">A user isolated way to mount file shares on a shared Linux host</a>
 </div>
-</a>
 </div>
 <div class="metadata">
-<a href="./posts/2023-06-04-odbc-drivers-ansible.html">
-<div class="listing-date">
-Jun 4, 2023
-</div>
-<div class="listing-reading-time">
-2 min
-</div>
-</a>
-</div>
-</div>
-<div class="quarto-post image-right" data-index="13" data-categories="ansible,Linux" data-listing-date-sort="1685836800000" data-listing-file-modified-sort="1705632869668" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="4">
-<div class="body">
-<a href="./posts/2023-06-04-ansible-autofs.html">
-<h3 class="no-anchor listing-title">
-Configuring autofs for CIFS mounts with ansible
-</h3>
-<div class="listing-subtitle">
-
-</div>
-<div class="listing-description">
-<p>A user isolated way to mount file shares on a shared Linux host</p>
-</div>
-</a>
-</div>
-<div class="metadata">
-<a href="./posts/2023-06-04-ansible-autofs.html">
+<a href="./posts/2023-06-04-ansible-autofs.html" class="no-external">
 <div class="listing-date">
 Jun 4, 2023
 </div>
@@ -519,22 +457,89 @@ Jun 4, 2023
 </a>
 </div>
 </div>
-<div class="quarto-post image-right" data-index="14" data-categories="networking,Linux" data-listing-date-sort="1680998400000" data-listing-file-modified-sort="1705632869668" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="54">
+<div class="quarto-post image-right" data-index="11" data-categories="docker,Linux,nvidia" data-listing-date-sort="1685836800000" data-listing-file-modified-sort="1713131589649" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="4" data-listing-word-count-sort="620">
 <div class="body">
-<a href="./posts/2023-04-09-network-rework.html">
 <h3 class="no-anchor listing-title">
-Redesigning my network
+<a href="./posts/2023-06-04-nvidia-notes.html" class="no-external">A couple notes on working with Nvidia cards</a>
 </h3>
 <div class="listing-subtitle">
-
+<a href="./posts/2023-06-04-nvidia-notes.html" class="no-external"></a>
 </div>
 <div class="listing-description">
-<p>Networking is hard.</p>
+<a href="./posts/2023-06-04-nvidia-notes.html" class="no-external">I figured some stuff out at work and wanted to save it here</a>
+</div>
+</div>
+<div class="metadata">
+<a href="./posts/2023-06-04-nvidia-notes.html" class="no-external">
+<div class="listing-date">
+Jun 4, 2023
+</div>
+<div class="listing-reading-time">
+4 min
 </div>
 </a>
 </div>
+</div>
+<div class="quarto-post image-right" data-index="12" data-categories="Linux,ansible" data-listing-date-sort="1685836800000" data-listing-file-modified-sort="1713131589649" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="2" data-listing-word-count-sort="228">
+<div class="body">
+<h3 class="no-anchor listing-title">
+<a href="./posts/2023-06-04-odbc-drivers-ansible.html" class="no-external">Install Microsoft ODBC drivers with ansible</a>
+</h3>
+<div class="listing-subtitle">
+<a href="./posts/2023-06-04-odbc-drivers-ansible.html" class="no-external"></a>
+</div>
+<div class="listing-description">
+<a href="./posts/2023-06-04-odbc-drivers-ansible.html" class="no-external">There’s a couple small tricks</a>
+</div>
+</div>
 <div class="metadata">
-<a href="./posts/2023-04-09-network-rework.html">
+<a href="./posts/2023-06-04-odbc-drivers-ansible.html" class="no-external">
+<div class="listing-date">
+Jun 4, 2023
+</div>
+<div class="listing-reading-time">
+2 min
+</div>
+</a>
+</div>
+</div>
+<div class="quarto-post image-right" data-index="13" data-categories="docker,Linux" data-listing-date-sort="1685836800000" data-listing-file-modified-sort="1713131589649" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="10" data-listing-word-count-sort="1836">
+<div class="body">
+<h3 class="no-anchor listing-title">
+<a href="./posts/2023-06-04-rootless-docker.html" class="no-external">Configuring Rootless docker with ansible</a>
+</h3>
+<div class="listing-subtitle">
+<a href="./posts/2023-06-04-rootless-docker.html" class="no-external"></a>
+</div>
+<div class="listing-description">
+<a href="./posts/2023-06-04-rootless-docker.html" class="no-external">Rootless docker is nice and more secure, but it’s a hassle to set up</a>
+</div>
+</div>
+<div class="metadata">
+<a href="./posts/2023-06-04-rootless-docker.html" class="no-external">
+<div class="listing-date">
+Jun 4, 2023
+</div>
+<div class="listing-reading-time">
+10 min
+</div>
+</a>
+</div>
+</div>
+<div class="quarto-post image-right" data-index="14" data-categories="networking,Linux" data-listing-date-sort="1680998400000" data-listing-file-modified-sort="1713131589649" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="54" data-listing-word-count-sort="10769">
+<div class="body">
+<h3 class="no-anchor listing-title">
+<a href="./posts/2023-04-09-network-rework.html" class="no-external">Redesigning my network</a>
+</h3>
+<div class="listing-subtitle">
+<a href="./posts/2023-04-09-network-rework.html" class="no-external"></a>
+</div>
+<div class="listing-description">
+<a href="./posts/2023-04-09-network-rework.html" class="no-external">Networking is hard.</a>
+</div>
+</div>
+<div class="metadata">
+<a href="./posts/2023-04-09-network-rework.html" class="no-external">
 <div class="listing-date">
 Apr 9, 2023
 </div>
@@ -544,22 +549,20 @@ Apr 9, 2023
 </a>
 </div>
 </div>
-<div class="quarto-post image-right" data-index="15" data-categories="networking,Linux" data-listing-date-sort="1680912000000" data-listing-file-modified-sort="1705632869664" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="18">
+<div class="quarto-post image-right" data-index="15" data-categories="networking,Linux" data-listing-date-sort="1680912000000" data-listing-file-modified-sort="1713131589649" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="18" data-listing-word-count-sort="3437">
 <div class="body">
-<a href="./posts/2023-04-08-managed-switch.html">
 <h3 class="no-anchor listing-title">
-Setting up my first managed switch
+<a href="./posts/2023-04-08-managed-switch.html" class="no-external">Setting up my first managed switch</a>
 </h3>
 <div class="listing-subtitle">
-
+<a href="./posts/2023-04-08-managed-switch.html" class="no-external"></a>
 </div>
 <div class="listing-description">
-<p>I picked up a cheap HP procurve 2810, let’s get it working</p>
+<a href="./posts/2023-04-08-managed-switch.html" class="no-external">I picked up a cheap HP procurve 2810, let’s get it working</a>
 </div>
-</a>
 </div>
 <div class="metadata">
-<a href="./posts/2023-04-08-managed-switch.html">
+<a href="./posts/2023-04-08-managed-switch.html" class="no-external">
 <div class="listing-date">
 Apr 8, 2023
 </div>
@@ -569,22 +572,20 @@ Apr 8, 2023
 </a>
 </div>
 </div>
-<div class="quarto-post image-right" data-index="16" data-categories="kubernetes,proxmox,Linux" data-listing-date-sort="1677196800000" data-listing-file-modified-sort="1705632869664" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="30">
+<div class="quarto-post image-right" data-index="16" data-categories="kubernetes,proxmox,Linux" data-listing-date-sort="1677196800000" data-listing-file-modified-sort="1713131589649" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="30" data-listing-word-count-sort="5967">
 <div class="body">
-<a href="./posts/2023-02-24-k8s-the-hard-way.html">
 <h3 class="no-anchor listing-title">
-Notes on Kubernetes the hard way
+<a href="./posts/2023-02-24-k8s-the-hard-way.html" class="no-external">Notes on Kubernetes the hard way</a>
 </h3>
 <div class="listing-subtitle">
-
+<a href="./posts/2023-02-24-k8s-the-hard-way.html" class="no-external"></a>
 </div>
 <div class="listing-description">
-<p>I may have bit off a bit more than I could chew</p>
+<a href="./posts/2023-02-24-k8s-the-hard-way.html" class="no-external">I may have bit off a bit more than I could chew</a>
 </div>
-</a>
 </div>
 <div class="metadata">
-<a href="./posts/2023-02-24-k8s-the-hard-way.html">
+<a href="./posts/2023-02-24-k8s-the-hard-way.html" class="no-external">
 <div class="listing-date">
 Feb 24, 2023
 </div>
@@ -594,22 +595,20 @@ Feb 24, 2023
 </a>
 </div>
 </div>
-<div class="quarto-post image-right" data-index="17" data-categories="configuration,proxmox,Linux,ceph" data-listing-date-sort="1675555200000" data-listing-file-modified-sort="1705632869664" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="29">
+<div class="quarto-post image-right" data-index="17" data-categories="configuration,proxmox,Linux,ceph" data-listing-date-sort="1675555200000" data-listing-file-modified-sort="1713131589649" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="29" data-listing-word-count-sort="5740">
 <div class="body">
-<a href="./posts/2023-02-05-proxmox-ceph.html">
 <h3 class="no-anchor listing-title">
-Home Cluster Part 4 - Setup CEPH
+<a href="./posts/2023-02-05-proxmox-ceph.html" class="no-external">Home Cluster Part 4 - Setup CEPH</a>
 </h3>
 <div class="listing-subtitle">
-
+<a href="./posts/2023-02-05-proxmox-ceph.html" class="no-external"></a>
 </div>
 <div class="listing-description">
-<p>What’s HA services without HA storage?</p>
+<a href="./posts/2023-02-05-proxmox-ceph.html" class="no-external">What’s HA services without HA storage?</a>
 </div>
-</a>
 </div>
 <div class="metadata">
-<a href="./posts/2023-02-05-proxmox-ceph.html">
+<a href="./posts/2023-02-05-proxmox-ceph.html" class="no-external">
 <div class="listing-date">
 Feb 5, 2023
 </div>
@@ -619,22 +618,20 @@ Feb 5, 2023
 </a>
 </div>
 </div>
-<div class="quarto-post image-right" data-index="18" data-categories="configuration" data-listing-date-sort="1675382400000" data-listing-file-modified-sort="1705632869664" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="1">
+<div class="quarto-post image-right" data-index="18" data-categories="configuration" data-listing-date-sort="1675382400000" data-listing-file-modified-sort="1713131589649" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="1" data-listing-word-count-sort="65">
 <div class="body">
-<a href="./posts/2023-02-03-migration.html">
 <h3 class="no-anchor listing-title">
-Migrating to quarto
+<a href="./posts/2023-02-03-migration.html" class="no-external">Migrating to quarto</a>
 </h3>
 <div class="listing-subtitle">
-
+<a href="./posts/2023-02-03-migration.html" class="no-external"></a>
 </div>
 <div class="listing-description">
-<p>Fastpages is dead, long live quarto</p>
+<a href="./posts/2023-02-03-migration.html" class="no-external">Fastpages is dead, long live quarto</a>
 </div>
-</a>
 </div>
 <div class="metadata">
-<a href="./posts/2023-02-03-migration.html">
+<a href="./posts/2023-02-03-migration.html" class="no-external">
 <div class="listing-date">
 Feb 3, 2023
 </div>
@@ -644,22 +641,20 @@ Feb 3, 2023
 </a>
 </div>
 </div>
-<div class="quarto-post image-right" data-index="19" data-categories="configuration,linux,proxmox" data-listing-date-sort="1674259200000" data-listing-file-modified-sort="1705632869664" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="44">
+<div class="quarto-post image-right" data-index="19" data-categories="configuration,linux,proxmox" data-listing-date-sort="1674259200000" data-listing-file-modified-sort="1713131589649" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="44" data-listing-word-count-sort="8754">
 <div class="body">
-<a href="./posts/2023-01-21-proxmox3.html">
 <h3 class="no-anchor listing-title">
-Home cluster part 3 - Setup VM templates on proxmox
+<a href="./posts/2023-01-21-proxmox3.html" class="no-external">Home cluster part 3 - Setup VM templates on proxmox</a>
 </h3>
 <div class="listing-subtitle">
-
+<a href="./posts/2023-01-21-proxmox3.html" class="no-external"></a>
 </div>
 <div class="listing-description">
-<p>Homelab cluster adventures continue</p>
+<a href="./posts/2023-01-21-proxmox3.html" class="no-external">Homelab cluster adventures continue</a>
 </div>
-</a>
 </div>
 <div class="metadata">
-<a href="./posts/2023-01-21-proxmox3.html">
+<a href="./posts/2023-01-21-proxmox3.html" class="no-external">
 <div class="listing-date">
 Jan 21, 2023
 </div>
@@ -669,22 +664,20 @@ Jan 21, 2023
 </a>
 </div>
 </div>
-<div class="quarto-post image-right" data-index="20" data-categories="configuration,linux,proxmox" data-listing-date-sort="1672444800000" data-listing-file-modified-sort="1705632869664" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="13">
+<div class="quarto-post image-right" data-index="20" data-categories="configuration,linux,proxmox" data-listing-date-sort="1672444800000" data-listing-file-modified-sort="1713131589649" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="13" data-listing-word-count-sort="2508">
 <div class="body">
-<a href="./posts/2022-12-31-proxmox2.html">
 <h3 class="no-anchor listing-title">
-Home cluster part 2 - Configuring Proxmox
+<a href="./posts/2022-12-31-proxmox2.html" class="no-external">Home cluster part 2 - Configuring Proxmox</a>
 </h3>
 <div class="listing-subtitle">
-
+<a href="./posts/2022-12-31-proxmox2.html" class="no-external"></a>
 </div>
 <div class="listing-description">
-<p>Homelab cluster adventures continue</p>
+<a href="./posts/2022-12-31-proxmox2.html" class="no-external">Homelab cluster adventures continue</a>
 </div>
-</a>
 </div>
 <div class="metadata">
-<a href="./posts/2022-12-31-proxmox2.html">
+<a href="./posts/2022-12-31-proxmox2.html" class="no-external">
 <div class="listing-date">
 Dec 31, 2022
 </div>
@@ -694,22 +687,20 @@ Dec 31, 2022
 </a>
 </div>
 </div>
-<div class="quarto-post image-right" data-index="21" data-categories="configuration,linux" data-listing-date-sort="1672358400000" data-listing-file-modified-sort="1705632869664" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="12">
+<div class="quarto-post image-right" data-index="21" data-categories="configuration,linux" data-listing-date-sort="1672358400000" data-listing-file-modified-sort="1713131589649" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="12" data-listing-word-count-sort="2352">
 <div class="body">
-<a href="./posts/2022-12-30-rootless-docker.html">
 <h3 class="no-anchor listing-title">
-Setting up rootless docker
+<a href="./posts/2022-12-30-rootless-docker.html" class="no-external">Setting up rootless docker</a>
 </h3>
 <div class="listing-subtitle">
-
+<a href="./posts/2022-12-30-rootless-docker.html" class="no-external"></a>
 </div>
 <div class="listing-description">
-<p>How can multiple users share a host for docker without a security nightmare?</p>
+<a href="./posts/2022-12-30-rootless-docker.html" class="no-external">How can multiple users share a host for docker without a security nightmare?</a>
 </div>
-</a>
 </div>
 <div class="metadata">
-<a href="./posts/2022-12-30-rootless-docker.html">
+<a href="./posts/2022-12-30-rootless-docker.html" class="no-external">
 <div class="listing-date">
 Dec 30, 2022
 </div>
@@ -719,22 +710,20 @@ Dec 30, 2022
 </a>
 </div>
 </div>
-<div class="quarto-post image-right" data-index="22" data-categories="configuration,linux" data-listing-date-sort="1672358400000" data-listing-file-modified-sort="1705632869664" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="6">
+<div class="quarto-post image-right" data-index="22" data-categories="configuration,linux" data-listing-date-sort="1672358400000" data-listing-file-modified-sort="1713131589649" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="6" data-listing-word-count-sort="1150">
 <div class="body">
-<a href="./posts/2022-12-30-devcontainers.html">
 <h3 class="no-anchor listing-title">
-Building my own devcontainers
+<a href="./posts/2022-12-30-devcontainers.html" class="no-external">Building my own devcontainers</a>
 </h3>
 <div class="listing-subtitle">
-
+<a href="./posts/2022-12-30-devcontainers.html" class="no-external"></a>
 </div>
 <div class="listing-description">
-<p>Sure I could just use the Microsoft built ones, but where’s the fun in that?</p>
+<a href="./posts/2022-12-30-devcontainers.html" class="no-external">Sure I could just use the Microsoft built ones, but where’s the fun in that?</a>
 </div>
-</a>
 </div>
 <div class="metadata">
-<a href="./posts/2022-12-30-devcontainers.html">
+<a href="./posts/2022-12-30-devcontainers.html" class="no-external">
 <div class="listing-date">
 Dec 30, 2022
 </div>
@@ -744,22 +733,20 @@ Dec 30, 2022
 </a>
 </div>
 </div>
-<div class="quarto-post image-right" data-index="23" data-categories="configuration,linux,proxmox" data-listing-date-sort="1668988800000" data-listing-file-modified-sort="1705632869664" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="10">
+<div class="quarto-post image-right" data-index="23" data-categories="configuration,linux,proxmox" data-listing-date-sort="1668988800000" data-listing-file-modified-sort="1713131589649" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="10" data-listing-word-count-sort="1957">
 <div class="body">
-<a href="./posts/2022-11-21-proxmox.html">
 <h3 class="no-anchor listing-title">
-Home cluster part 1 - Intro and Proxmox install
+<a href="./posts/2022-11-21-proxmox.html" class="no-external">Home cluster part 1 - Intro and Proxmox install</a>
 </h3>
 <div class="listing-subtitle">
-
+<a href="./posts/2022-11-21-proxmox.html" class="no-external"></a>
 </div>
 <div class="listing-description">
-<p>Figuring out how to make my own little homelab cluster</p>
+<a href="./posts/2022-11-21-proxmox.html" class="no-external">Figuring out how to make my own little homelab cluster</a>
 </div>
-</a>
 </div>
 <div class="metadata">
-<a href="./posts/2022-11-21-proxmox.html">
+<a href="./posts/2022-11-21-proxmox.html" class="no-external">
 <div class="listing-date">
 Nov 21, 2022
 </div>
@@ -769,22 +756,20 @@ Nov 21, 2022
 </a>
 </div>
 </div>
-<div class="quarto-post image-right" data-index="24" data-categories="python,statistics" data-listing-date-sort="1659312000000" data-listing-file-modified-sort="1705632869664" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="4">
+<div class="quarto-post image-right" data-index="24" data-categories="python,statistics" data-listing-date-sort="1659312000000" data-listing-file-modified-sort="1713131589649" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="4" data-listing-word-count-sort="749">
 <div class="body">
-<a href="./posts/2022-08-01-dunning.html">
 <h3 class="no-anchor listing-title">
-Dunning-Kruger is autocorrelation
+<a href="./posts/2022-08-01-dunning.html" class="no-external">Dunning-Kruger is autocorrelation</a>
 </h3>
 <div class="listing-subtitle">
-
+<a href="./posts/2022-08-01-dunning.html" class="no-external"></a>
 </div>
 <div class="listing-description">
-<p>Read a cool post, wanted to play around with the idea some more</p>
+<a href="./posts/2022-08-01-dunning.html" class="no-external">Read a cool post, wanted to play around with the idea some more</a>
 </div>
-</a>
 </div>
 <div class="metadata">
-<a href="./posts/2022-08-01-dunning.html">
+<a href="./posts/2022-08-01-dunning.html" class="no-external">
 <div class="listing-date">
 Aug 1, 2022
 </div>
@@ -794,22 +779,20 @@ Aug 1, 2022
 </a>
 </div>
 </div>
-<div class="quarto-post image-right" data-index="25" data-categories="housing,jupyter,python" data-listing-date-sort="1647475200000" data-listing-file-modified-sort="1705632869660" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="9">
+<div class="quarto-post image-right" data-index="25" data-categories="housing,jupyter,python" data-listing-date-sort="1647475200000" data-listing-file-modified-sort="1713131589645" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="9" data-listing-word-count-sort="1691">
 <div class="body">
-<a href="./posts/2022-03-17-mortgage.html">
 <h3 class="no-anchor listing-title">
-Modeling out fixed closed vs capped variable mortgages
+<a href="./posts/2022-03-17-mortgage.html" class="no-external">Modeling out fixed closed vs capped variable mortgages</a>
 </h3>
 <div class="listing-subtitle">
-
+<a href="./posts/2022-03-17-mortgage.html" class="no-external"></a>
 </div>
 <div class="listing-description">
-<p>I’m buying a house, let’s use python to help.</p>
+<a href="./posts/2022-03-17-mortgage.html" class="no-external">I’m buying a house, let’s use python to help.</a>
 </div>
-</a>
 </div>
 <div class="metadata">
-<a href="./posts/2022-03-17-mortgage.html">
+<a href="./posts/2022-03-17-mortgage.html" class="no-external">
 <div class="listing-date">
 Mar 17, 2022
 </div>
@@ -819,22 +802,20 @@ Mar 17, 2022
 </a>
 </div>
 </div>
-<div class="quarto-post image-right" data-index="26" data-categories="data,python,yyc" data-listing-date-sort="1640822400000" data-listing-file-modified-sort="1705632869656" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="14">
+<div class="quarto-post image-right" data-index="26" data-categories="data,python,yyc" data-listing-date-sort="1640822400000" data-listing-file-modified-sort="1713131589637" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="14" data-listing-word-count-sort="2640">
 <div class="body">
-<a href="./posts/2021-12-30-wheretolive.html">
 <h3 class="no-anchor listing-title">
-Building a where to live app
+<a href="./posts/2021-12-30-wheretolive.html" class="no-external">Building a where to live app</a>
 </h3>
 <div class="listing-subtitle">
-
+<a href="./posts/2021-12-30-wheretolive.html" class="no-external"></a>
 </div>
 <div class="listing-description">
-<p>An excuse to teach myself some cool tools and figure out the best place to live</p>
+<a href="./posts/2021-12-30-wheretolive.html" class="no-external">An excuse to teach myself some cool tools and figure out the best place to live</a>
 </div>
-</a>
 </div>
 <div class="metadata">
-<a href="./posts/2021-12-30-wheretolive.html">
+<a href="./posts/2021-12-30-wheretolive.html" class="no-external">
 <div class="listing-date">
 Dec 30, 2021
 </div>
@@ -844,22 +825,20 @@ Dec 30, 2021
 </a>
 </div>
 </div>
-<div class="quarto-post image-right" data-index="27" data-listing-date-sort="1618012800000" data-listing-file-modified-sort="1705632869656" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="8">
+<div class="quarto-post image-right" data-index="27" data-listing-date-sort="1618012800000" data-listing-file-modified-sort="1713131589637" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="8" data-listing-word-count-sort="1458">
 <div class="body">
-<a href="./posts/2021-04-10-portfolio.html">
 <h3 class="no-anchor listing-title">
-My Portfolio
+<a href="./posts/2021-04-10-portfolio.html" class="no-external">My Portfolio</a>
 </h3>
 <div class="listing-subtitle">
-
+<a href="./posts/2021-04-10-portfolio.html" class="no-external"></a>
 </div>
 <div class="listing-description">
-<p>The bigger posts and projects I’ve worked on that I want to share.</p>
+<a href="./posts/2021-04-10-portfolio.html" class="no-external">The bigger posts and projects I’ve worked on that I want to share.</a>
 </div>
-</a>
 </div>
 <div class="metadata">
-<a href="./posts/2021-04-10-portfolio.html">
+<a href="./posts/2021-04-10-portfolio.html" class="no-external">
 <div class="listing-date">
 Apr 10, 2021
 </div>
@@ -869,22 +848,20 @@ Apr 10, 2021
 </a>
 </div>
 </div>
-<div class="quarto-post image-right" data-index="28" data-categories="econometrics,jupyter,python,Alberta" data-listing-date-sort="1614297600000" data-listing-file-modified-sort="1705632869656" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="10">
+<div class="quarto-post image-right" data-index="28" data-categories="econometrics,jupyter,python,Alberta" data-listing-date-sort="1614297600000" data-listing-file-modified-sort="1713131589637" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="10" data-listing-word-count-sort="1831">
 <div class="body">
-<a href="./posts/2021-02-26-ferede.html">
 <h3 class="no-anchor listing-title">
-Alberta’s Fiscal Responses To Fluctuations In Non-Renewable-Resource Revenue
+<a href="./posts/2021-02-26-ferede.html" class="no-external">Alberta’s Fiscal Responses To Fluctuations In Non-Renewable-Resource Revenue</a>
 </h3>
 <div class="listing-subtitle">
-
+<a href="./posts/2021-02-26-ferede.html" class="no-external"></a>
 </div>
 <div class="listing-description">
-<p>I wanted to practice my python and econometrics, found a data error that invalidated the paper’s findings as well.</p>
+<a href="./posts/2021-02-26-ferede.html" class="no-external">I wanted to practice my python and econometrics, found a data error that invalidated the paper’s findings as well.</a>
 </div>
-</a>
 </div>
 <div class="metadata">
-<a href="./posts/2021-02-26-ferede.html">
+<a href="./posts/2021-02-26-ferede.html" class="no-external">
 <div class="listing-date">
 Feb 26, 2021
 </div>
@@ -894,22 +871,20 @@ Feb 26, 2021
 </a>
 </div>
 </div>
-<div class="quarto-post image-right" data-index="29" data-categories="docker,traefik,networking,tip" data-listing-date-sort="1610150400000" data-listing-file-modified-sort="1705632869644" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="3">
+<div class="quarto-post image-right" data-index="29" data-categories="docker,traefik,networking,tip" data-listing-date-sort="1610150400000" data-listing-file-modified-sort="1713131589625" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="3" data-listing-word-count-sort="555">
 <div class="body">
-<a href="./posts/2021-01-09-traefik-lan.html">
 <h3 class="no-anchor listing-title">
-Using traefik for internal services
+<a href="./posts/2021-01-09-traefik-lan.html" class="no-external">Using traefik for internal services</a>
 </h3>
 <div class="listing-subtitle">
-
+<a href="./posts/2021-01-09-traefik-lan.html" class="no-external"></a>
 </div>
 <div class="listing-description">
-<p>How to make a reverse proxy work within your LAN</p>
+<a href="./posts/2021-01-09-traefik-lan.html" class="no-external">How to make a reverse proxy work within your LAN</a>
 </div>
-</a>
 </div>
 <div class="metadata">
-<a href="./posts/2021-01-09-traefik-lan.html">
+<a href="./posts/2021-01-09-traefik-lan.html" class="no-external">
 <div class="listing-date">
 Jan 9, 2021
 </div>
@@ -919,22 +894,20 @@ Jan 9, 2021
 </a>
 </div>
 </div>
-<div class="quarto-post image-right" data-index="30" data-categories="configuration,linux,arch" data-listing-date-sort="1606348800000" data-listing-file-modified-sort="1705632869644" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="3">
+<div class="quarto-post image-right" data-index="30" data-categories="configuration,linux,arch" data-listing-date-sort="1606348800000" data-listing-file-modified-sort="1713131589625" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="3" data-listing-word-count-sort="468">
 <div class="body">
-<a href="./posts/2020-11-26-arch-tldr.html">
 <h3 class="no-anchor listing-title">
-Automating provisioning Arch continued - TLDR
+<a href="./posts/2020-11-26-arch-tldr.html" class="no-external">Automating provisioning Arch continued - TLDR</a>
 </h3>
 <div class="listing-subtitle">
-
+<a href="./posts/2020-11-26-arch-tldr.html" class="no-external"></a>
 </div>
 <div class="listing-description">
-<p>Summarizing how I provision my machines with just the steps to reproduce the process.</p>
+<a href="./posts/2020-11-26-arch-tldr.html" class="no-external">Summarizing how I provision my machines with just the steps to reproduce the process.</a>
 </div>
-</a>
 </div>
 <div class="metadata">
-<a href="./posts/2020-11-26-arch-tldr.html">
+<a href="./posts/2020-11-26-arch-tldr.html" class="no-external">
 <div class="listing-date">
 Nov 26, 2020
 </div>
@@ -944,22 +917,20 @@ Nov 26, 2020
 </a>
 </div>
 </div>
-<div class="quarto-post image-right" data-index="31" data-categories="configuration,linux,arch,python" data-listing-date-sort="1606262400000" data-listing-file-modified-sort="1705632869644" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="10">
+<div class="quarto-post image-right" data-index="31" data-categories="configuration,linux,arch,python" data-listing-date-sort="1606262400000" data-listing-file-modified-sort="1713131589625" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="10" data-listing-word-count-sort="1841">
 <div class="body">
-<a href="./posts/2020-11-25-dotfiles.html">
 <h3 class="no-anchor listing-title">
-Automating provisioning Arch continued - dotfiles
+<a href="./posts/2020-11-25-dotfiles.html" class="no-external">Automating provisioning Arch continued - dotfiles</a>
 </h3>
 <div class="listing-subtitle">
-
+<a href="./posts/2020-11-25-dotfiles.html" class="no-external"></a>
 </div>
 <div class="listing-description">
-<p>How I do all the user level configuration for my system, including setting up my python environment.</p>
+<a href="./posts/2020-11-25-dotfiles.html" class="no-external">How I do all the user level configuration for my system, including setting up my python environment.</a>
 </div>
-</a>
 </div>
 <div class="metadata">
-<a href="./posts/2020-11-25-dotfiles.html">
+<a href="./posts/2020-11-25-dotfiles.html" class="no-external">
 <div class="listing-date">
 Nov 25, 2020
 </div>
@@ -969,22 +940,20 @@ Nov 25, 2020
 </a>
 </div>
 </div>
-<div class="quarto-post image-right" data-index="32" data-categories="configuration,ansible,linux,arch" data-listing-date-sort="1605916800000" data-listing-file-modified-sort="1705632869644" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="3">
+<div class="quarto-post image-right" data-index="32" data-categories="configuration,ansible,linux,arch" data-listing-date-sort="1605916800000" data-listing-file-modified-sort="1713131589625" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="3" data-listing-word-count-sort="523">
 <div class="body">
-<a href="./posts/2020-11-21-ansible.html">
 <h3 class="no-anchor listing-title">
-Automating provisioning Arch continued - Ansible
+<a href="./posts/2020-11-21-ansible.html" class="no-external">Automating provisioning Arch continued - Ansible</a>
 </h3>
 <div class="listing-subtitle">
-
+<a href="./posts/2020-11-21-ansible.html" class="no-external"></a>
 </div>
 <div class="listing-description">
-<p>Using ansible to install programs and do other system level configuration</p>
+<a href="./posts/2020-11-21-ansible.html" class="no-external">Using ansible to install programs and do other system level configuration</a>
 </div>
-</a>
 </div>
 <div class="metadata">
-<a href="./posts/2020-11-21-ansible.html">
+<a href="./posts/2020-11-21-ansible.html" class="no-external">
 <div class="listing-date">
 Nov 21, 2020
 </div>
@@ -994,22 +963,20 @@ Nov 21, 2020
 </a>
 </div>
 </div>
-<div class="quarto-post image-right" data-index="33" data-categories="configuration,linux,arch,bash" data-listing-date-sort="1602633600000" data-listing-file-modified-sort="1705632869644" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="28">
+<div class="quarto-post image-right" data-index="33" data-categories="configuration,linux,arch,bash" data-listing-date-sort="1602633600000" data-listing-file-modified-sort="1713131589625" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="28" data-listing-word-count-sort="5477">
 <div class="body">
-<a href="./posts/2020-10-14-arch-bootstrap.html">
 <h3 class="no-anchor listing-title">
-Automating provisioning Arch - OS installation
+<a href="./posts/2020-10-14-arch-bootstrap.html" class="no-external">Automating provisioning Arch - OS installation</a>
 </h3>
 <div class="listing-subtitle">
-
+<a href="./posts/2020-10-14-arch-bootstrap.html" class="no-external"></a>
 </div>
 <div class="listing-description">
-<p>My bash script for getting a minimal working Arch install.</p>
+<a href="./posts/2020-10-14-arch-bootstrap.html" class="no-external">My bash script for getting a minimal working Arch install.</a>
 </div>
-</a>
 </div>
 <div class="metadata">
-<a href="./posts/2020-10-14-arch-bootstrap.html">
+<a href="./posts/2020-10-14-arch-bootstrap.html" class="no-external">
 <div class="listing-date">
 Oct 14, 2020
 </div>
@@ -1019,22 +986,20 @@ Oct 14, 2020
 </a>
 </div>
 </div>
-<div class="quarto-post image-right" data-index="34" data-categories="docker,tips" data-listing-date-sort="1601942400000" data-listing-file-modified-sort="1705632869640" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="2">
+<div class="quarto-post image-right" data-index="34" data-categories="docker,tips" data-listing-date-sort="1601942400000" data-listing-file-modified-sort="1713131589625" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="2" data-listing-word-count-sort="275">
 <div class="body">
-<a href="./posts/2020-10-06-docker-compose.html">
 <h3 class="no-anchor listing-title">
-Notes on docker-compose
+<a href="./posts/2020-10-06-docker-compose.html" class="no-external">Notes on docker-compose</a>
 </h3>
 <div class="listing-subtitle">
-
+<a href="./posts/2020-10-06-docker-compose.html" class="no-external"></a>
 </div>
 <div class="listing-description">
-<p>Tiny snippets of things I forget or often have to look up about docker compose.</p>
+<a href="./posts/2020-10-06-docker-compose.html" class="no-external">Tiny snippets of things I forget or often have to look up about docker compose.</a>
 </div>
-</a>
 </div>
 <div class="metadata">
-<a href="./posts/2020-10-06-docker-compose.html">
+<a href="./posts/2020-10-06-docker-compose.html" class="no-external">
 <div class="listing-date">
 Oct 6, 2020
 </div>
@@ -1044,22 +1009,20 @@ Oct 6, 2020
 </a>
 </div>
 </div>
-<div class="quarto-post image-right" data-index="35" data-categories="tips,linux,bluetooth,pi" data-listing-date-sort="1595203200000" data-listing-file-modified-sort="1705632869640" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="2">
+<div class="quarto-post image-right" data-index="35" data-categories="tips,linux,bluetooth,pi" data-listing-date-sort="1595203200000" data-listing-file-modified-sort="1713131589625" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="2" data-listing-word-count-sort="233">
 <div class="body">
-<a href="./posts/2020-07-20-pi-bluetooth.html">
 <h3 class="no-anchor listing-title">
-Connecting a Harmony remote to a raspberry pi
+<a href="./posts/2020-07-20-pi-bluetooth.html" class="no-external">Connecting a Harmony remote to a raspberry pi</a>
 </h3>
 <div class="listing-subtitle">
-
+<a href="./posts/2020-07-20-pi-bluetooth.html" class="no-external"></a>
 </div>
 <div class="listing-description">
-<p>Handy tip if you’re using raspberry pi OS as a media front end and have a harmony remote, or just want to remember how to pair bluetooth from the command line.</p>
+<a href="./posts/2020-07-20-pi-bluetooth.html" class="no-external">Handy tip if you’re using raspberry pi OS as a media front end and have a harmony remote, or just want to remember how to pair bluetooth from the command line.</a>
 </div>
-</a>
 </div>
 <div class="metadata">
-<a href="./posts/2020-07-20-pi-bluetooth.html">
+<a href="./posts/2020-07-20-pi-bluetooth.html" class="no-external">
 <div class="listing-date">
 Jul 20, 2020
 </div>
@@ -1069,22 +1032,20 @@ Jul 20, 2020
 </a>
 </div>
 </div>
-<div class="quarto-post image-right" data-index="36" data-categories="python,poetry,conda" data-listing-date-sort="1594252800000" data-listing-file-modified-sort="1705632869640" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="28">
+<div class="quarto-post image-right" data-index="36" data-categories="python,poetry,conda" data-listing-date-sort="1594252800000" data-listing-file-modified-sort="1713131589625" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="28" data-listing-word-count-sort="5422">
 <div class="body">
-<a href="./posts/2020-07-09-pypack.html">
 <h3 class="no-anchor listing-title">
-Python packaging
+<a href="./posts/2020-07-09-pypack.html" class="no-external">Python packaging</a>
 </h3>
 <div class="listing-subtitle">
-
+<a href="./posts/2020-07-09-pypack.html" class="no-external"></a>
 </div>
 <div class="listing-description">
-<p>Helping myself understand python packaging by working up from a single file to an actual library.</p>
+<a href="./posts/2020-07-09-pypack.html" class="no-external">Helping myself understand python packaging by working up from a single file to an actual library.</a>
 </div>
-</a>
 </div>
 <div class="metadata">
-<a href="./posts/2020-07-09-pypack.html">
+<a href="./posts/2020-07-09-pypack.html" class="no-external">
 <div class="listing-date">
 Jul 9, 2020
 </div>
@@ -1094,22 +1055,20 @@ Jul 9, 2020
 </a>
 </div>
 </div>
-<div class="quarto-post image-right" data-index="37" data-categories="python,conda,bug" data-listing-date-sort="1589673600000" data-listing-file-modified-sort="1705632869640" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="3">
+<div class="quarto-post image-right" data-index="37" data-categories="python,conda,bug" data-listing-date-sort="1589673600000" data-listing-file-modified-sort="1713131589625" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="3" data-listing-word-count-sort="590">
 <div class="body">
-<a href="./posts/2020-05-17-conda.html">
 <h3 class="no-anchor listing-title">
-Trouble with reproducible conda environments
+<a href="./posts/2020-05-17-conda.html" class="no-external">Trouble with reproducible conda environments</a>
 </h3>
 <div class="listing-subtitle">
-
+<a href="./posts/2020-05-17-conda.html" class="no-external"></a>
 </div>
 <div class="listing-description">
-<p>Sometimes my conda environments aren’t reproducible and I can’t figure out why. This documents what I’ve tried so far.</p>
+<a href="./posts/2020-05-17-conda.html" class="no-external">Sometimes my conda environments aren’t reproducible and I can’t figure out why. This documents what I’ve tried so far.</a>
 </div>
-</a>
 </div>
 <div class="metadata">
-<a href="./posts/2020-05-17-conda.html">
+<a href="./posts/2020-05-17-conda.html" class="no-external">
 <div class="listing-date">
 May 17, 2020
 </div>
@@ -1119,22 +1078,20 @@ May 17, 2020
 </a>
 </div>
 </div>
-<div class="quarto-post image-right" data-index="38" data-categories="conda,python,bash" data-listing-date-sort="1589328000000" data-listing-file-modified-sort="1705632869640" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="8">
+<div class="quarto-post image-right" data-index="38" data-categories="conda,python,bash" data-listing-date-sort="1589328000000" data-listing-file-modified-sort="1713131589625" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="8" data-listing-word-count-sort="1538">
 <div class="body">
-<a href="./posts/2020-05-13-conda_envs.html">
 <h3 class="no-anchor listing-title">
-How to work with conda environments in shell scripts and Makefiles
+<a href="./posts/2020-05-13-conda_envs.html" class="no-external">How to work with conda environments in shell scripts and Makefiles</a>
 </h3>
 <div class="listing-subtitle">
-
+<a href="./posts/2020-05-13-conda_envs.html" class="no-external"></a>
 </div>
 <div class="listing-description">
-<p>conda environments are a little tricky to incorporate into automation. This post outlines a bit of how they work, and how to integrate them in scripts and makefiles.</p>
+<a href="./posts/2020-05-13-conda_envs.html" class="no-external">conda environments are a little tricky to incorporate into automation. This post outlines a bit of how they work, and how to integrate them in scripts and makefiles.</a>
 </div>
-</a>
 </div>
 <div class="metadata">
-<a href="./posts/2020-05-13-conda_envs.html">
+<a href="./posts/2020-05-13-conda_envs.html" class="no-external">
 <div class="listing-date">
 May 13, 2020
 </div>
@@ -1144,22 +1101,20 @@ May 13, 2020
 </a>
 </div>
 </div>
-<div class="quarto-post image-right" data-index="39" data-categories="configuration,samba,linux" data-listing-date-sort="1588982400000" data-listing-file-modified-sort="1705632869640" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="5">
+<div class="quarto-post image-right" data-index="39" data-categories="configuration,samba,linux" data-listing-date-sort="1588982400000" data-listing-file-modified-sort="1713131589625" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="5" data-listing-word-count-sort="819">
 <div class="body">
-<a href="./posts/2020-05-09-samba.html">
 <h3 class="no-anchor listing-title">
-A basic SAMBA share for home networks
+<a href="./posts/2020-05-09-samba.html" class="no-external">A basic SAMBA share for home networks</a>
 </h3>
 <div class="listing-subtitle">
-
+<a href="./posts/2020-05-09-samba.html" class="no-external"></a>
 </div>
 <div class="listing-description">
-<p>Simple (but not super secure) SAMBA shares for the home user</p>
+<a href="./posts/2020-05-09-samba.html" class="no-external">Simple (but not super secure) SAMBA shares for the home user</a>
 </div>
-</a>
 </div>
 <div class="metadata">
-<a href="./posts/2020-05-09-samba.html">
+<a href="./posts/2020-05-09-samba.html" class="no-external">
 <div class="listing-date">
 May 9, 2020
 </div>
@@ -1169,22 +1124,20 @@ May 9, 2020
 </a>
 </div>
 </div>
-<div class="quarto-post image-right" data-index="40" data-categories="configuration,pfsense,networking" data-listing-date-sort="1588723200000" data-listing-file-modified-sort="1705632869640" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="19">
+<div class="quarto-post image-right" data-index="40" data-categories="configuration,pfsense,networking" data-listing-date-sort="1588723200000" data-listing-file-modified-sort="1713131589625" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="19" data-listing-word-count-sort="3797">
 <div class="body">
-<a href="./posts/2020-05-06-pfsense.html">
 <h3 class="no-anchor listing-title">
-Building pfsense
+<a href="./posts/2020-05-06-pfsense.html" class="no-external">Building pfsense</a>
 </h3>
 <div class="listing-subtitle">
-
+<a href="./posts/2020-05-06-pfsense.html" class="no-external"></a>
 </div>
 <div class="listing-description">
-<p>Documenting everything I did to configure my pfsense router.</p>
+<a href="./posts/2020-05-06-pfsense.html" class="no-external">Documenting everything I did to configure my pfsense router.</a>
 </div>
-</a>
 </div>
 <div class="metadata">
-<a href="./posts/2020-05-06-pfsense.html">
+<a href="./posts/2020-05-06-pfsense.html" class="no-external">
 <div class="listing-date">
 May 6, 2020
 </div>
@@ -1194,22 +1147,20 @@ May 6, 2020
 </a>
 </div>
 </div>
-<div class="quarto-post image-right" data-index="41" data-categories="ssh,linux,bash" data-listing-date-sort="1588464000000" data-listing-file-modified-sort="1705632869640" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="10">
+<div class="quarto-post image-right" data-index="41" data-categories="ssh,linux,bash" data-listing-date-sort="1588464000000" data-listing-file-modified-sort="1713131589625" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="10" data-listing-word-count-sort="1936">
 <div class="body">
-<a href="./posts/2020-05-03-ssh.html">
 <h3 class="no-anchor listing-title">
-Managing SSH keys for a home network
+<a href="./posts/2020-05-03-ssh.html" class="no-external">Managing SSH keys for a home network</a>
 </h3>
 <div class="listing-subtitle">
-
+<a href="./posts/2020-05-03-ssh.html" class="no-external"></a>
 </div>
 <div class="listing-description">
-<p>How to generate certificate authorities so your clients and hosts can all talk to each other easily.</p>
+<a href="./posts/2020-05-03-ssh.html" class="no-external">How to generate certificate authorities so your clients and hosts can all talk to each other easily.</a>
 </div>
-</a>
 </div>
 <div class="metadata">
-<a href="./posts/2020-05-03-ssh.html">
+<a href="./posts/2020-05-03-ssh.html" class="no-external">
 <div class="listing-date">
 May 3, 2020
 </div>
@@ -1219,22 +1170,20 @@ May 3, 2020
 </a>
 </div>
 </div>
-<div class="quarto-post image-right" data-index="42" data-categories="data,python,configuration" data-listing-date-sort="1581724800000" data-listing-file-modified-sort="1705632869640" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="18">
+<div class="quarto-post image-right" data-index="42" data-categories="data,python,configuration" data-listing-date-sort="1581724800000" data-listing-file-modified-sort="1713131589625" data-listing-date-modified-sort="NaN" data-listing-reading-time-sort="18" data-listing-word-count-sort="3405">
 <div class="body">
-<a href="./posts/2020-02-15-windows-ds-software.html">
 <h3 class="no-anchor listing-title">
-Setting up for data science in python on Windows
+<a href="./posts/2020-02-15-windows-ds-software.html" class="no-external">Setting up for data science in python on Windows</a>
 </h3>
 <div class="listing-subtitle">
-
+<a href="./posts/2020-02-15-windows-ds-software.html" class="no-external"></a>
 </div>
 <div class="listing-description">
-<p>My opinionated setup to do data work in python on Windows, without admin rights.</p>
+<a href="./posts/2020-02-15-windows-ds-software.html" class="no-external">My opinionated setup to do data work in python on Windows, without admin rights.</a>
 </div>
-</a>
 </div>
 <div class="metadata">
-<a href="./posts/2020-02-15-windows-ds-software.html">
+<a href="./posts/2020-02-15-windows-ds-software.html" class="no-external">
 <div class="listing-date">
 Feb 15, 2020
 </div>
@@ -1331,10 +1280,27 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
     // clear code selection
     e.clearSelection();
   });
-  function tippyHover(el, contentFn) {
+    var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+    var mailtoRegex = new RegExp(/^mailto:/);
+      var filterRegex = new RegExp("https:\/\/blog\.ianpreston\.ca");
+    var isInternal = (href) => {
+        return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+    }
+    // Inspect non-navigation links and adorn them if external
+ 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool)');
+    for (var i=0; i<links.length; i++) {
+      const link = links[i];
+      if (!isInternal(link.href)) {
+        // undo the damage that might have been done by quarto-nav.js in the case of
+        // links that we want to consider external
+        if (link.dataset.originalHref !== undefined) {
+          link.href = link.dataset.originalHref;
+        }
+      }
+    }
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
     const config = {
       allowHTML: true,
-      content: contentFn,
       maxWidth: 500,
       delay: 100,
       arrow: false,
@@ -1344,8 +1310,17 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
       interactive: true,
       interactiveBorder: 10,
       theme: 'quarto',
-      placement: 'bottom-start'
+      placement: 'bottom-start',
     };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
     window.tippy(el, config); 
   }
   const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
@@ -1357,7 +1332,130 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
       try { href = new URL(href).hash; } catch {}
       const id = href.replace(/^#\/?/, "");
       const note = window.document.getElementById(id);
-      return note.innerHTML;
+      if (note) {
+        return note.innerHTML;
+      } else {
+        return "";
+      }
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(container);
+        }
+        return container.innerHTML
+      } else {
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(note);
+      }
+      // TODO in 1.5, we should make sure this works without a callout special case
+      if (note.classList.contains("callout")) {
+        return note.outerHTML;
+      } else {
+        return note.innerHTML;
+      }
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
     });
   }
       let selectedAnnoteEl;
@@ -1401,6 +1499,7 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
             }
             div.style.top = top - 2 + "px";
             div.style.height = height + 4 + "px";
+            div.style.left = 0;
             let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
             if (gutterDiv === null) {
               gutterDiv = window.document.createElement("div");
@@ -1426,6 +1525,32 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
         });
         selectedAnnoteEl = undefined;
       };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
       // Attach click handler to the DT
       const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
       for (const annoteDlNode of annoteDls) {
@@ -1486,6 +1611,7 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
 });
 </script>
 </div> <!-- /content -->
+
 
 
 

@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.3.450">
+<meta name="generator" content="quarto-1.4.553">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
@@ -24,7 +24,7 @@ ul.task-list li input[type="checkbox"] {
 }
 /* CSS for syntax highlighting */
 pre > code.sourceCode { white-space: pre; position: relative; }
-pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span { line-height: 1.25; }
 pre > code.sourceCode > span:empty { height: 1.2em; }
 .sourceCode { overflow: visible; }
 code.sourceCode > span { color: inherit; text-decoration: inherit; }
@@ -59,7 +59,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </style>
 
 
-<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js" integrity="sha512-bLT0Qm9VnAYZDflyKcBaQ2gg0hSYNQrJ8RilYldYQ1FxQYoCLtUjuuRuZo+fjqhx/qtq/1itJ0C2ejDxltZVFg==" crossorigin="anonymous"></script><script src="../site_libs/quarto-nav/quarto-nav.js"></script>
 <script src="../site_libs/quarto-nav/headroom.min.js"></script>
 <script src="../site_libs/clipboard/clipboard.min.js"></script>
 <script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
@@ -81,7 +81,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   "collapse-after": 3,
   "panel-placement": "end",
   "type": "overlay",
-  "limit": 20,
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
   "language": {
     "search-no-results-text": "No results",
     "search-matching-documents-text": "matching documents",
@@ -90,13 +96,14 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     "search-more-match-text": "more match in this document",
     "search-more-matches-text": "more matches in this document",
     "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
     "search-detached-cancel-button-title": "Cancel",
     "search-submit-button-title": "Submit",
     "search-label": "Search"
   }
 }</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.6/require.min.js" integrity="sha512-c3Nl8+7g4LMSTdrm621y7kf9v3SDPnhxLNhcjFJbKECVnmZHTdo+IRO05sNLTH/D3vA6u1X32ehoLC7WFVdheg==" crossorigin="anonymous"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js" integrity="sha512-bLT0Qm9VnAYZDflyKcBaQ2gg0hSYNQrJ8RilYldYQ1FxQYoCLtUjuuRuZo+fjqhx/qtq/1itJ0C2ejDxltZVFg==" crossorigin="anonymous"></script>
+
 <script type="application/javascript">define('jquery', [],function() {return window.jQuery;})</script>
 
 
@@ -106,10 +113,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <body class="nav-fixed">
 
 <div id="quarto-search-results"></div>
-  <header id="quarto-header" class="headroom fixed-top">
-    <nav class="navbar navbar-expand-lg navbar-dark ">
+  <header id="quarto-header" class="headroom fixed-top quarto-banner">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
       <div class="navbar-container container-fluid">
-      <div class="navbar-brand-container">
+      <div class="navbar-brand-container mx-auto">
     <a class="navbar-brand" href="../index.html">
     <span class="navbar-title">Ian’s blog</span>
     </a>
@@ -121,18 +128,18 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
           <div class="collapse navbar-collapse" id="navbarCollapse">
             <ul class="navbar-nav navbar-nav-scroll ms-auto">
   <li class="nav-item">
-    <a class="nav-link" href="../about.html" rel="" target="">
- <span class="menu-text">about</span></a>
+    <a class="nav-link" href="../about.html"> 
+<span class="menu-text">about</span></a>
   </li>  
   <li class="nav-item compact">
-    <a class="nav-link" href="https://github.com/ianepreston" rel="" target=""><i class="bi bi-github" role="img">
+    <a class="nav-link" href="https://github.com/ianepreston"> <i class="bi bi-github" role="img">
 </i> 
- <span class="menu-text"></span></a>
+<span class="menu-text"></span></a>
   </li>  
 </ul>
-            <div class="quarto-navbar-tools">
-</div>
           </div> <!-- /navcollapse -->
+          <div class="quarto-navbar-tools">
+</div>
       </div> <!-- /container-fluid -->
     </nav>
 </header>
@@ -184,10 +191,11 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   <li><a href="#model-out-capped-variable-strategy" id="toc-model-out-capped-variable-strategy" class="nav-link" data-scroll-target="#model-out-capped-variable-strategy">Model out capped variable strategy</a></li>
   <li><a href="#conclusion" id="toc-conclusion" class="nav-link" data-scroll-target="#conclusion">Conclusion</a></li>
   </ul>
-</nav>
+<div class="quarto-code-links"><h2>Code Links</h2><ul><li><a href="https://mybinder.org/v2/gh/ianepreston/blog/HEAD" target="_blank"><i class="bi bi-journals"></i>Launch Binder</a></li></ul></div></nav>
     </div>
 <!-- main -->
 <main class="content quarto-banner-title-block" id="quarto-document-content">
+
 
 
 
@@ -199,20 +207,20 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="get-some-data" class="level2">
 <h2 class="anchored" data-anchor-id="get-some-data">Get some data</h2>
 <p>To do any scenario planning it will be helpful to have some historical data on the relevant interest rates. Specifically I want to know 5 year fixed mortgage rates, and the big bank prime rate, as that forms the basis of variable rate mortgages. At the time of this writing RBC is offering variable mortgages at “RBC Prime Rate - 0.750%” but they’re also offering a “special rate” of 3.34% compared to their posted rate of 4.79% for 5 year fixed. The delta there is 1.45%. Their posted variable rate is just their posted prime. I’m less interested in the exact rates than I am the delta. It looks like right now the delta of their offered rates between fixed and closed (3.34 - 1.95 = 1.39) is less than their posted fixed and closed rate (4.79 - 2.70 = 2.09). Because the data set I can work with only has posted rates and I have no way of estimating the “true” delta in historical periods I’ll use it as the basis for this analysis. However, it will be important to remember that at least in this current low interest rate environment there’s less of a gap between fixed and variable rates than my data will suggest. Depending on how close these scenarios play out I can re-run them by adding 2.09 - 1.39 = 0.7 onto my prime rate to simulate that narrower gap.</p>
-<div class="cell" data-execution_count="1">
+<div id="cell-3" class="cell" data-execution_count="1">
 <div class="sourceCode cell-code" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> collections <span class="im">import</span> defaultdict</span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> pandas <span class="im">as</span> pd</span>
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> requests</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>First we grab some historical rate data in JSON from the Bank of Canada website. I tried to grab it as a CSV but it’s terribly formatted, so we’ll go with this and clean it up.</p>
-<div class="cell" data-tags="[]" data-execution_count="2">
+<div id="cell-5" class="cell" data-tags="[]" data-execution_count="2">
 <div class="sourceCode cell-code" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>rates_json <span class="op">=</span> requests.get(<span class="st">"https://www.bankofcanada.ca/valet/observations/group/chartered_bank_interest/json"</span>).json()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>Next I have to clean it up into a dataframe for analysis.</p>
-<div class="cell" data-execution_count="3">
+<div id="cell-7" class="cell" data-execution_count="3">
 <div class="sourceCode cell-code" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>renamer <span class="op">=</span> {k: <span class="ss">f"</span><span class="sc">{</span>v[<span class="st">'description'</span>]<span class="sc">}</span><span class="ss"> </span><span class="sc">{</span>v[<span class="st">'label'</span>]<span class="sc">}</span><span class="ss">"</span>.strip() <span class="cf">for</span> k, v <span class="kw">in</span> rates_json[<span class="st">"seriesDetail"</span>].items()}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<div class="cell" data-execution_count="4">
+<div id="cell-8" class="cell" data-execution_count="4">
 <div class="sourceCode cell-code" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>base_df <span class="op">=</span> (</span>
 <span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>    pd.DataFrame(rates_json[<span class="st">"observations"</span>])</span>
 <span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>    <span class="co"># convert date series from string to datetime</span></span>
@@ -224,9 +232,10 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>Let’s take a quick look at it to make sure it’s sensible.</p>
-<div class="cell" data-execution_count="5">
+<div id="cell-10" class="cell" data-execution_count="5">
 <div class="sourceCode cell-code" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>base_df.tail()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-display" data-execution_count="5">
+<div>
 <div>
 
 
@@ -331,8 +340,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </div>
 </div>
+</div>
 <p>That looks good to me. I’m just going to shrink it down to the just the columns I care about, resample it down to monthly frequency, and give them easier to work with names.</p>
-<div class="cell" data-execution_count="6">
+<div id="cell-12" class="cell" data-execution_count="6">
 <div class="sourceCode cell-code" id="cb6"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>df <span class="op">=</span> (</span>
 <span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>    base_df</span>
 <span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>    .rename(columns<span class="op">=</span>{<span class="st">"Prime rate"</span>: <span class="st">"prime"</span>, <span class="st">"Conventional mortgage 5-year"</span>: <span class="st">"fiveyear"</span>})</span>
@@ -350,6 +360,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a>)</span>
 <span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a>df.head()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-display" data-execution_count="6">
+<div>
 <div>
 
 
@@ -398,25 +409,30 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </div>
 </div>
+</div>
 </section>
 <section id="some-quick-exploration" class="level2">
 <h2 class="anchored" data-anchor-id="some-quick-exploration">Some quick exploration</h2>
 <p>Let’s do some basic charting on this data just to get a sense of what we’re working with.</p>
-<div class="cell" data-execution_count="7">
+<div id="cell-14" class="cell" data-execution_count="7">
 <div class="sourceCode cell-code" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Would rather use altair but I have lots of data points and I'm not sure how using render server will play with my static site generator</span></span>
 <span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> seaborn <span class="im">as</span> sns</span>
 <span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> matplotlib.pyplot <span class="im">as</span> plt</span>
 <span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Make my charts a decent size</span></span>
 <span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>sns.<span class="bu">set</span>(rc <span class="op">=</span> {<span class="st">'figure.figsize'</span>:(<span class="dv">15</span>,<span class="dv">8</span>)})</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<div class="cell" data-execution_count="8">
+<div id="cell-15" class="cell" data-execution_count="8">
 <div class="sourceCode cell-code" id="cb8"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Seaborn likes data in tidy format</span></span>
 <span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>cdf <span class="op">=</span> df.melt(ignore_index<span class="op">=</span><span class="va">False</span>).reset_index()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<div class="cell" data-execution_count="9">
+<div id="cell-16" class="cell" data-execution_count="9">
 <div class="sourceCode cell-code" id="cb9"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>sns.lineplot(data<span class="op">=</span>cdf, x<span class="op">=</span><span class="st">"d"</span>, y<span class="op">=</span><span class="st">"value"</span>, hue<span class="op">=</span><span class="st">"variable"</span>)<span class="op">;</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-display">
-<p><img src="2022-03-17-mortgage_files/figure-html/cell-10-output-1.png" class="img-fluid"></p>
+<div>
+<figure class="figure">
+<p><img src="2022-03-17-mortgage_files/figure-html/cell-10-output-1.png" class="img-fluid figure-img"></p>
+</figure>
+</div>
 </div>
 </div>
 <p>Here’s what prime vs 5 year mortgage rates have looked like for the last 50ish years. The variable rate tends to be below the fixed at any given point in time, but of course the variable rate can go up over your mortgage term while a fixed rate will stay fixed. Let’s start the actual analysis.</p>
@@ -424,11 +440,11 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="check-variable-vs-5-year-term" class="level2">
 <h2 class="anchored" data-anchor-id="check-variable-vs-5-year-term">Check variable vs 5 year term</h2>
 <p>For any starting period I can compare a 5 year fixed rate to what the variable rate would have been over that same period and plot the delta between them. Let’s see what that looks like:</p>
-<div class="cell" data-execution_count="10">
+<div id="cell-19" class="cell" data-execution_count="10">
 <div class="sourceCode cell-code" id="cb10"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Get all the dates that have at least 5 years of history ahead of them</span></span>
 <span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>start_dates <span class="op">=</span> <span class="bu">list</span>(df.index[:<span class="op">-</span><span class="dv">60</span>])</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<div class="cell" data-execution_count="11">
+<div id="cell-20" class="cell" data-execution_count="11">
 <div class="sourceCode cell-code" id="cb11"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>delta_dict <span class="op">=</span> defaultdict(<span class="bu">dict</span>)</span>
 <span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> start_date <span class="kw">in</span> start_dates:</span>
 <span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>    five_year_rate <span class="op">=</span> df.loc[start_date, <span class="st">"fiveyear"</span>]</span>
@@ -439,6 +455,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a>delta_df <span class="op">=</span> pd.DataFrame(delta_dict).T</span>
 <span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a>delta_df.head()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-display" data-execution_count="11">
+<div>
 <div>
 
 
@@ -597,7 +614,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </div>
 </div>
-<div class="cell" data-execution_count="12">
+</div>
+<div id="cell-21" class="cell" data-execution_count="12">
 <div class="sourceCode cell-code" id="cb12"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>delta_cdf <span class="op">=</span> (</span>
 <span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>    delta_df</span>
 <span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>    .melt(ignore_index<span class="op">=</span><span class="va">False</span>)</span>
@@ -608,31 +626,39 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a>    .rename(columns<span class="op">=</span>{<span class="st">"index"</span>: <span class="st">"period"</span>, <span class="st">"variable"</span>: <span class="st">"start date delta"</span>, <span class="st">"value"</span>: <span class="st">"variable_delta"</span>})</span>
 <span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<div class="cell" data-execution_count="13">
+<div id="cell-22" class="cell" data-execution_count="13">
 <div class="sourceCode cell-code" id="cb13"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>sns.lineplot(data<span class="op">=</span>delta_cdf, x<span class="op">=</span><span class="st">"period"</span>, y<span class="op">=</span><span class="st">"variable_delta"</span>, hue<span class="op">=</span><span class="st">"start date delta"</span>)<span class="op">;</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-display">
-<p><img src="2022-03-17-mortgage_files/figure-html/cell-14-output-1.png" class="img-fluid"></p>
+<div>
+<figure class="figure">
+<p><img src="2022-03-17-mortgage_files/figure-html/cell-14-output-1.png" class="img-fluid figure-img"></p>
+</figure>
+</div>
 </div>
 </div>
 <p>This chart shows the change in the delta between a fixed rate mortgage and the variable rate over a 5 year period. Each line represents a potential start month, with the delta between fixed and variable on the y axis and how many months into the 5 year term that mortgage is on the x axis. The colour corresponds to the number of days after Jan 1 1970 the scenario starts (I just needed a nice linear series to get the colour coding).</p>
 <p>That’s way too noisy to make a ton of sense of, but it shows that variable rates can be quite a lot higher or lower than the 5 year fixed. Most of the crazy outliers are lighter in colour, which corresponds to earlier points in history and given the wildly volatile interest rates we saw in the previous chart that seems reasonable. Eyeballing it it definitely looks like the majority of series are below the 0 line throughout the 5 year period.</p>
 <p>One could make the argument that including the 1980s is unfair given the crazy stagflation and associated high interest rates used to combat them. If you think more recent history is a better guide we can look at just the scenarios starting since the year 2000:</p>
-<div class="cell" data-execution_count="14">
+<div id="cell-24" class="cell" data-execution_count="14">
 <div class="sourceCode cell-code" id="cb14"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>subset_cdf <span class="op">=</span> delta_cdf.loc[<span class="kw">lambda</span> df: df[<span class="st">"start date delta"</span>] <span class="op">&gt;=</span> <span class="dv">25</span> <span class="op">*</span> <span class="dv">365</span>]</span>
 <span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>sns.lineplot(data<span class="op">=</span>subset_cdf, x<span class="op">=</span><span class="st">"period"</span>, y<span class="op">=</span><span class="st">"variable_delta"</span>, hue<span class="op">=</span><span class="st">"start date delta"</span>)<span class="op">;</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-display">
-<p><img src="2022-03-17-mortgage_files/figure-html/cell-15-output-1.png" class="img-fluid"></p>
+<div>
+<figure class="figure">
+<p><img src="2022-03-17-mortgage_files/figure-html/cell-15-output-1.png" class="img-fluid figure-img"></p>
+</figure>
+</div>
 </div>
 </div>
 <p>So since 2000 it looks like your variable rate has almost never gone above the five year fixed rate. Again, recall that the actual fixed or variable rate you’d get at any of these points is not perfectly correlated with the posted rates I’m using, but it’s still a good indicator. Personally since I’m risk averse and we are currently looking at higher inflation than there’s been for 30 years I’m inclined to use the longer term scenarios, but it was an interesting exercise to see what more recent history looks like.</p>
 <p>Now, even though these charts are kind of pretty, they’re not very informative, there’s too much going on. What I can do instead is summarize the distribution of those lines. So for any point in the mortgage term I can show the mean delta, or the median, or any other quantile. Let’s take a look at that:</p>
-<div class="cell" data-execution_count="15">
+<div id="cell-26" class="cell" data-execution_count="15">
 <div class="sourceCode cell-code" id="cb15"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>full_series <span class="op">=</span> [delta_df.mean(axis<span class="op">=</span><span class="st">"columns"</span>).rename(<span class="st">"mean"</span>)]</span>
 <span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> q <span class="kw">in</span> [<span class="fl">0.05</span>, <span class="fl">0.10</span>, <span class="fl">0.25</span>, <span class="fl">0.5</span>, <span class="fl">0.75</span>, <span class="fl">0.9</span>, <span class="fl">0.95</span>]:</span>
 <span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>    full_series.append(delta_df.quantile(q, axis<span class="op">=</span><span class="st">"columns"</span>).rename(<span class="ss">f"q</span><span class="sc">{</span>q<span class="sc">}</span><span class="ss">"</span>))</span>
 <span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a>full_distributions <span class="op">=</span> pd.concat(full_series, axis<span class="op">=</span><span class="st">"columns"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<div class="cell" data-execution_count="16">
+<div id="cell-27" class="cell" data-execution_count="16">
 <div class="sourceCode cell-code" id="cb16"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>fdist_cdf <span class="op">=</span> (</span>
 <span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>    full_distributions</span>
 <span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>    .melt(ignore_index<span class="op">=</span><span class="va">False</span>)</span>
@@ -641,11 +667,15 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a>)</span>
 <span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a>sns.lineplot(data<span class="op">=</span>fdist_cdf, x<span class="op">=</span><span class="st">"period"</span>, y<span class="op">=</span><span class="st">"value"</span>, hue<span class="op">=</span><span class="st">"variable"</span>)<span class="op">;</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-display">
-<p><img src="2022-03-17-mortgage_files/figure-html/cell-17-output-1.png" class="img-fluid"></p>
+<div>
+<figure class="figure">
+<p><img src="2022-03-17-mortgage_files/figure-html/cell-17-output-1.png" class="img-fluid figure-img"></p>
+</figure>
+</div>
 </div>
 </div>
 <p>So over the whole observation period the mean gap between fixed and variable rate tends to trend downward, which makes sense given interest rates were declining over most of the observed period. At least 3/4 of the time they stayed below the fixed rate for the entire period, but when we look at the 90th percentile and above they were over the fixed rate throughout the period (this is not saying any one series was consistently that high above throughout the 5 year period, just that at least 10% of them were that much above it at that point.) Let’s try it again, just focusing on since 2000.</p>
-<div class="cell" data-execution_count="17">
+<div id="cell-29" class="cell" data-execution_count="17">
 <div class="sourceCode cell-code" id="cb17"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>rdelta_df <span class="op">=</span> delta_df.T.loc[<span class="st">"2000"</span>:].T</span>
 <span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>full_series <span class="op">=</span> [rdelta_df.mean(axis<span class="op">=</span><span class="st">"columns"</span>).rename(<span class="st">"mean"</span>)]</span>
 <span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> q <span class="kw">in</span> [<span class="fl">0.01</span>, <span class="fl">0.05</span>, <span class="fl">0.10</span>, <span class="fl">0.25</span>, <span class="fl">0.5</span>, <span class="fl">0.75</span>, <span class="fl">0.9</span>, <span class="fl">0.95</span>, <span class="fl">0.99</span>]:</span>
@@ -659,7 +689,11 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb17-11"><a href="#cb17-11" aria-hidden="true" tabindex="-1"></a>)</span>
 <span id="cb17-12"><a href="#cb17-12" aria-hidden="true" tabindex="-1"></a>sns.lineplot(data<span class="op">=</span>fdist_cdf, x<span class="op">=</span><span class="st">"period"</span>, y<span class="op">=</span><span class="st">"value"</span>, hue<span class="op">=</span><span class="st">"variable"</span>)<span class="op">;</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-display">
-<p><img src="2022-03-17-mortgage_files/figure-html/cell-18-output-1.png" class="img-fluid"></p>
+<div>
+<figure class="figure">
+<p><img src="2022-03-17-mortgage_files/figure-html/cell-18-output-1.png" class="img-fluid figure-img"></p>
+</figure>
+</div>
 </div>
 </div>
 <p>So in the more recent period I checked out some of the wider end of the tails. At the 99th percentile we do see a couple spots where it goes above 0, but not by much. Variable rates over the last 20 years have been a pretty sweet deal.</p>
@@ -667,13 +701,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="model-out-capped-variable-strategy" class="level2">
 <h2 class="anchored" data-anchor-id="model-out-capped-variable-strategy">Model out capped variable strategy</h2>
 <p>Looking at these trends, it definitely seems like going with the capped variable rate would be the way to go, but let’s model it out a bit and see. The first thing I need to do is write a class that can handle mortgage payments, including variable payments or a capped variable strategy. For that I can leverage some of the code I wrote for my rent or own calculator (with some tweaks).</p>
-<div class="cell" data-execution_count="18">
+<div id="cell-32" class="cell" data-execution_count="18">
 <div class="sourceCode cell-code" id="cb18"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> math</span>
 <span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> collections <span class="im">import</span> OrderedDict</span>
 <span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy_financial <span class="im">as</span> npf</span>
 <span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> numpy <span class="im">as</span> np</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<div class="cell" data-execution_count="19">
+<div id="cell-33" class="cell" data-execution_count="19">
 <div class="sourceCode cell-code" id="cb19"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> Mortgage:</span>
 <span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""Base mortgage class.</span></span>
 <span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a><span class="co">    Parameters</span></span>
@@ -816,18 +850,18 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb19-140"><a href="#cb19-140" aria-hidden="true" tabindex="-1"></a>        result <span class="op">=</span> <span class="ss">f"""</span></span>
 <span id="cb19-141"><a href="#cb19-141" aria-hidden="true" tabindex="-1"></a><span class="ss">            Scenario: </span><span class="sc">{</span>summary[<span class="st">"scenario_name"</span>]<span class="sc">}</span></span>
 <span id="cb19-142"><a href="#cb19-142" aria-hidden="true" tabindex="-1"></a><span class="ss">            Capped: </span><span class="sc">{</span><span class="va">self</span><span class="sc">.</span>capped_variable<span class="sc">}</span></span>
-<span id="cb19-143"><a href="#cb19-143" aria-hidden="true" tabindex="-1"></a><span class="ss">            Total Payments: $</span><span class="sc">{</span>summary[<span class="st">"total_payments"</span>]<span class="sc">:,</span><span class="fl">.0</span><span class="er">f</span><span class="sc">}</span></span>
-<span id="cb19-144"><a href="#cb19-144" aria-hidden="true" tabindex="-1"></a><span class="ss">            Ending mortgage balance: $</span><span class="sc">{</span>summary[<span class="st">"end_balance"</span>]<span class="sc">:,</span><span class="fl">.0</span><span class="er">f</span><span class="sc">}</span></span>
-<span id="cb19-145"><a href="#cb19-145" aria-hidden="true" tabindex="-1"></a><span class="ss">            Total interest payments: $</span><span class="sc">{</span>summary[<span class="st">"total_interest"</span>]<span class="sc">:,</span><span class="fl">.0</span><span class="er">f</span><span class="sc">}</span></span>
-<span id="cb19-146"><a href="#cb19-146" aria-hidden="true" tabindex="-1"></a><span class="ss">            Total principal payments: $</span><span class="sc">{</span>summary[<span class="st">"total_principal"</span>]<span class="sc">:,</span><span class="fl">.0</span><span class="er">f</span><span class="sc">}</span></span>
-<span id="cb19-147"><a href="#cb19-147" aria-hidden="true" tabindex="-1"></a><span class="ss">            Average payment: $</span><span class="sc">{</span>summary[<span class="st">"average_payment"</span>]<span class="sc">:,</span><span class="fl">.0</span><span class="er">f</span><span class="sc">}</span></span>
-<span id="cb19-148"><a href="#cb19-148" aria-hidden="true" tabindex="-1"></a><span class="ss">            Minimum payment: $</span><span class="sc">{</span>summary[<span class="st">"min_payment"</span>]<span class="sc">:,</span><span class="fl">.0</span><span class="er">f</span><span class="sc">}</span></span>
-<span id="cb19-149"><a href="#cb19-149" aria-hidden="true" tabindex="-1"></a><span class="ss">            Maximum payment: $</span><span class="sc">{</span>summary[<span class="st">"max_payment"</span>]<span class="sc">:,</span><span class="fl">.0</span><span class="er">f</span><span class="sc">}</span></span>
+<span id="cb19-143"><a href="#cb19-143" aria-hidden="true" tabindex="-1"></a><span class="ss">            Total Payments: $</span><span class="sc">{</span>summary[<span class="st">"total_payments"</span>]<span class="sc">:,.0f}</span></span>
+<span id="cb19-144"><a href="#cb19-144" aria-hidden="true" tabindex="-1"></a><span class="ss">            Ending mortgage balance: $</span><span class="sc">{</span>summary[<span class="st">"end_balance"</span>]<span class="sc">:,.0f}</span></span>
+<span id="cb19-145"><a href="#cb19-145" aria-hidden="true" tabindex="-1"></a><span class="ss">            Total interest payments: $</span><span class="sc">{</span>summary[<span class="st">"total_interest"</span>]<span class="sc">:,.0f}</span></span>
+<span id="cb19-146"><a href="#cb19-146" aria-hidden="true" tabindex="-1"></a><span class="ss">            Total principal payments: $</span><span class="sc">{</span>summary[<span class="st">"total_principal"</span>]<span class="sc">:,.0f}</span></span>
+<span id="cb19-147"><a href="#cb19-147" aria-hidden="true" tabindex="-1"></a><span class="ss">            Average payment: $</span><span class="sc">{</span>summary[<span class="st">"average_payment"</span>]<span class="sc">:,.0f}</span></span>
+<span id="cb19-148"><a href="#cb19-148" aria-hidden="true" tabindex="-1"></a><span class="ss">            Minimum payment: $</span><span class="sc">{</span>summary[<span class="st">"min_payment"</span>]<span class="sc">:,.0f}</span></span>
+<span id="cb19-149"><a href="#cb19-149" aria-hidden="true" tabindex="-1"></a><span class="ss">            Maximum payment: $</span><span class="sc">{</span>summary[<span class="st">"max_payment"</span>]<span class="sc">:,.0f}</span></span>
 <span id="cb19-150"><a href="#cb19-150" aria-hidden="true" tabindex="-1"></a><span class="ss">        """</span></span>
 <span id="cb19-151"><a href="#cb19-151" aria-hidden="true" tabindex="-1"></a>        <span class="bu">print</span>(result)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>Let’s look at the summary of a few of these scenarios</p>
-<div class="cell" data-execution_count="20">
+<div id="cell-35" class="cell" data-execution_count="20">
 <div class="sourceCode cell-code" id="cb20"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a>fixed_scenario <span class="op">=</span> Mortgage(</span>
 <span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>    delta_series<span class="op">=</span>np.zeros(<span class="dv">60</span>),</span>
 <span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a>    scenario_name<span class="op">=</span><span class="st">"fixed payments"</span>,</span>
@@ -849,7 +883,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
         </code></pre>
 </div>
 </div>
-<div class="cell" data-execution_count="21">
+<div id="cell-36" class="cell" data-execution_count="21">
 <div class="sourceCode cell-code" id="cb22"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a>Mortgage(</span>
 <span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a>    delta_series<span class="op">=</span>delta_df[<span class="st">"1975-01-01"</span>],</span>
 <span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a>    scenario_name<span class="op">=</span><span class="st">"1975-01-01"</span>,</span>
@@ -869,7 +903,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
         </code></pre>
 </div>
 </div>
-<div class="cell" data-execution_count="22">
+<div id="cell-37" class="cell" data-execution_count="22">
 <div class="sourceCode cell-code" id="cb24"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a>Mortgage(</span>
 <span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a>    delta_series<span class="op">=</span>delta_df[<span class="st">"1975-01-01"</span>],</span>
 <span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a>    scenario_name<span class="op">=</span><span class="st">"1975-01-01 capped"</span>,</span>
@@ -890,7 +924,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </div>
 <p>Before I run a bunch of scenarios from historical ones, let’s plug in something derived from a forecast. <a href="https://economics.td.com/ca-long-term-forecast">TD forecasts</a> the overnight rate for the BoC will end 2022 at 1.25% (it’s 0.5% as I write this) and climb to 1.75% by the end of 2023 before leveling off for the remainder of the forecast period. Let’s make a scenario where variable rates follow that same hike schedule 1:1</p>
-<div class="cell" data-execution_count="23">
+<div id="cell-39" class="cell" data-execution_count="23">
 <div class="sourceCode cell-code" id="cb26"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Current delta based on "special" rates available on RBC site</span></span>
 <span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a>start_delta <span class="op">=</span> <span class="op">-</span><span class="fl">1.39</span></span>
 <span id="cb26-3"><a href="#cb26-3" aria-hidden="true" tabindex="-1"></a>delta_series <span class="op">=</span> np.repeat(start_delta, <span class="dv">60</span>)</span>
@@ -901,7 +935,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <span id="cb26-8"><a href="#cb26-8" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> cut <span class="kw">in</span> [<span class="dv">12</span>, <span class="dv">18</span>]:</span>
 <span id="cb26-9"><a href="#cb26-9" aria-hidden="true" tabindex="-1"></a>    delta_series[cut:] <span class="op">+=</span> <span class="fl">0.25</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
-<div class="cell" data-execution_count="24">
+<div id="cell-40" class="cell" data-execution_count="24">
 <div class="sourceCode cell-code" id="cb27"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a>Mortgage(</span>
 <span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a>    delta_series<span class="op">=</span>delta_series,</span>
 <span id="cb27-3"><a href="#cb27-3" aria-hidden="true" tabindex="-1"></a>    scenario_name<span class="op">=</span><span class="st">"1.25% total hikes, capped"</span>,</span>
@@ -921,7 +955,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
         </code></pre>
 </div>
 </div>
-<div class="cell" data-execution_count="25">
+<div id="cell-41" class="cell" data-execution_count="25">
 <div class="sourceCode cell-code" id="cb29"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a>Mortgage(</span>
 <span id="cb29-2"><a href="#cb29-2" aria-hidden="true" tabindex="-1"></a>    delta_series<span class="op">=</span>delta_series,</span>
 <span id="cb29-3"><a href="#cb29-3" aria-hidden="true" tabindex="-1"></a>    scenario_name<span class="op">=</span><span class="st">"1.25% total hikes, uncapped"</span>,</span>
@@ -943,7 +977,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 <p>So in this scenario (which I’m definitely not saying will happen, but it’s plausible) either of the variable strategies beat a fixed strategy since we never get up to the fixed rate. Between capped and full variable you make bigger payments and also pay less interest, so as long as those payments are manageable that seems like a pretty solid deal. Let’s run this against a bunch of historical scenarios now.</p>
 <p>First we’ll look at the distribution of outcomes for the capped strategy based on historical rate delta development</p>
-<div class="cell" data-execution_count="26">
+<div id="cell-44" class="cell" data-execution_count="26">
 <div class="sourceCode cell-code" id="cb31"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a>capped_scenarios <span class="op">=</span> pd.DataFrame([</span>
 <span id="cb31-2"><a href="#cb31-2" aria-hidden="true" tabindex="-1"></a>    Mortgage(</span>
 <span id="cb31-3"><a href="#cb31-3" aria-hidden="true" tabindex="-1"></a>        delta_series<span class="op">=</span>delta_df[col],</span>
@@ -959,28 +993,36 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   (1 + rate*when)*(temp - 1)/rate)</code></pre>
 </div>
 </div>
-<div class="cell" data-execution_count="27">
+<div id="cell-45" class="cell" data-execution_count="27">
 <div class="sourceCode cell-code" id="cb33"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> plot_hist(data, col):</span>
 <span id="cb33-2"><a href="#cb33-2" aria-hidden="true" tabindex="-1"></a>    g <span class="op">=</span> sns.histplot(data<span class="op">=</span>data,x<span class="op">=</span>col, bins<span class="op">=</span><span class="dv">50</span>, stat<span class="op">=</span><span class="st">"percent"</span>)</span>
 <span id="cb33-3"><a href="#cb33-3" aria-hidden="true" tabindex="-1"></a>    plt.axvline(x<span class="op">=</span>fixed_summary[col], color<span class="op">=</span><span class="st">"red"</span>)</span>
 <span id="cb33-4"><a href="#cb33-4" aria-hidden="true" tabindex="-1"></a>    <span class="cf">return</span> g</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </div>
 <p>This chart shows the distribution of end balances (the amount still owing on the mortgage at the end of the 5 year term) using the capped variable strategy across all the historical scenarios we outlined above. The red vertical line is the equivalent point for going with a fixed rate. The vast majority of points show a lower ending balance, which is definitely good, although there is some tail risk of ending with a balance of up to about $50k more.</p>
-<div class="cell" data-execution_count="28">
+<div id="cell-47" class="cell" data-execution_count="28">
 <div class="sourceCode cell-code" id="cb34"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a>plot_hist(capped_scenarios, <span class="st">"end_balance"</span>)<span class="op">;</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-display">
-<p><img src="2022-03-17-mortgage_files/figure-html/cell-29-output-1.png" class="img-fluid"></p>
+<div>
+<figure class="figure">
+<p><img src="2022-03-17-mortgage_files/figure-html/cell-29-output-1.png" class="img-fluid figure-img"></p>
+</figure>
+</div>
 </div>
 </div>
 <p>Similarly, we can look at the distribution of maximum payments made over the whole 5 year term. As long as the cap at least covers your interest payments you never go over it, so unsurprisingly over 70% of the scenarios have a max payment equal to the fixed amount. Again though, there’s a long tail (presumably corresponding to the massive rate hikes we saw in the late 70s and early 80s where you would end up making at least one payment that’s more than double the fixed amount, ouch.</p>
-<div class="cell" data-execution_count="29">
+<div id="cell-49" class="cell" data-execution_count="29">
 <div class="sourceCode cell-code" id="cb35"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a>plot_hist(capped_scenarios, <span class="st">"max_payment"</span>)<span class="op">;</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-display">
-<p><img src="2022-03-17-mortgage_files/figure-html/cell-30-output-1.png" class="img-fluid"></p>
+<div>
+<figure class="figure">
+<p><img src="2022-03-17-mortgage_files/figure-html/cell-30-output-1.png" class="img-fluid figure-img"></p>
+</figure>
+</div>
 </div>
 </div>
 <p>Finally, let’s look at the same scenarios, but just paying the variable rate the whole way through. The graphs represent the same things as above, just with the uncapped variable rate mortgage.</p>
-<div class="cell" data-execution_count="30">
+<div id="cell-51" class="cell" data-execution_count="30">
 <div class="sourceCode cell-code" id="cb36"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb36-1"><a href="#cb36-1" aria-hidden="true" tabindex="-1"></a>uncapped_scenarios <span class="op">=</span> pd.DataFrame([</span>
 <span id="cb36-2"><a href="#cb36-2" aria-hidden="true" tabindex="-1"></a>    Mortgage(</span>
 <span id="cb36-3"><a href="#cb36-3" aria-hidden="true" tabindex="-1"></a>        delta_series<span class="op">=</span>delta_df[col],</span>
@@ -996,16 +1038,24 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   (1 + rate*when)*(temp - 1)/rate)</code></pre>
 </div>
 </div>
-<div class="cell" data-execution_count="31">
+<div id="cell-52" class="cell" data-execution_count="31">
 <div class="sourceCode cell-code" id="cb38"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb38-1"><a href="#cb38-1" aria-hidden="true" tabindex="-1"></a>plot_hist(uncapped_scenarios, <span class="st">"end_balance"</span>)<span class="op">;</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-display">
-<p><img src="2022-03-17-mortgage_files/figure-html/cell-32-output-1.png" class="img-fluid"></p>
+<div>
+<figure class="figure">
+<p><img src="2022-03-17-mortgage_files/figure-html/cell-32-output-1.png" class="img-fluid figure-img"></p>
+</figure>
 </div>
 </div>
-<div class="cell" data-execution_count="32">
+</div>
+<div id="cell-53" class="cell" data-execution_count="32">
 <div class="sourceCode cell-code" id="cb39"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb39-1"><a href="#cb39-1" aria-hidden="true" tabindex="-1"></a>plot_hist(uncapped_scenarios, <span class="st">"max_payment"</span>)<span class="op">;</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-display">
-<p><img src="2022-03-17-mortgage_files/figure-html/cell-33-output-1.png" class="img-fluid"></p>
+<div>
+<figure class="figure">
+<p><img src="2022-03-17-mortgage_files/figure-html/cell-33-output-1.png" class="img-fluid figure-img"></p>
+</figure>
+</div>
 </div>
 </div>
 <p>The distribution of end balances looks reasonably similar, although the capped variable definitely has more weight on the lower end of the distribution, which is quite good. Unsurprisingly, the max payment is a much wider distribution than under the capped scenario, with a decent chunk of payments above what you’d do in the fixed rate scenario.</p>
@@ -1097,10 +1147,27 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
     // clear code selection
     e.clearSelection();
   });
-  function tippyHover(el, contentFn) {
+    var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+    var mailtoRegex = new RegExp(/^mailto:/);
+      var filterRegex = new RegExp("https:\/\/blog\.ianpreston\.ca");
+    var isInternal = (href) => {
+        return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+    }
+    // Inspect non-navigation links and adorn them if external
+ 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool)');
+    for (var i=0; i<links.length; i++) {
+      const link = links[i];
+      if (!isInternal(link.href)) {
+        // undo the damage that might have been done by quarto-nav.js in the case of
+        // links that we want to consider external
+        if (link.dataset.originalHref !== undefined) {
+          link.href = link.dataset.originalHref;
+        }
+      }
+    }
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
     const config = {
       allowHTML: true,
-      content: contentFn,
       maxWidth: 500,
       delay: 100,
       arrow: false,
@@ -1110,8 +1177,17 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
       interactive: true,
       interactiveBorder: 10,
       theme: 'quarto',
-      placement: 'bottom-start'
+      placement: 'bottom-start',
     };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
     window.tippy(el, config); 
   }
   const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
@@ -1123,7 +1199,130 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
       try { href = new URL(href).hash; } catch {}
       const id = href.replace(/^#\/?/, "");
       const note = window.document.getElementById(id);
-      return note.innerHTML;
+      if (note) {
+        return note.innerHTML;
+      } else {
+        return "";
+      }
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(container);
+        }
+        return container.innerHTML
+      } else {
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(note);
+      }
+      // TODO in 1.5, we should make sure this works without a callout special case
+      if (note.classList.contains("callout")) {
+        return note.outerHTML;
+      } else {
+        return note.innerHTML;
+      }
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
     });
   }
       let selectedAnnoteEl;
@@ -1167,6 +1366,7 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
             }
             div.style.top = top - 2 + "px";
             div.style.height = height + 4 + "px";
+            div.style.left = 0;
             let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
             if (gutterDiv === null) {
               gutterDiv = window.document.createElement("div");
@@ -1192,6 +1392,32 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
         });
         selectedAnnoteEl = undefined;
       };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
       // Attach click handler to the DT
       const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
       for (const annoteDlNode of annoteDls) {
@@ -1252,6 +1478,7 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
 });
 </script>
 </div> <!-- /content -->
+
 
 
 
