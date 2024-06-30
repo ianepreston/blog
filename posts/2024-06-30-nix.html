@@ -1,0 +1,1010 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.4.557">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="dcterms.date" content="2024-06-30">
+<meta name="description" content="No, you spend all your time bike-shedding your setup">
+
+<title>Ian’s blog - Setting up nix development enviroments</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { display: inline-block; text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../site_libs/clipboard/clipboard.min.js"></script>
+<script src="../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="../">
+<script src="../site_libs/quarto-html/quarto.js"></script>
+<script src="../site_libs/quarto-html/popper.min.js"></script>
+<script src="../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="../site_libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../site_libs/bootstrap/bootstrap.min.css" rel="stylesheet" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+
+<link rel="stylesheet" href="../styles.css">
+</head>
+
+<body class="nav-fixed">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top quarto-banner">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container mx-auto">
+    <a class="navbar-brand" href="../index.html">
+    <span class="navbar-title">Ian’s blog</span>
+    </a>
+  </div>
+            <div id="quarto-search" class="" title="Search"></div>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll ms-auto">
+  <li class="nav-item">
+    <a class="nav-link" href="../about.html"> 
+<span class="menu-text">about</span></a>
+  </li>  
+  <li class="nav-item compact">
+    <a class="nav-link" href="https://github.com/ianepreston"> <i class="bi bi-github" role="img">
+</i> 
+<span class="menu-text"></span></a>
+  </li>  
+</ul>
+          </div> <!-- /navcollapse -->
+          <div class="quarto-navbar-tools">
+</div>
+      </div> <!-- /container-fluid -->
+    </nav>
+</header>
+<!-- content -->
+<header id="title-block-header" class="quarto-title-block default page-columns page-full">
+  <div class="quarto-title-banner page-columns page-full">
+    <div class="quarto-title column-body">
+      <h1 class="title">Setting up nix development enviroments</h1>
+                  <div>
+        <div class="description">
+          No, you spend all your time bike-shedding your setup
+        </div>
+      </div>
+                          <div class="quarto-categories">
+                <div class="quarto-category">nix</div>
+                <div class="quarto-category">linux</div>
+              </div>
+                  </div>
+  </div>
+    
+  
+  <div class="quarto-title-meta">
+
+      
+      <div>
+      <div class="quarto-title-meta-heading">Published</div>
+      <div class="quarto-title-meta-contents">
+        <p class="date">June 30, 2024</p>
+      </div>
+    </div>
+    
+      
+    </div>
+    
+  
+  </header><div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#introduction" id="toc-introduction" class="nav-link active" data-scroll-target="#introduction">Introduction</a></li>
+  <li><a href="#what-problem-im-trying-to-solve" id="toc-what-problem-im-trying-to-solve" class="nav-link" data-scroll-target="#what-problem-im-trying-to-solve">What problem I’m trying to solve</a></li>
+  <li><a href="#resources-that-were-helpful" id="toc-resources-that-were-helpful" class="nav-link" data-scroll-target="#resources-that-were-helpful">Resources that were helpful</a></li>
+  <li><a href="#python-environment" id="toc-python-environment" class="nav-link" data-scroll-target="#python-environment">Python environment</a>
+  <ul class="collapse">
+  <li><a href="#log-of-what-i-tried-before-finally-getting-things-working" id="toc-log-of-what-i-tried-before-finally-getting-things-working" class="nav-link" data-scroll-target="#log-of-what-i-tried-before-finally-getting-things-working">Log of what I tried before finally getting things working</a>
+  <ul class="collapse">
+  <li><a href="#first-official-attempt" id="toc-first-official-attempt" class="nav-link" data-scroll-target="#first-official-attempt">First official attempt</a></li>
+  <li><a href="#try-just-sticking-poetry-in" id="toc-try-just-sticking-poetry-in" class="nav-link" data-scroll-target="#try-just-sticking-poetry-in">Try just sticking poetry in</a></li>
+  <li><a href="#ok-sure-but-how-about-with-pandas" id="toc-ok-sure-but-how-about-with-pandas" class="nav-link" data-scroll-target="#ok-sure-but-how-about-with-pandas">Ok sure, but how about with pandas?</a></li>
+  <li><a href="#work-on-different-python-versions" id="toc-work-on-different-python-versions" class="nav-link" data-scroll-target="#work-on-different-python-versions">Work on different python versions</a></li>
+  <li><a href="#try-to-bring-in-devenv-again" id="toc-try-to-bring-in-devenv-again" class="nav-link" data-scroll-target="#try-to-bring-in-devenv-again">Try to bring in devenv again</a></li>
+  <li><a href="#figure-out-where-to-go-next" id="toc-figure-out-where-to-go-next" class="nav-link" data-scroll-target="#figure-out-where-to-go-next">Figure out where to go next</a></li>
+  <li><a href="#try-fixing-devenv" id="toc-try-fixing-devenv" class="nav-link" data-scroll-target="#try-fixing-devenv">Try fixing devenv</a></li>
+  <li><a href="#detour-into-devcontainers" id="toc-detour-into-devcontainers" class="nav-link" data-scroll-target="#detour-into-devcontainers">Detour into devcontainers</a></li>
+  <li><a href="#back-to-poetry-with-poetry2nix" id="toc-back-to-poetry-with-poetry2nix" class="nav-link" data-scroll-target="#back-to-poetry-with-poetry2nix">Back to poetry with poetry2nix</a></li>
+  <li><a href="#test-this-on-a-real-project" id="toc-test-this-on-a-real-project" class="nav-link" data-scroll-target="#test-this-on-a-real-project">Test this on a real project</a></li>
+  <li><a href="#how-about-cicd" id="toc-how-about-cicd" class="nav-link" data-scroll-target="#how-about-cicd">How about CI/CD?</a></li>
+  </ul></li>
+  </ul></li>
+  <li><a href="#conclusion" id="toc-conclusion" class="nav-link" data-scroll-target="#conclusion">Conclusion</a></li>
+  </ul>
+</nav>
+    </div>
+<!-- main -->
+<main class="content quarto-banner-title-block" id="quarto-document-content">
+
+
+
+
+
+<section id="introduction" class="level1">
+<h1>Introduction</h1>
+<p>For the past little while now I’ve been changing how I manage my dotfiles and development environments to use <a href="https://nixos.org/">nix</a>. I haven’t gone full bore and switched to NixOS itself, but otherwise I’m pretty into it. This post will go over what problems I was trying to solve by switching, share some resources I found helpful, and document what I did to get my python environment working the way I like, because it took a ton of time and also does the best job of showing some of the different ways you can do things in nix.</p>
+</section>
+<section id="what-problem-im-trying-to-solve" class="level1">
+<h1>What problem I’m trying to solve</h1>
+<p>Previously I was deploying my dotfiles with <a href="https://github.com/anishathalye/dotbot">dotbot</a> and setting up my development environment with <a href="https://containers.dev/">devcontainers</a>, specifically through <a href="https://devpod.sh/">devpod</a>. Nothing against either of these projects, they’re great at what they’re for, but I did have some issues that left me wondering if there was a better solution.</p>
+<p>First, while my dotfiles contained all the config for my apps, they didn’t have any capability to check for and fix installation of those apps if they weren’t present. So for example I could have my <a href="https://starship.rs/">starship</a> config in my dotfiles, but that wouldn’t do me any good if the environment I was developing in didn’t have it. For actual hosts I could take care of this with ansible, and for devcontainers I built a base image that had the tools I liked that I would then build language or project specific containers on top of. This worked, but it felt disjointed. Ansible feels heavy to just install a couple packages, especially when you have to deal with either setting up connectivity from an existing host to a WSL system or whatever, or you have to bootstrap installing ansible on the machine to run a playbook against a <code>local</code> host. For the devcontainers it meant that whenever I updated my base image I then had to rebuild and repull any child images based on it, which meant if I was working on a project and realized there was a cool tool I wanted to add to my base image I was either going into my devcontainer repo, making changes, pushing up, rebuilding the base image, rebuilding the child image I needed, pulling it down into my environment and resuming what I was actually working on, or I just hacked something into the devcontainer that was lost the next time I restarted and then I had to go through the process above.</p>
+<p>Regarding devcontainers, they’re an awesome idea, and I think maybe if my dev environments involved a much larger stack, like if I was standing up a cache and a database and some other tooling along with whatever I was developing then being able to orchestrate all that with docker would appeal. What I generally actually want out of devcontainers though is just for some tools to be available. I can definitely get this from a devcontainer, but at the cost of a lot more isolation than I actually want. Any config files I want to mount in I have to add, <code>ssh-agent</code> seems to hate forwarding into devcontainers for me (I’m pretty sure this is because I have some weird stack with WSL but still), and configuring a <code>Dockerfile</code> is a bit of a hassle. If I realize I need something else in the container do I carefully rewrite the file to keep my layers small and related actions close together? Or do I jam it in at the end of the file so I don’t have to rebuild all those layers I already made so I can get back to work quickly?</p>
+<p>To address these issues I decided to try nix. <a href="https://nix-community.github.io/home-manager/">Home Manager</a> lets me bundle common apps along with their config, and then <a href="https://nixos.wiki/wiki/flakes#Super_fast_nix-shell">nix-shell</a> lets me declaratively define a development environment that I can bundle (along with pinned dependencies) with a project. It took a fair bit of work and reading to get my head around the tooling, but in the end I’m quite pleased with my setup.</p>
+</section>
+<section id="resources-that-were-helpful" class="level1">
+<h1>Resources that were helpful</h1>
+<p>For the most part I don’t have anything original to add to this discussion. I’m not going to try and reiterate a worse version of the tutorials and guides I followed to configure my setup, that doesn’t seem helpful. Instead in this section I’ll list the links that were most useful for me when trying to figure this out. In the next section I will go through all the things I tried to set up a python environment, since I didn’t see anything that explored all the options I tried while I was searching, so it might actually be useful to others.</p>
+<ul>
+<li><a href="https://zero-to-nix.com/start/install">zero to nix</a>. Great guide. Covers the basics and gets you set up with an environment where you can actually test other things out. Highly recommend starting here.</li>
+<li><a href="https://tonyfinn.com/blog/nix-from-first-principles-flake-edition/">nix from first principles: flake edition</a> Much more comprehensive. Very solid description of nix, how it works, some of the patterns it uses, and some nice example development environments. I referred back to this the most.</li>
+<li><a href="https://www.youtube.com/@vimjoyer">vimjoyer channel</a>. Lots of good videos going over things in nix. Includes NixOS specific stuff that isn’t currently relevant to me and video format makes it harder to review, but a very nice way to get an overview of what’s possible in nix. Watched a lot of these while doing dishes.</li>
+</ul>
+</section>
+<section id="python-environment" class="level1">
+<h1>Python environment</h1>
+<p>For the most part after going through the guides above I was able to get what I wanted working fairly easily. I would have to ask ChatGPT about some particular syntax, or refer to the home-manager appendices to figure out a specific configuration, but as I mentioned above I don’t think I have a lot of wisdom to contribute for those scenarios. Read the guides above, bang your head against the code a bit until it starts making sense and you’ll be good to go.</p>
+<p>The exception to this is python environments. I did a <strong>lot</strong> of messing around with setting up my environment and I think describing what I tried will be helpful to others.</p>
+<p>In the interest of not burying the lede for those who just want to know what worked I built an environment for each version of python I wanted to test against using <a href="https://github.com/nix-community/poetry2nix?tab=readme-ov-file#mkpoetryenv">poetry2nix</a>.</p>
+<p>You can see what I’m currently doing by checking out my <a href="https://github.com/ianepreston/stats_can/blob/master/flake.nix">stats_can project</a>.</p>
+<p>I resisted this approach at first because I was thinking of nix in terms of docker as something that should just give me a python runtime, poetry, and nox and then get out of my way. It turns out there are problems with that approach.</p>
+<section id="log-of-what-i-tried-before-finally-getting-things-working" class="level2">
+<h2 class="anchored" data-anchor-id="log-of-what-i-tried-before-finally-getting-things-working">Log of what I tried before finally getting things working</h2>
+<p>I wanted to be able to just tell nix to give me an environment with a python runtime of my choice, poetry, and nox (not to be confused with nix, just an unfortunately very similarly named project). I think I probably could have gotten this working if my projects only used pure python dependencies, but stuff with c bindings like numpy and pandas had all sorts of issues since the c libraries of the nix packages didn’t match my OS, and installing c libraries into nix didn’t fix the fact that the… links? were wrong? To be honest I was pretty confused by all this. Suffice to say, it didn’t work. I also tried out <a href="https://devenv.sh/">devenv</a> and <a href="https://numtide.github.io/devshell/">devshell</a> which are built on top of nix and intended to make things easier, but in the case of python environments I found they ended up adding complexity. The section below is a record of the things I tried, only loosely edited. I’m keeping it in for reference and also so maybe someone else trying these things will find it in google and be able to skip to the setup I actually got working.</p>
+<section id="first-official-attempt" class="level3">
+<h3 class="anchored" data-anchor-id="first-official-attempt">First official attempt</h3>
+<p>I did a lot of fumbling around trying to just drop some flakes off the internet into existing python projects, but that quickly turned out to be too complicated for testing.</p>
+<p>Instead I started a fresh git repo with the intent of making a minimum viable package and then extending from there as required.</p>
+<p>I’ll start with the development environment described in <a href="https://tonyfinn.com/blog/nix-from-first-principles-flake-edition/nix-8-flakes-and-developer-environments/">nix from first principles</a>. It’s fairly understandable, gives me multiple python versions, and will have a different version of python as the default than I’m using in poetry so I can test that.</p>
+<p>It looks like this to start:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode nix code-with-copy"><code class="sourceCode nix"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>  <span class="va">inputs</span>.<span class="va">nixpkgs</span>.<span class="va">url</span> <span class="op">=</span> <span class="st">"github:NixOS/nixpkgs/nixpkgs-unstable"</span><span class="op">;</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>  <span class="va">outputs</span> <span class="op">=</span> <span class="op">{</span> <span class="va">self</span><span class="op">,</span> <span class="va">nixpkgs</span> <span class="op">}</span>:</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>    <span class="kw">let</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>      <span class="va">pkgs</span> <span class="op">=</span> <span class="bu">import</span> nixpkgs <span class="op">{</span> <span class="va">system</span> <span class="op">=</span> <span class="st">"x86_64-linux"</span><span class="op">;</span> <span class="op">};</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>      <span class="co"># A list of shell names and their Python versions</span></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>      <span class="va">pythonVersions</span> <span class="op">=</span> <span class="op">{</span></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>        <span class="va">python38</span> <span class="op">=</span> pkgs.python38<span class="op">;</span></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>        <span class="va">python39</span> <span class="op">=</span> pkgs.python39<span class="op">;</span></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>        <span class="va">python310</span> <span class="op">=</span> pkgs.python310<span class="op">;</span></span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>        <span class="va">default</span> <span class="op">=</span> pkgs.python310<span class="op">;</span></span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>      <span class="op">};</span></span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a>      <span class="co"># A function to make a shell with a python version</span></span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a>      <span class="va">makePythonShell</span> <span class="op">=</span> <span class="va">shellName</span><span class="op">:</span> <span class="va">pythonPackage</span><span class="op">:</span></span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a>        pkgs.mkShell <span class="op">{</span></span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a>          <span class="co"># You could add extra packages you need here too</span></span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a>          <span class="va">packages</span> <span class="op">=</span> <span class="op">[</span> pythonPackage <span class="op">];</span></span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a>          <span class="co"># You can also add commands that run on shell startup with shellHook</span></span>
+<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a>          <span class="va">shellHook</span> <span class="op">=</span> <span class="st">''</span></span>
+<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a><span class="st">            echo "Now entering </span><span class="sc">${</span>shellName<span class="sc">}</span><span class="st"> environment."</span></span>
+<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a><span class="st">          ''</span><span class="op">;</span></span>
+<span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a>        <span class="op">};</span></span>
+<span id="cb1-25"><a href="#cb1-25" aria-hidden="true" tabindex="-1"></a>    <span class="kw">in</span> <span class="op">{</span></span>
+<span id="cb1-26"><a href="#cb1-26" aria-hidden="true" tabindex="-1"></a>      <span class="co"># mapAttrs runs the given function (makePythonShell) against every value</span></span>
+<span id="cb1-27"><a href="#cb1-27" aria-hidden="true" tabindex="-1"></a>      <span class="co"># in the attribute set (pythonVersions) and returns a new set</span></span>
+<span id="cb1-28"><a href="#cb1-28" aria-hidden="true" tabindex="-1"></a>      <span class="va">devShells</span>.<span class="va">x86_64-linux</span> <span class="op">=</span> <span class="bu">builtins</span>.mapAttrs makePythonShell pythonVersions<span class="op">;</span></span>
+<span id="cb1-29"><a href="#cb1-29" aria-hidden="true" tabindex="-1"></a>    <span class="op">};</span></span>
+<span id="cb1-30"><a href="#cb1-30" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>After staging this in my repo I run <code>nix develop</code> to load the default python 3.10 shell. Well, first off, I’m not in my default shell anymore, no fish, no starship. That’s annoying, but I think there’s a fix around that, or maybe I swap this over to devenv later since it handles it well. Put that on the todo for now. It loads pretty fast, I can start up fish and get all my good stuff back, and it’s got me a vanilla python. Not much more to test here to be honest. I’m not trying to add other packages currently so let’s call this step one and see what we can extend it to.</p>
+</section>
+<section id="try-just-sticking-poetry-in" class="level3">
+<h3 class="anchored" data-anchor-id="try-just-sticking-poetry-in">Try just sticking poetry in</h3>
+<p>Still not getting fancy with devenv or poetry2nix. Let’s try the suggestion in <a href="https://ayats.org/blog/nix-workflow/">this post</a>. I’m honestly not super optimistic this will work since it has this lovely warning:</p>
+<pre><code>Using LD_LIBRARY_PATH may lead to weird errors if the glibc version of the shell doesn’t match the one of the system. For a devshell that uses &lt;nixpkgs&gt; it shouldn’t be an issue, but otherwise I’d recommend using nix-ld.</code></pre>
+<p>As briefly mentioned above I can’t use nix-ld since I’m not doing this on NixOS. Well, we can’t know how bad it is until we try.</p>
+<p>Let’s see if I can just put the diff in here and have it look reasonable:</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode nix code-with-copy"><code class="sourceCode nix"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>       makePythonShell = <span class="va">shellName</span><span class="op">:</span> <span class="va">pythonPackage</span><span class="op">:</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>         pkgs.mkShell <span class="op">{</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>           <span class="co"># You could add extra packages you need here too</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>-          <span class="va">packages</span> <span class="op">=</span> <span class="op">[</span> pythonPackage <span class="op">];</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>+          <span class="va">packages</span> <span class="op">=</span> <span class="op">[</span> pythonPackage pkgs.poetry <span class="op">];</span></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>           <span class="co"># You can also add commands that run on shell startup with shellHook</span></span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>           <span class="va">shellHook</span> <span class="op">=</span> <span class="st">''</span></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a><span class="st">             echo "Now entering </span><span class="sc">${</span>shellName<span class="sc">}</span><span class="st"> environment."</span></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a><span class="st">           ''</span><span class="op">;</span></span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>+          <span class="va">env</span> <span class="op">=</span> <span class="op">{</span></span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>+            <span class="va">LD_LIBRARY_PATH</span> <span class="op">=</span> pkgs.lib.makeLibraryPath <span class="op">[</span> pkgs.stdenv.cc.cc <span class="op">];</span></span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>+            <span class="va">POETRY_VIRTUALENVS_IN_PROJECT</span> <span class="op">=</span> <span class="st">"true"</span><span class="op">;</span></span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>+            <span class="va">POETRY_VIRTUALENVS_PATH</span> <span class="op">=</span> <span class="st">"{project-dir}/.venv"</span><span class="op">;</span></span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>+            <span class="va">POETRY_VIRTUALENVS_PREFER_ACTIVE_PYTHON</span> <span class="op">=</span> <span class="st">"true"</span><span class="op">;</span></span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>+          <span class="op">};</span></span>
+<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a>         <span class="op">}</span>;</span>
+<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a>     in <span class="op">{</span></span>
+<span id="cb3-18"><a href="#cb3-18" aria-hidden="true" tabindex="-1"></a>       <span class="co"># mapAttrs runs the given function (makePythonShell) against every value</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>That’s not so bad. Gives a little context.</p>
+<p>Ok, that got so far as installing poetry and I created a project. Let’s try installing some stuff.</p>
+<p>Add a basic dependency with <code>poetry add requests</code> and then a dev dependency with <code>poetry add -G ruff</code>.</p>
+<p>Running python by default does not see either of these libraries. I guess that’s fair, usually with poetry you have to run <code>poetry shell</code> to activate the environment. Running that gives me some issues with my shell:</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="ex">Spawning</span> shell within /home/ipreston/nixpy/.venv</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="ex">Unsupported</span> use of <span class="st">'='</span>. In fish, please use <span class="st">'set VIRTUAL_ENV '</span>/home/ipreston/nixpy/.venv<span class="st">''</span>.</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="va">VIRTUAL_ENV</span><span class="op">=</span><span class="st">'/home/ipreston/nixpy/.venv'</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Ok, I can probably figure out my way around that, although I’m starting to really understand the appeal of using devenv where they’ve figured all this out.</p>
+<p>It looks like this happens because I start my nix shell in bash, but when I run <code>poetry shell</code> it wants to activate in fish, but since I’m in bash it uses the bash activate script from the venv? That doesn’t really make sense to me but if I go into my fish shell by running <code>fish</code> and then run <code>poetry shell</code> it seems to work. Weird.</p>
+<p>Running poetry install then ran into an error because I hadn’t actually created a package so I made a quick stub README and a <code>src</code> folder with a hello world function.</p>
+<p>After doing that I was able to import requests successfully and run ruff on my stub code.</p>
+<p>Basics are working, let’s try and deal with weird c dependencies now.</p>
+</section>
+<section id="ok-sure-but-how-about-with-pandas" class="level3">
+<h3 class="anchored" data-anchor-id="ok-sure-but-how-about-with-pandas">Ok sure, but how about with pandas?</h3>
+<p>‘poetry add pandas’, ‘python’, ‘import pandas as pd’, ’print(pd.__version__)’ all work? Cool I guess, but why is this working when so many of my other attempts failed miserably? Should I just be happy? I mean this works pretty well.</p>
+</section>
+<section id="work-on-different-python-versions" class="level3">
+<h3 class="anchored" data-anchor-id="work-on-different-python-versions">Work on different python versions</h3>
+<p>One thing I noticed is that although I specified my python package to be verion <code>3.10</code> and I set the environment variable to prefer the active python, when I enter <code>poetry shell</code> and call python I end up with <code>3.11</code>, which I assume is what’s bundled with poetry. Why would that be? I do need the ability to specify my python versions so I can test my library against new and old releases.</p>
+<p>From <a href="https://python-poetry.org/docs/configuration#virtualenvsprefer-active-python-experimental">the docs</a> it seems like the setting I created should have worked for this.</p>
+<p>To double check I hadn’t done something stupid on the initial install I blew away the virtual environment with <code>rm -rf .venv</code>, confirmed that I was in a nix shell with python 3.10 as the active python and then ran <code>poetry install</code>. Same deal, outside the venv I’m on python 3.10, as soon as I activate it I’m in 3.11.</p>
+<p>Devenv seemed to handle this really nicely. I wonder if I can couple that <code>LD_LIBRARY_PATH</code> argument and have the best of both worlds?</p>
+</section>
+<section id="try-to-bring-in-devenv-again" class="level3">
+<h3 class="anchored" data-anchor-id="try-to-bring-in-devenv-again">Try to bring in devenv again</h3>
+<p>I convert my flake back to a devenv config I was using in earlier testing.</p>
+<p>The changes look like this:</p>
+<pre class="git"><code>
+diff --git a/flake.nix b/flake.nix
+index 4fc6451..d3c26c2 100644
+--- a/flake.nix
++++ b/flake.nix
+@@ -1,31 +1,56 @@
+ {
+-  inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
++  inputs = {
++    nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
++    nixpkgs-python.url = "github:cachix/nixpkgs-python";
++    nixpkgs-python.inputs = { nixpkgs.follows = "nixpkgs"; };
++    devenv.url = "github:cachix/devenv";
++  };
+ 
+-  outputs = { self, nixpkgs }:
++  nixConfig = {
++    extra-trusted-public-keys =
++      "devenv.cachix.org-1:w1cLUi8dv3hnoSPGAuibQv+f9TZLr6cv/Hm9XgU50cw=";
++    extra-substituters = "https://devenv.cachix.org";
++  };
++
++  outputs = { self, nixpkgs, devenv, ... }@inputs:
+     let
+-      pkgs = import nixpkgs { system = "x86_64-linux"; };
++      system = "x86_64-linux";
++      pkgs = import nixpkgs { system = system; };
+       # A list of shell names and their Python versions
+       pythonVersions = {
+-        python38 = pkgs.python38;
+-        python39 = pkgs.python39;
+-        python310 = pkgs.python310;
+-        default = pkgs.python310;
++        python39 = "3.9";
++        python310 = "3.10";
++        python311 = "3.11";
++        default = "3.10";
+       };
+       # A function to make a shell with a python version
+-      makePythonShell = shellName: pythonPackage:
+-        pkgs.mkShell {
+-          # You could add extra packages you need here too
+-          packages = [ pythonPackage pkgs.poetry ];
+-          # You can also add commands that run on shell startup with shellHook
+-          shellHook = ''
+-            echo "Now entering ${shellName} environment."
+-          '';
+-          env = {
+-            LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath [ pkgs.stdenv.cc.cc ];
+-            POETRY_VIRTUALENVS_IN_PROJECT = "true";
+-            POETRY_VIRTUALENVS_PATH = "{project-dir}/.venv";
+-            POETRY_VIRTUALENVS_PREFER_ACTIVE_PYTHON = "true";
+-          };
++      makePythonShell = shellName: pythonVersion:
++        devenv.lib.mkShell {
++          inherit inputs pkgs;
++          modules = [
++            ({ pkgs, config, ... }: {
++              languages.python = {
++                version = pythonVersion;
++                enable = true;
++                venv.enable = true;
++                poetry = {
++                  enable = true;
++                  activate.enable = true;
++                  package = pkgs.poetry;
++                  install = {
++                    enable = true;
++                    # compile = true;
++                    installRootPackage = true;
++                  };
++                };
++              };
++              env = {
++                LD_LIBRARY_PATH =
++                  pkgs.lib.makeLibraryPath [ pkgs.stdenv.cc.cc ];
++              };
++
++            })
++          ];
+         };
+     in {
+       # mapAttrs runs the given function (makePythonShell) against every value</code></pre>
+<p>The LD_LIBRARY_PATH environment variable is still set and works. When I try and bring up python it does use the 3.10 version I set to be default. However, now I can’t import numpy:</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="ex">IMPORTANT:</span> PLEASE READ THIS FOR ADVICE ON HOW TO SOLVE THIS ISSUE!</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="ex">Importing</span> the numpy C-extensions failed. This error can happen for</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="ex">many</span> reasons, often due to issues with your setup or how NumPy was</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="ex">installed.</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a><span class="ex">We</span> have compiled some common reasons and troubleshooting tips at:</span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>    <span class="ex">https://numpy.org/devdocs/user/troubleshooting-importerror.html</span></span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a><span class="ex">Please</span> note and check the following:</span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>  <span class="ex">*</span> The Python version is: Python3.10 from <span class="st">"/home/ipreston/nixpy/.venv/bin/python"</span></span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a>  <span class="ex">*</span> The NumPy version is: <span class="st">"1.26.4"</span></span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a><span class="ex">and</span> make sure that they are the versions you expect.</span>
+<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a><span class="ex">Please</span> carefully study the documentation linked above for further help.</span>
+<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a><span class="ex">Original</span> error was: libz.so.1: cannot open shared object file: No such file or directory</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>So we’re back to this?</p>
+</section>
+<section id="figure-out-where-to-go-next" class="level3">
+<h3 class="anchored" data-anchor-id="figure-out-where-to-go-next">Figure out where to go next</h3>
+<p>With devenv I get a lot of convenience functions and proper support for specifying a python version. On the other hand I can’t import numpy, and my environment activation is sloooooow. Do I hack my older config until it has the nice parts of devenv but not the bad parts? Do I hack devenv to fix my library linking issues? Do I try another tool altogether?</p>
+</section>
+<section id="try-fixing-devenv" class="level3">
+<h3 class="anchored" data-anchor-id="try-fixing-devenv">Try fixing devenv</h3>
+<p>There’s a lot of good stuff in devenv, I feel like my least disruptive path is if I can get it working, so let’s try that first. <a href="https://github.com/cachix/devenv/issues/1095">This issue</a> sounds basically like the one I’m having so let’s see if I can get that working. I’ll comment out the <code>LD_LIBRARY_PATH</code> stuff and add <code>libraries = with pkgs; [zlib];</code> to the flake and try again.</p>
+<p>That doesn’t initially work, but the issue does mention needing to blow things away and retry so let’s delete my <code>flake.lock</code>, <code>poetry.lock</code>, <code>.venv</code> and <code>.devenv</code>, give the system a reboot and give <code>nix develop --impure</code> another shot.</p>
+<p>It works! Let’s see if I can work with other versions of python now. Leaving that shell I run <code>nix develop --impure .#python311</code> and… get the same import error on numpy. Ok, how about going back to my default shell? Now it doesn’t work there either. What happened?</p>
+<section id="try-and-figure-out-switching-python-versions" class="level4">
+<h4 class="anchored" data-anchor-id="try-and-figure-out-switching-python-versions">Try and figure out switching python versions</h4>
+<p>I can’t really blow away my whole environment and rebuild every time I want to test a different python, let’s see if I can narrow down the issue.</p>
+<p>Doing just a restart is not sufficient, so I guess it’s not some environment variable that’s being reset. Let’s try deleting <code>.devenv</code> and see what that does? Still nothing. I notice that I’m actually calling <code>nix develop --impure .#python310</code>, which should be the same as my default, but for completeness let’s see if that makes a difference? Nope.</p>
+<p>Ok, one thing at a time is going to be slow, let’s attack this from the other direction and make sure I can reproduce making things work again.</p>
+<p>I came back to these notes after a break where I was busy on other things. On the initial run just to make sure I knew where I was at I could import numpy but not pandas. Pandas gave an error about <code>ImportError: libstdc++.so.6: cannot open shared object file: No such file or directory</code></p>
+<p>When I switched to python 3.11 I was back to my numpy import error from above, and reverting back to the default I could no longer import numpy. So something in the activation of the 3.11 environment broke my 3.10 one. Even if I fix that I’ll still have to fix pandas.</p>
+<p>I do think fixing this is worth looking into though, if for no other reason than it might help me understand nix better.</p>
+<p>Now I’m jumping back and forth between environments and it’s only consistently giving the pandas error. On the one hand, hurray, problem solved. On the other, what?</p>
+<p>And now I came back to it and found myself with the numpy error again.</p>
+<p>I don’t think this is the way to go. There’s too much jankiness.</p>
+</section>
+</section>
+<section id="detour-into-devcontainers" class="level3">
+<h3 class="anchored" data-anchor-id="detour-into-devcontainers">Detour into devcontainers</h3>
+<p>At this point I was getting really frustrated. It seemed like the mutability of what I wanted to do with python just wasn’t a good fit for nix. So I took a long detour back into devcontainers.</p>
+<p>I did manage to get devcontainers working with DevPod. But between fighting to get my ssh keys passed in, to random failures at build, plus super long wait times I (not so) quickly remembered all the reasons I was trying to get away from devcontainers. Even though I found a nix devcontainer feature that allowed me to pass in my home-manager install for dotfile configs into the devcontainer, which was sweet, at the end I decided that I was fighting just as hard to make the devcontainer work as I had been nix, so maybe I should just go back. On a quick sidebar, I did switch out my shell from fish to zsh. I even tried bash again with ble.sh installed on top but it was too slow if I wanted the syntax highlighting. Zsh seems more common than fish, is posix compliant, and I was able to fairly easily get my autocomplete and syntax highlighting preferences configured.</p>
+</section>
+<section id="back-to-poetry-with-poetry2nix" class="level3">
+<h3 class="anchored" data-anchor-id="back-to-poetry-with-poetry2nix">Back to poetry with poetry2nix</h3>
+<p>I’ve resisted learning poetry2nix. It seemed like a lot of complication, and I was worried about its ability to handle packages that might not be in the nix library. But after fighting with c bindings a bunch in the previous efforts I think I might have to just suck it up and learn. After copying over the default flake I was basically immediately able to access a working python environment and import numpy as well as my dev dependencies. I now have to figure out how to convert this to handle multiple python versions. There are docs on that, it’s just a matter of figuring out enough nix syntax to know how to do it.</p>
+<p>Let’s start with the template:</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode nix code-with-copy"><code class="sourceCode nix"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="op">{</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>  <span class="va">description</span> <span class="op">=</span> <span class="st">"Application packaged using poetry2nix"</span><span class="op">;</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>  <span class="va">inputs</span> <span class="op">=</span> <span class="op">{</span></span>
+<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>    <span class="va">flake-utils</span>.<span class="va">url</span> <span class="op">=</span> <span class="st">"github:numtide/flake-utils"</span><span class="op">;</span></span>
+<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>    <span class="va">nixpkgs</span>.<span class="va">url</span> <span class="op">=</span> <span class="st">"github:NixOS/nixpkgs/nixos-unstable-small"</span><span class="op">;</span></span>
+<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>    <span class="va">poetry2nix</span> <span class="op">=</span> <span class="op">{</span></span>
+<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>      <span class="va">url</span> <span class="op">=</span> <span class="st">"github:nix-community/poetry2nix"</span><span class="op">;</span></span>
+<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>      <span class="va">inputs</span>.<span class="va">nixpkgs</span>.<span class="va">follows</span> <span class="op">=</span> <span class="st">"nixpkgs"</span><span class="op">;</span></span>
+<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>    <span class="op">};</span></span>
+<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a>  <span class="op">};</span></span>
+<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a>  <span class="va">outputs</span> <span class="op">=</span> <span class="op">{</span> <span class="va">self</span><span class="op">,</span> <span class="va">nixpkgs</span><span class="op">,</span> <span class="va">flake-utils</span><span class="op">,</span> <span class="va">poetry2nix</span> <span class="op">}</span>:</span>
+<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a>    flake<span class="op">-</span>utils.lib.eachDefaultSystem <span class="op">(</span><span class="va">system</span><span class="op">:</span></span>
+<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a>      <span class="kw">let</span></span>
+<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a>        <span class="co"># see https://github.com/nix-community/poetry2nix/tree/master#api for more functions and examples.</span></span>
+<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a>        <span class="va">pkgs</span> <span class="op">=</span> nixpkgs.legacyPackages.$<span class="op">{</span><span class="va">system</span><span class="op">};</span></span>
+<span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a>        <span class="va">inherit</span> (<span class="va">poetry2nix</span>.<span class="va">lib</span>.<span class="va">mkPoetry2Nix</span> { <span class="va">inherit</span> <span class="va">pkgs</span>; })</span>
+<span id="cb7-20"><a href="#cb7-20" aria-hidden="true" tabindex="-1"></a>          <span class="va">mkPoetryApplication</span>;</span>
+<span id="cb7-21"><a href="#cb7-21" aria-hidden="true" tabindex="-1"></a>      <span class="kw">in</span> <span class="op">{</span></span>
+<span id="cb7-22"><a href="#cb7-22" aria-hidden="true" tabindex="-1"></a>        <span class="va">packages</span> <span class="op">=</span> <span class="op">{</span></span>
+<span id="cb7-23"><a href="#cb7-23" aria-hidden="true" tabindex="-1"></a>          <span class="va">myapp</span> <span class="op">=</span> mkPoetryApplication <span class="op">{</span> <span class="va">projectDir</span> <span class="op">=</span> self<span class="op">;</span> <span class="op">};</span></span>
+<span id="cb7-24"><a href="#cb7-24" aria-hidden="true" tabindex="-1"></a>          <span class="va">default</span> <span class="op">=</span> self.packages.$<span class="op">{</span><span class="va">system</span><span class="op">}</span>.myapp<span class="op">;</span></span>
+<span id="cb7-25"><a href="#cb7-25" aria-hidden="true" tabindex="-1"></a>        <span class="op">};</span></span>
+<span id="cb7-26"><a href="#cb7-26" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-27"><a href="#cb7-27" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Shell for app dependencies.</span></span>
+<span id="cb7-28"><a href="#cb7-28" aria-hidden="true" tabindex="-1"></a>        <span class="co">#</span></span>
+<span id="cb7-29"><a href="#cb7-29" aria-hidden="true" tabindex="-1"></a>        <span class="co">#     nix develop</span></span>
+<span id="cb7-30"><a href="#cb7-30" aria-hidden="true" tabindex="-1"></a>        <span class="co">#</span></span>
+<span id="cb7-31"><a href="#cb7-31" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Use this shell for developing your app.</span></span>
+<span id="cb7-32"><a href="#cb7-32" aria-hidden="true" tabindex="-1"></a>        <span class="va">devShells</span>.<span class="va">default</span> <span class="op">=</span></span>
+<span id="cb7-33"><a href="#cb7-33" aria-hidden="true" tabindex="-1"></a>          pkgs.mkShell <span class="op">{</span> <span class="va">inputsFrom</span> <span class="op">=</span> <span class="op">[</span> self.packages.$<span class="op">{</span><span class="va">system</span><span class="op">}</span>.myapp <span class="op">];</span> <span class="op">};</span></span>
+<span id="cb7-34"><a href="#cb7-34" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb7-35"><a href="#cb7-35" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Shell for poetry.</span></span>
+<span id="cb7-36"><a href="#cb7-36" aria-hidden="true" tabindex="-1"></a>        <span class="co">#</span></span>
+<span id="cb7-37"><a href="#cb7-37" aria-hidden="true" tabindex="-1"></a>        <span class="co">#     nix develop .#poetry</span></span>
+<span id="cb7-38"><a href="#cb7-38" aria-hidden="true" tabindex="-1"></a>        <span class="co">#</span></span>
+<span id="cb7-39"><a href="#cb7-39" aria-hidden="true" tabindex="-1"></a>        <span class="co"># Use this shell for changes to pyproject.toml and poetry.lock.</span></span>
+<span id="cb7-40"><a href="#cb7-40" aria-hidden="true" tabindex="-1"></a>        <span class="va">devShells</span>.<span class="va">poetry</span> <span class="op">=</span> pkgs.mkShell <span class="op">{</span> <span class="va">packages</span> <span class="op">=</span> <span class="op">[</span> pkgs.poetry <span class="op">];</span> <span class="op">};</span></span>
+<span id="cb7-41"><a href="#cb7-41" aria-hidden="true" tabindex="-1"></a>      <span class="op">});</span></span>
+<span id="cb7-42"><a href="#cb7-42" aria-hidden="true" tabindex="-1"></a><span class="op">}</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>This works, I get a nix shell with all my libraries available and I’m able to import numpy. But I don’t really understand how it works and I need to be able to extend it to work with multiple versions of python, so let’s figure that stuff out.</p>
+<p>The first thing I haven’t really used yet is this <code>flake-utils.lib.echDefaultSystem</code> thing from <a href="https://github.com/numtide/flake-utils?tab=readme-ov-file#eachdefaultsystem--system---attrs">the docs</a> it’s just a way to ensure you get environments built for mac, linux etc. I don’t really need it for my case but no harm keeping it. It’s wrapping well around everything I’d care about so I’ll just leave it on the outside.</p>
+<p>Next we have this big long inherit statement, which is just bringing the <code>mkPoetryApplication</code> function into scope for me. That makes sense, there’s a few other functions there like mkPoetryEnv that I might want to add but for now it’s ok.</p>
+<p>At the top of the <code>in</code> block we have the <code>packages</code> attribute, which defines what will get built if I run <code>nix build</code>. I’m not really trying to use nix as my package builder right now, although maybe I will be by the end of this. This is where my poetry application requirements get defined though, so I’ll have to modify this part later to make things work. <code>projectDir = self</code> is just saying the poetry project is in the same directory as the flake, which is fine.</p>
+<p>The <code>devShells.default</code> is pretty straightforward, it’s making a development shell with the argument to take the build requirements from the package defined earlier in the flake. I don’t think this is actually the way I want to package things in my case, since the <code>mkPoetryEnv</code> function has options to specify the python version and some other things. I’m also confused how this knows to bring in my development dependency for ruff. According to <a href="https://github.com/nix-community/poetry2nix?tab=readme-ov-file#mkpoetryapplication">the docs</a> the default for <code>groups</code> is empty. Maybe it’s installing it because it’s in <code>dev</code> and that’s included in <code>checkGroups</code>? Is running tests considered part of the build by default? That kind of makes sense. I guess it must be.</p>
+<p>Finally the poetry devshell is where I run poetry commands to add, remove, or otherwise manage dependencies. That’s ok for now. I’ll get some more practice working with that if I can get these other pieces working.</p>
+<p>As a start I’m just going to try replacing devShells.default with a call to <code>mkPoetryEnv</code>. Not really trying to change any outcomes, just seeing if I can work off that:</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode nix code-with-copy"><code class="sourceCode nix"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>devShells.default = mkPoetryEnv <span class="op">{</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>  <span class="va">projectDir</span> <span class="op">=</span> self<span class="op">;</span></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>  <span class="va">python</span> <span class="op">=</span> pkgs.python3<span class="op">;</span></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>  <span class="va">groups</span> <span class="op">=</span> <span class="op">[</span> <span class="st">"dev"</span> <span class="op">];</span></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a><span class="op">}</span>;</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>If I can get this working then I can use some of the function wrapping I did above to make multiple python development environments pretty easily (I think at least).</p>
+<p>A quick run of <code>nix develop -c zsh</code> ran almost instantly and took me into an environment, but I couldn’t actually run python or do anything else. That’s weird, what did I actually accomplish?</p>
+<p>Well, nothing. When I look into this a bit more I need to pass the output of <code>mkPoetryEnv</code> as an input to <code>pkgs.mkShell</code> under <code>buildInputs</code>. Let’s try this again as follows:</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode nix code-with-copy"><code class="sourceCode nix"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="kw">let</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>  <span class="co"># see https://github.com/nix-community/poetry2nix/tree/master#api for more functions and examples.</span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>  <span class="va">pkgs</span> <span class="op">=</span> nixpkgs.legacyPackages.$<span class="op">{</span><span class="va">system</span><span class="op">};</span></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>  <span class="va">inherit</span> (<span class="va">poetry2nix</span>.<span class="va">lib</span>.<span class="va">mkPoetry2Nix</span> { <span class="va">inherit</span> <span class="va">pkgs</span>; })</span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>    <span class="va">mkPoetryApplication</span> <span class="va">mkPoetryEnv</span>;</span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>  <span class="va">myappEnv</span> <span class="op">=</span> mkPoetryEnv <span class="op">{</span></span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>    <span class="va">projectDir</span> <span class="op">=</span> self<span class="op">;</span></span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>    <span class="va">python</span> <span class="op">=</span> pkgs.python3<span class="op">;</span></span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>    <span class="va">groups</span> <span class="op">=</span> <span class="op">[</span> <span class="st">"dev"</span> <span class="op">];</span></span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>  <span class="op">};</span></span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a><span class="kw">in</span> <span class="op">{</span></span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Use this shell for developing your app.</span></span>
+<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a>  <span class="va">devShells</span>.<span class="va">default</span> <span class="op">=</span> pkgs.mkShell <span class="op">{</span> <span class="va">buildInputs</span> <span class="op">=</span> <span class="op">[</span> myappEnv <span class="op">];</span> <span class="op">};</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Ok, this worked. We haven’t accomplished anything yet, but I have a better foundation for implementing the changes I want. Let’s make some additional changes and see if it still works. The first thing is just going to be adding the argument <code>preferWheels = true;</code> to my env. Building from source worked fine but it was sloooow. It only has to happen once so it’s not the end of the world if I need to do this, but it would be cool to be able to skip it. That seemed to work and my build was quicker so that’s solid. Next let’s try a different python version. I’m still not parameterizing it, which is my long term goal, but let’s just see if we can make it work at all. All I have to change at this point is setting <code>python = pkgs.python310;</code> and re-running. Again it builds quickly (thanks wheels!) and I find myself in a python <code>3.10</code> interpreter and able to import all my dependencies. We’re looking pretty good! Now let’s get cocky and try and reproduce the multiple python versions thing I had going on before.</p>
+<p>I got it working but I had to do a few sneaky things to make it work so let’s look at the new code and then discuss:</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode nix code-with-copy"><code class="sourceCode nix"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>      <span class="kw">let</span></span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>        <span class="co"># see https://github.com/nix-community/poetry2nix/tree/master#api for more functions and examples.</span></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>        <span class="va">pkgs</span> <span class="op">=</span> nixpkgs.legacyPackages.$<span class="op">{</span><span class="va">system</span><span class="op">};</span></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>        <span class="va">inherit</span> (<span class="va">poetry2nix</span>.<span class="va">lib</span>.<span class="va">mkPoetry2Nix</span> { <span class="va">inherit</span> <span class="va">pkgs</span>; })</span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>          <span class="va">mkPoetryApplication</span> <span class="va">mkPoetryEnv</span>;</span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>        <span class="va">pythonVersions</span> <span class="op">=</span> <span class="op">{</span></span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>          <span class="va">python310</span> <span class="op">=</span> pkgs.python310<span class="op">;</span></span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>          <span class="va">python311</span> <span class="op">=</span> pkgs.python311<span class="op">;</span></span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a>          <span class="va">default</span> <span class="op">=</span> pkgs.python310<span class="op">;</span></span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a>        <span class="op">};</span></span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a>        <span class="va">makePoetryEnvPyVer</span> <span class="op">=</span> <span class="va">pythonPackage</span><span class="op">:</span></span>
+<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a>          mkPoetryEnv <span class="op">{</span></span>
+<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a>            <span class="va">projectDir</span> <span class="op">=</span> self<span class="op">;</span></span>
+<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a>            <span class="va">python</span> <span class="op">=</span> pythonPackage<span class="op">;</span></span>
+<span id="cb10-15"><a href="#cb10-15" aria-hidden="true" tabindex="-1"></a>            <span class="va">preferWheels</span> <span class="op">=</span> <span class="cn">true</span><span class="op">;</span></span>
+<span id="cb10-16"><a href="#cb10-16" aria-hidden="true" tabindex="-1"></a>            <span class="va">groups</span> <span class="op">=</span> <span class="op">[</span> <span class="st">"dev"</span> <span class="op">];</span></span>
+<span id="cb10-17"><a href="#cb10-17" aria-hidden="true" tabindex="-1"></a>          <span class="op">};</span></span>
+<span id="cb10-18"><a href="#cb10-18" aria-hidden="true" tabindex="-1"></a>        <span class="va">makePythonShell</span> <span class="op">=</span> <span class="va">shellName</span><span class="op">:</span> <span class="va">pythonPackage</span><span class="op">:</span></span>
+<span id="cb10-19"><a href="#cb10-19" aria-hidden="true" tabindex="-1"></a>          pkgs.mkShell <span class="op">{</span></span>
+<span id="cb10-20"><a href="#cb10-20" aria-hidden="true" tabindex="-1"></a>            <span class="va">buildInputs</span> <span class="op">=</span> <span class="op">[</span> <span class="op">(</span>makePoetryEnvPyVer pythonPackage<span class="op">)</span> <span class="op">];</span></span>
+<span id="cb10-21"><a href="#cb10-21" aria-hidden="true" tabindex="-1"></a>          <span class="op">};</span></span>
+<span id="cb10-22"><a href="#cb10-22" aria-hidden="true" tabindex="-1"></a>        <span class="va">mappedDevShells</span> <span class="op">=</span> <span class="bu">builtins</span>.mapAttrs makePythonShell pythonVersions<span class="op">;</span></span>
+<span id="cb10-23"><a href="#cb10-23" aria-hidden="true" tabindex="-1"></a>        <span class="va">moreDevShells</span> <span class="op">=</span> <span class="op">{</span></span>
+<span id="cb10-24"><a href="#cb10-24" aria-hidden="true" tabindex="-1"></a>          <span class="va">poetry</span> <span class="op">=</span> pkgs.mkShell <span class="op">{</span> <span class="va">packages</span> <span class="op">=</span> <span class="op">[</span> pkgs.poetry <span class="op">];</span> <span class="op">};</span></span>
+<span id="cb10-25"><a href="#cb10-25" aria-hidden="true" tabindex="-1"></a>        <span class="op">};</span></span>
+<span id="cb10-26"><a href="#cb10-26" aria-hidden="true" tabindex="-1"></a>      <span class="kw">in</span> <span class="op">{</span> <span class="va">devShells</span> <span class="op">=</span> mappedDevShells <span class="op">//</span> moreDevShells<span class="op">;</span> <span class="op">}</span>);</span>
+<span id="cb10-27"><a href="#cb10-27" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Ok, so the <code>pythonVersions</code> set is the same as pre poetry2nix, just a list of python versions mapped to the name of the devShell I want to use them in. python 3.10 is listed twice since it’s the default and can be called explicitly.</p>
+<p>I couldn’t figure out how to just dump the <code>mkPoetryEnv</code> call inside the <code>makePythonShell</code> function. When I tried I got errors about extra <code>;</code> or <code>error: Dependency is not of a valid type: element 1 of buildInputs for nix-shell</code> if I didn’t put a <code>;</code> at the end of my <code>mkPoetryEnv{}</code>. After consulting chat GPT it suggested the issue might relate to the context of <code>self</code> within this function. So instead I make a function that creates a poetry env with an argument for the python version to use, and then call taht from my <code>makePythonShell</code> function. This works fine.</p>
+<p>The next issue I had was that I couldn’t just call the <code>builtins.mapAttrs</code> method to make most of my <code>devShells</code> and then inject <code>devShells.poetry</code> for the poetry environment after. Instead I define maps for all the mapped devShells and the poetry shell in my <code>let</code> statement and then combine them to make the full <code>devShells</code> map in the <code>in</code> statement. Another shout out to ChatGPT for helping me figure that out.</p>
+<p>Now that this is all done I can quickly and painlessly enter a development environment running the version of python I want, or enter a poetry environment to update or otherwise manage my dependencies. Hurray!</p>
+</section>
+<section id="test-this-on-a-real-project" class="level3">
+<h3 class="anchored" data-anchor-id="test-this-on-a-real-project">Test this on a real project</h3>
+<p>This all worked well on a toy project, but how about the actual library I want to maintain? I copied the flake over to my <code>stats_can</code> project and tried developing. The dependencies all loaded, but I couldn’t actually import my library. Switching back to the toy I realized I couldn’t do it there either, it just hadn’t really come up so I hadn’t thought to test it. Adding the following line to my <code>mkPoetryEnv</code> call fixed it: <code>editablePackageSources = { my-app = ./src;</code>.</p>
+<p>After that I tried to run my tests. I got an error about <code>pytest-vcr</code> conflicting with <code>pytest-recording</code>. I realized I did have both specified in my project and that <code>pytest-vcr</code> should have been removed. I’m not sure why my old setup worked with that, but it was easy enough to correct.</p>
+<p>I also had some hassles with my cassettes from testing, but that was probably a one off from converting. After that the tests ran ok.</p>
+</section>
+<section id="how-about-cicd" class="level3">
+<h3 class="anchored" data-anchor-id="how-about-cicd">How about CI/CD?</h3>
+<p>At this point it looks like my project is working, but now I’ve got one approach to testing locally and a different one when I run CI/CD. I happen to know from experience that that’s a nightmare scenario and that I should keep my CI/CD as close as possible to my local dev environment.</p>
+<p>There was a nice <a href="https://determinate.systems/posts/nix-github-actions/">blog</a> I remember reading on this subject, let’s try it out.</p>
+<p>This actually worked great. No notes. I have a <code>Makefile</code> in my project that for tests spins up each python version’s nix shell and runs pytest. This works locally, and after adding the nix setup actions to my CI/CD pipeline I can call it just the same from GitHub actions. This is a surprise bonus for this approach, much more consistent runs between local and CI/CD.</p>
+</section>
+</section>
+</section>
+<section id="conclusion" class="level1">
+<h1>Conclusion</h1>
+<p>Nix has a pretty solid learning curve. Do not expect to pick it up in an hour. Especially if your development environment is complex/involves python. With that said, I’m super happy with my environment now and think the time I spent was well worth it. It will probably be a couple years at least before I officially break even on time saved with this approach from not having to install packages or rebuild containers, but I’m still glad I did it.</p>
+
+
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const toggleBodyColorMode = (bsSheetEl) => {
+    const mode = bsSheetEl.getAttribute("data-mode");
+    const bodyEl = window.document.querySelector("body");
+    if (mode === "dark") {
+      bodyEl.classList.add("quarto-dark");
+      bodyEl.classList.remove("quarto-light");
+    } else {
+      bodyEl.classList.add("quarto-light");
+      bodyEl.classList.remove("quarto-dark");
+    }
+  }
+  const toggleBodyColorPrimary = () => {
+    const bsSheetEl = window.document.querySelector("link#quarto-bootstrap");
+    if (bsSheetEl) {
+      toggleBodyColorMode(bsSheetEl);
+    }
+  }
+  toggleBodyColorPrimary();  
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const isCodeAnnotation = (el) => {
+    for (const clz of el.classList) {
+      if (clz.startsWith('code-annotation-')) {                     
+        return true;
+      }
+    }
+    return false;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    text: function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+  });
+  clipboard.on('success', function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    let tooltip;
+    if (window.bootstrap) {
+      button.setAttribute("data-bs-toggle", "tooltip");
+      button.setAttribute("data-bs-placement", "left");
+      button.setAttribute("data-bs-title", "Copied!");
+      tooltip = new bootstrap.Tooltip(button, 
+        { trigger: "manual", 
+          customClass: "code-copy-button-tooltip",
+          offset: [0, -8]});
+      tooltip.show();    
+    }
+    setTimeout(function() {
+      if (tooltip) {
+        tooltip.hide();
+        button.removeAttribute("data-bs-title");
+        button.removeAttribute("data-bs-toggle");
+        button.removeAttribute("data-bs-placement");
+      }
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  });
+    var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+    var mailtoRegex = new RegExp(/^mailto:/);
+      var filterRegex = new RegExp("https:\/\/blog\.ianpreston\.ca");
+    var isInternal = (href) => {
+        return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+    }
+    // Inspect non-navigation links and adorn them if external
+ 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool)');
+    for (var i=0; i<links.length; i++) {
+      const link = links[i];
+      if (!isInternal(link.href)) {
+        // undo the damage that might have been done by quarto-nav.js in the case of
+        // links that we want to consider external
+        if (link.dataset.originalHref !== undefined) {
+          link.href = link.dataset.originalHref;
+        }
+      }
+    }
+  function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+    const config = {
+      allowHTML: true,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start',
+    };
+    if (contentFn) {
+      config.content = contentFn;
+    }
+    if (onTriggerFn) {
+      config.onTrigger = onTriggerFn;
+    }
+    if (onUntriggerFn) {
+      config.onUntrigger = onUntriggerFn;
+    }
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      // use id or data attribute instead here
+      let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      if (note) {
+        return note.innerHTML;
+      } else {
+        return "";
+      }
+    });
+  }
+  const xrefs = window.document.querySelectorAll('a.quarto-xref');
+  const processXRef = (id, note) => {
+    // Strip column container classes
+    const stripColumnClz = (el) => {
+      el.classList.remove("page-full", "page-columns");
+      if (el.children) {
+        for (const child of el.children) {
+          stripColumnClz(child);
+        }
+      }
+    }
+    stripColumnClz(note)
+    if (id === null || id.startsWith('sec-')) {
+      // Special case sections, only their first couple elements
+      const container = document.createElement("div");
+      if (note.children && note.children.length > 2) {
+        container.appendChild(note.children[0].cloneNode(true));
+        for (let i = 1; i < note.children.length; i++) {
+          const child = note.children[i];
+          if (child.tagName === "P" && child.innerText === "") {
+            continue;
+          } else {
+            container.appendChild(child.cloneNode(true));
+            break;
+          }
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(container);
+        }
+        return container.innerHTML
+      } else {
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        return note.innerHTML;
+      }
+    } else {
+      // Remove any anchor links if they are present
+      const anchorLink = note.querySelector('a.anchorjs-link');
+      if (anchorLink) {
+        anchorLink.remove();
+      }
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(note);
+      }
+      // TODO in 1.5, we should make sure this works without a callout special case
+      if (note.classList.contains("callout")) {
+        return note.outerHTML;
+      } else {
+        return note.innerHTML;
+      }
+    }
+  }
+  for (var i=0; i<xrefs.length; i++) {
+    const xref = xrefs[i];
+    tippyHover(xref, undefined, function(instance) {
+      instance.disable();
+      let url = xref.getAttribute('href');
+      let hash = undefined; 
+      if (url.startsWith('#')) {
+        hash = url;
+      } else {
+        try { hash = new URL(url).hash; } catch {}
+      }
+      if (hash) {
+        const id = hash.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note !== null) {
+          try {
+            const html = processXRef(id, note.cloneNode(true));
+            instance.setContent(html);
+          } finally {
+            instance.enable();
+            instance.show();
+          }
+        } else {
+          // See if we can fetch this
+          fetch(url.split('#')[0])
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.getElementById(id);
+            if (note !== null) {
+              const html = processXRef(id, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      } else {
+        // See if we can fetch a full url (with no hash to target)
+        // This is a special case and we should probably do some content thinning / targeting
+        fetch(url)
+        .then(res => res.text())
+        .then(html => {
+          const parser = new DOMParser();
+          const htmlDoc = parser.parseFromString(html, "text/html");
+          const note = htmlDoc.querySelector('main.content');
+          if (note !== null) {
+            // This should only happen for chapter cross references
+            // (since there is no id in the URL)
+            // remove the first header
+            if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+              note.children[0].remove();
+            }
+            const html = processXRef(null, note);
+            instance.setContent(html);
+          } 
+        }).finally(() => {
+          instance.enable();
+          instance.show();
+        });
+      }
+    }, function(instance) {
+    });
+  }
+      let selectedAnnoteEl;
+      const selectorForAnnotation = ( cell, annotation) => {
+        let cellAttr = 'data-code-cell="' + cell + '"';
+        let lineAttr = 'data-code-annotation="' +  annotation + '"';
+        const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+        return selector;
+      }
+      const selectCodeLines = (annoteEl) => {
+        const doc = window.document;
+        const targetCell = annoteEl.getAttribute("data-target-cell");
+        const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+        const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+        const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+        const lineIds = lines.map((line) => {
+          return targetCell + "-" + line;
+        })
+        let top = null;
+        let height = null;
+        let parent = null;
+        if (lineIds.length > 0) {
+            //compute the position of the single el (top and bottom and make a div)
+            const el = window.document.getElementById(lineIds[0]);
+            top = el.offsetTop;
+            height = el.offsetHeight;
+            parent = el.parentElement.parentElement;
+          if (lineIds.length > 1) {
+            const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+            const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+            height = bottom - top;
+          }
+          if (top !== null && height !== null && parent !== null) {
+            // cook up a div (if necessary) and position it 
+            let div = window.document.getElementById("code-annotation-line-highlight");
+            if (div === null) {
+              div = window.document.createElement("div");
+              div.setAttribute("id", "code-annotation-line-highlight");
+              div.style.position = 'absolute';
+              parent.appendChild(div);
+            }
+            div.style.top = top - 2 + "px";
+            div.style.height = height + 4 + "px";
+            div.style.left = 0;
+            let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+            if (gutterDiv === null) {
+              gutterDiv = window.document.createElement("div");
+              gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+              gutterDiv.style.position = 'absolute';
+              const codeCell = window.document.getElementById(targetCell);
+              const gutter = codeCell.querySelector('.code-annotation-gutter');
+              gutter.appendChild(gutterDiv);
+            }
+            gutterDiv.style.top = top - 2 + "px";
+            gutterDiv.style.height = height + 4 + "px";
+          }
+          selectedAnnoteEl = annoteEl;
+        }
+      };
+      const unselectCodeLines = () => {
+        const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+        elementsIds.forEach((elId) => {
+          const div = window.document.getElementById(elId);
+          if (div) {
+            div.remove();
+          }
+        });
+        selectedAnnoteEl = undefined;
+      };
+        // Handle positioning of the toggle
+    window.addEventListener(
+      "resize",
+      throttle(() => {
+        elRect = undefined;
+        if (selectedAnnoteEl) {
+          selectCodeLines(selectedAnnoteEl);
+        }
+      }, 10)
+    );
+    function throttle(fn, ms) {
+    let throttle = false;
+    let timer;
+      return (...args) => {
+        if(!throttle) { // first call gets through
+            fn.apply(this, args);
+            throttle = true;
+        } else { // all the others get throttled
+            if(timer) clearTimeout(timer); // cancel #2
+            timer = setTimeout(() => {
+              fn.apply(this, args);
+              timer = throttle = false;
+            }, ms);
+        }
+      };
+    }
+      // Attach click handler to the DT
+      const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+      for (const annoteDlNode of annoteDls) {
+        annoteDlNode.addEventListener('click', (event) => {
+          const clickedEl = event.target;
+          if (clickedEl !== selectedAnnoteEl) {
+            unselectCodeLines();
+            const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+            if (activeEl) {
+              activeEl.classList.remove('code-annotation-active');
+            }
+            selectCodeLines(clickedEl);
+            clickedEl.classList.add('code-annotation-active');
+          } else {
+            // Unselect the line
+            unselectCodeLines();
+            clickedEl.classList.remove('code-annotation-active');
+          }
+        });
+      }
+  const findCites = (el) => {
+    const parentEl = el.parentElement;
+    if (parentEl) {
+      const cites = parentEl.dataset.cites;
+      if (cites) {
+        return {
+          el,
+          cites: cites.split(' ')
+        };
+      } else {
+        return findCites(el.parentElement)
+      }
+    } else {
+      return undefined;
+    }
+  };
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const citeInfo = findCites(ref);
+    if (citeInfo) {
+      tippyHover(citeInfo.el, function() {
+        var popup = window.document.createElement('div');
+        citeInfo.cites.forEach(function(cite) {
+          var citeDiv = window.document.createElement('div');
+          citeDiv.classList.add('hanging-indent');
+          citeDiv.classList.add('csl-entry');
+          var biblioDiv = window.document.getElementById('ref-' + cite);
+          if (biblioDiv) {
+            citeDiv.innerHTML = biblioDiv.innerHTML;
+          }
+          popup.appendChild(citeDiv);
+        });
+        return popup.innerHTML;
+      });
+    }
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>

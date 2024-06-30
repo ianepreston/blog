@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.4.553">
+<meta name="generator" content="quarto-1.4.557">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
@@ -35,7 +35,7 @@ div.sourceCode { overflow: auto; }
 }
 @media print {
 pre > code.sourceCode { white-space: pre-wrap; }
-pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+pre > code.sourceCode > span { display: inline-block; text-indent: -5em; padding-left: 5em; }
 }
 pre.numberSource code
   { counter-reset: source-line 0; }
@@ -1125,10 +1125,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div id="cell-41" class="cell" data-execution_count="20">
 <div class="sourceCode cell-code" id="cb19"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a>tbl1_level(mdfl)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-display" data-execution_count="20">
-<div>
 <style type="text/css">
 </style>
-<table id="T_16831_" data-quarto-postprocess="true" class="table table-sm table-striped small">
+<table id="T_16831_" class="caption-top table table-sm table-striped small" data-quarto-postprocess="true">
 <thead>
 <tr class="header">
 <th class="blank level0" data-quarto-table-cell-role="th"></th>
@@ -1257,15 +1256,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </table>
 </div>
 </div>
-</div>
 <p>And the same summary on the data with the introduced error</p>
 <div id="cell-43" class="cell" data-execution_count="21">
 <div class="sourceCode cell-code" id="cb20"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a>tbl1_level(mdfl_err)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-display" data-execution_count="21">
-<div>
 <style type="text/css">
 </style>
-<table id="T_a9fa3_" data-quarto-postprocess="true" class="table table-sm table-striped small">
+<table id="T_a9fa3_" class="caption-top table table-sm table-striped small" data-quarto-postprocess="true">
 <thead>
 <tr class="header">
 <th class="blank level0" data-quarto-table-cell-role="th"></th>
@@ -1394,7 +1391,6 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </table>
 </div>
 </div>
-</div>
 <p>All the figures that I can validate against (exogenous variables aren’t reported in the paper) are reasonably close. The one noted difference is the previously described outlier in natural resource revenue which leads to my minimum for that variable being significantly lower than in the paper. That large one goes away again if I introduce the same data error described above. My guess for the remaining small discrepancies are differences in calculating population or CPI.</p>
 </section>
 <section id="sumary-statistics-for-key-variables-1970-71-2016-17-first-difference" class="level3">
@@ -1486,10 +1482,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div id="cell-51" class="cell" data-execution_count="25">
 <div class="sourceCode cell-code" id="cb24"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a>tbl1_diff(mdfl)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-display" data-execution_count="25">
-<div>
 <style type="text/css">
 </style>
-<table id="T_dfab2_" data-quarto-postprocess="true" class="table table-sm table-striped small">
+<table id="T_dfab2_" class="caption-top table table-sm table-striped small" data-quarto-postprocess="true">
 <thead>
 <tr class="header">
 <th class="blank level0" data-quarto-table-cell-role="th"></th>
@@ -1640,15 +1635,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </table>
 </div>
 </div>
-</div>
 <p>And with the data error:</p>
 <div id="cell-53" class="cell" data-execution_count="26">
 <div class="sourceCode cell-code" id="cb25"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a>tbl1_diff(mdfl_err)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-display" data-execution_count="26">
-<div>
 <style type="text/css">
 </style>
-<table id="T_e3dc6_" data-quarto-postprocess="true" class="table table-sm table-striped small">
+<table id="T_e3dc6_" class="caption-top table table-sm table-striped small" data-quarto-postprocess="true">
 <thead>
 <tr class="header">
 <th class="blank level0" data-quarto-table-cell-role="th"></th>
@@ -1799,7 +1792,6 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </table>
 </div>
 </div>
-</div>
 <p>As with everything so far, the data overall matches, and Natural Resource Revenue matches a lot better if I neglect to net out the heritage fund in 1976.</p>
 </section>
 <section id="unit-root-tests" class="level3">
@@ -1873,10 +1865,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="sourceCode cell-code" id="cb28"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a>stationarity_tests(mdfl, first_diff<span class="op">=</span><span class="va">False</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-display" data-execution_count="29">
 <div>
-<div>
 
 
-<table class="dataframe table table-sm table-striped small" data-quarto-postprocess="true" data-border="1">
+<table class="dataframe caption-top table table-sm table-striped small" data-quarto-postprocess="true" data-border="1">
 <thead>
 <tr class="header">
 <th data-quarto-table-cell-role="th"></th>
@@ -1952,15 +1943,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </div>
 </div>
-</div>
 <div id="cell-61" class="cell" data-execution_count="30">
 <div class="sourceCode cell-code" id="cb29"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a>stationarity_tests(mdfl, first_diff<span class="op">=</span><span class="va">True</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-display" data-execution_count="30">
 <div>
-<div>
 
 
-<table class="dataframe table table-sm table-striped small" data-quarto-postprocess="true" data-border="1">
+<table class="dataframe caption-top table table-sm table-striped small" data-quarto-postprocess="true" data-border="1">
 <thead>
 <tr class="header">
 <th data-quarto-table-cell-role="th"></th>
@@ -2048,16 +2037,14 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </div>
 </div>
-</div>
 <p>And with the error data set:</p>
 <div id="cell-63" class="cell" data-execution_count="31">
 <div class="sourceCode cell-code" id="cb30"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a>stationarity_tests(mdfl_err, first_diff<span class="op">=</span><span class="va">False</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-display" data-execution_count="31">
 <div>
-<div>
 
 
-<table class="dataframe table table-sm table-striped small" data-quarto-postprocess="true" data-border="1">
+<table class="dataframe caption-top table table-sm table-striped small" data-quarto-postprocess="true" data-border="1">
 <thead>
 <tr class="header">
 <th data-quarto-table-cell-role="th"></th>
@@ -2133,15 +2120,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </div>
 </div>
-</div>
 <div id="cell-64" class="cell" data-execution_count="32">
 <div class="sourceCode cell-code" id="cb31"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a>stationarity_tests(mdfl_err, first_diff<span class="op">=</span><span class="va">True</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-display" data-execution_count="32">
 <div>
-<div>
 
 
-<table class="dataframe table table-sm table-striped small" data-quarto-postprocess="true" data-border="1">
+<table class="dataframe caption-top table table-sm table-striped small" data-quarto-postprocess="true" data-border="1">
 <thead>
 <tr class="header">
 <th data-quarto-table-cell-role="th"></th>
@@ -2226,7 +2211,6 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </tbody>
 </table>
 
-</div>
 </div>
 </div>
 </div>
@@ -2328,10 +2312,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="sourceCode cell-code" id="cb37"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb37-1"><a href="#cb37-1" aria-hidden="true" tabindex="-1"></a>results.params.reindex(index<span class="op">=</span>reindex_rows, columns<span class="op">=</span>reindex_cols)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-display" data-execution_count="38">
 <div>
-<div>
 
 
-<table class="dataframe table table-sm table-striped small" data-quarto-postprocess="true" data-border="1">
+<table class="dataframe caption-top table table-sm table-striped small" data-quarto-postprocess="true" data-border="1">
 <thead>
 <tr class="header">
 <th data-quarto-table-cell-role="th"></th>
@@ -2491,11 +2474,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </div>
 </div>
-</div>
 <div id="cell-74" class="cell" data-execution_count="39">
 <div class="sourceCode cell-code" id="cb38"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb38-1"><a href="#cb38-1" aria-hidden="true" tabindex="-1"></a>results.pvalues.reindex(index<span class="op">=</span>reindex_rows, columns<span class="op">=</span>reindex_cols).style.applymap(highlight_significance).<span class="bu">format</span>(<span class="st">"</span><span class="sc">{:.2%}</span><span class="st">"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-display" data-execution_count="39">
-<div>
 <style type="text/css">
 #T_b41d0_row0_col0,#T_b41d0_row0_col1,#T_b41d0_row0_col2,#T_b41d0_row0_col3,#T_b41d0_row0_col4,#T_b41d0_row0_col5,#T_b41d0_row0_col6,#T_b41d0_row1_col1,#T_b41d0_row1_col2,#T_b41d0_row1_col3,#T_b41d0_row1_col4,#T_b41d0_row1_col5,#T_b41d0_row1_col6,#T_b41d0_row2_col0,#T_b41d0_row2_col1,#T_b41d0_row2_col2,#T_b41d0_row2_col4,#T_b41d0_row2_col5,#T_b41d0_row2_col6,#T_b41d0_row3_col1,#T_b41d0_row3_col2,#T_b41d0_row3_col3,#T_b41d0_row3_col4,#T_b41d0_row3_col5,#T_b41d0_row3_col6,#T_b41d0_row4_col0,#T_b41d0_row4_col1,#T_b41d0_row4_col2,#T_b41d0_row4_col3,#T_b41d0_row4_col4,#T_b41d0_row4_col5,#T_b41d0_row4_col6,#T_b41d0_row5_col0,#T_b41d0_row5_col1,#T_b41d0_row5_col2,#T_b41d0_row5_col3,#T_b41d0_row5_col5,#T_b41d0_row6_col0,#T_b41d0_row6_col2,#T_b41d0_row6_col3,#T_b41d0_row6_col4,#T_b41d0_row6_col6,#T_b41d0_row7_col1,#T_b41d0_row7_col2,#T_b41d0_row7_col3,#T_b41d0_row7_col4,#T_b41d0_row7_col5,#T_b41d0_row7_col6,#T_b41d0_row8_col0,#T_b41d0_row8_col1,#T_b41d0_row8_col2,#T_b41d0_row8_col3,#T_b41d0_row8_col4,#T_b41d0_row8_col6,#T_b41d0_row9_col0,#T_b41d0_row9_col2,#T_b41d0_row9_col3,#T_b41d0_row9_col4,#T_b41d0_row9_col5,#T_b41d0_row9_col6,#T_b41d0_row10_col0,#T_b41d0_row10_col1,#T_b41d0_row10_col4,#T_b41d0_row10_col5,#T_b41d0_row10_col6,#T_b41d0_row11_col0,#T_b41d0_row11_col1,#T_b41d0_row11_col2,#T_b41d0_row11_col3,#T_b41d0_row11_col4,#T_b41d0_row11_col5,#T_b41d0_row11_col6,#T_b41d0_row12_col0,#T_b41d0_row12_col1,#T_b41d0_row12_col2,#T_b41d0_row12_col3,#T_b41d0_row12_col4,#T_b41d0_row12_col5,#T_b41d0_row12_col6,#T_b41d0_row13_col0,#T_b41d0_row13_col1,#T_b41d0_row13_col2,#T_b41d0_row13_col3,#T_b41d0_row13_col6{
             color:  black;
@@ -2504,7 +2485,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
         }#T_b41d0_row3_col0,#T_b41d0_row5_col6,#T_b41d0_row6_col5,#T_b41d0_row7_col0,#T_b41d0_row8_col5,#T_b41d0_row10_col2,#T_b41d0_row10_col3,#T_b41d0_row13_col4{
             color:  orange;
         }</style>
-<table id="T_b41d0_" data-quarto-postprocess="true" class="table table-sm table-striped small">
+<table id="T_b41d0_" class="caption-top table table-sm table-striped small" data-quarto-postprocess="true">
 <thead>
 <tr class="header">
 <th class="blank level0" data-quarto-table-cell-role="th"></th>
@@ -2662,15 +2643,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </table>
 </div>
 </div>
-</div>
 <div id="cell-75" class="cell" data-execution_count="40">
 <div class="sourceCode cell-code" id="cb39"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb39-1"><a href="#cb39-1" aria-hidden="true" tabindex="-1"></a>results_err.params.reindex(index<span class="op">=</span>reindex_rows, columns<span class="op">=</span>reindex_cols)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-display" data-execution_count="40">
 <div>
-<div>
 
 
-<table class="dataframe table table-sm table-striped small" data-quarto-postprocess="true" data-border="1">
+<table class="dataframe caption-top table table-sm table-striped small" data-quarto-postprocess="true" data-border="1">
 <thead>
 <tr class="header">
 <th data-quarto-table-cell-role="th"></th>
@@ -2830,11 +2809,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </div>
 </div>
-</div>
 <div id="cell-76" class="cell" data-execution_count="41">
 <div class="sourceCode cell-code" id="cb40"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb40-1"><a href="#cb40-1" aria-hidden="true" tabindex="-1"></a>results_err.pvalues.reindex(index<span class="op">=</span>reindex_rows, columns<span class="op">=</span>reindex_cols).style.applymap(highlight_significance).<span class="bu">format</span>(<span class="st">"</span><span class="sc">{:.2%}</span><span class="st">"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-display" data-execution_count="41">
-<div>
 <style type="text/css">
 #T_e8301_row0_col0,#T_e8301_row6_col5,#T_e8301_row8_col5,#T_e8301_row10_col3,#T_e8301_row13_col4{
             color:  orange;
@@ -2843,7 +2820,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
         }#T_e8301_row5_col4,#T_e8301_row6_col1,#T_e8301_row9_col1{
             color:  red;
         }</style>
-<table id="T_e8301_" data-quarto-postprocess="true" class="table table-sm table-striped small">
+<table id="T_e8301_" class="caption-top table table-sm table-striped small" data-quarto-postprocess="true">
 <thead>
 <tr class="header">
 <th class="blank level0" data-quarto-table-cell-role="th"></th>
@@ -3001,7 +2978,6 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </table>
 </div>
 </div>
-</div>
 <p>Once again, my results with the data error included are much closer to the original paper results. Note that without the data error, program spending is shown to rise in response to an increase <em>or</em> decrease in natural resource revenue, but only on the second lag (at least at a statistically significant level. That’s completely contrary to the main thesis of the paper. Now, given that I’ve shown with the corrected data set that budget deficits are stationary in levels, maybe a more appropriate form of analysis would have been to use a VECM as the paper states it would have been, but from this I can say that the data error has led to a significant change in the outcome of the analysis.</p>
 </section>
 <section id="impulse-response-functions" class="level3">
@@ -3076,10 +3052,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="sourceCode cell-code" id="cb43"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb43-1"><a href="#cb43-1" aria-hidden="true" tabindex="-1"></a>irf_tbl(results, <span class="st">"nrrd"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-display" data-execution_count="44">
 <div>
-<div>
 
 
-<table class="dataframe table table-sm table-striped small" data-quarto-postprocess="true" data-border="1">
+<table class="dataframe caption-top table table-sm table-striped small" data-quarto-postprocess="true" data-border="1">
 <thead>
 <tr class="header">
 <th data-quarto-table-cell-role="th"></th>
@@ -3155,15 +3130,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </div>
 </div>
-</div>
 <div id="cell-83" class="cell" data-execution_count="45">
 <div class="sourceCode cell-code" id="cb44"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb44-1"><a href="#cb44-1" aria-hidden="true" tabindex="-1"></a>irf_tbl(results, <span class="st">"nrri"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-display" data-execution_count="45">
 <div>
-<div>
 
 
-<table class="dataframe table table-sm table-striped small" data-quarto-postprocess="true" data-border="1">
+<table class="dataframe caption-top table table-sm table-striped small" data-quarto-postprocess="true" data-border="1">
 <thead>
 <tr class="header">
 <th data-quarto-table-cell-role="th"></th>
@@ -3239,15 +3212,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </div>
 </div>
-</div>
 <div id="cell-84" class="cell" data-execution_count="46">
 <div class="sourceCode cell-code" id="cb45"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb45-1"><a href="#cb45-1" aria-hidden="true" tabindex="-1"></a>irf_tbl(results_err, <span class="st">"nrrd"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-display" data-execution_count="46">
 <div>
-<div>
 
 
-<table class="dataframe table table-sm table-striped small" data-quarto-postprocess="true" data-border="1">
+<table class="dataframe caption-top table table-sm table-striped small" data-quarto-postprocess="true" data-border="1">
 <thead>
 <tr class="header">
 <th data-quarto-table-cell-role="th"></th>
@@ -3323,15 +3294,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </div>
 </div>
-</div>
 <div id="cell-85" class="cell" data-execution_count="47">
 <div class="sourceCode cell-code" id="cb46"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb46-1"><a href="#cb46-1" aria-hidden="true" tabindex="-1"></a>irf_tbl(results_err, <span class="st">"nrri"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-display" data-execution_count="47">
 <div>
-<div>
 
 
-<table class="dataframe table table-sm table-striped small" data-quarto-postprocess="true" data-border="1">
+<table class="dataframe caption-top table table-sm table-striped small" data-quarto-postprocess="true" data-border="1">
 <thead>
 <tr class="header">
 <th data-quarto-table-cell-role="th"></th>
@@ -3407,7 +3376,6 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </div>
 </div>
-</div>
 <p>Same patters as we’ve seen above, the results with the data error included are pretty close to what the paper reports.</p>
 </section>
 <section id="plot-the-irfs" class="level4">
@@ -3478,10 +3446,9 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <div class="sourceCode cell-code" id="cb52"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb52-1"><a href="#cb52-1" aria-hidden="true" tabindex="-1"></a>mdfl</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-display" data-execution_count="53">
 <div>
-<div>
 
 
-<table class="dataframe table table-sm table-striped small" data-quarto-postprocess="true" data-border="1">
+<table class="dataframe caption-top table table-sm table-striped small" data-quarto-postprocess="true" data-border="1">
 <thead>
 <tr class="header">
 <th data-quarto-table-cell-role="th"></th>
@@ -4289,15 +4256,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </div>
 </div>
-</div>
 <div id="cell-97" class="cell" data-execution_count="54">
 <div class="sourceCode cell-code" id="cb53"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb53-1"><a href="#cb53-1" aria-hidden="true" tabindex="-1"></a>model_df_first_diff(mdfl)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-display" data-execution_count="54">
 <div>
-<div>
 
 
-<table class="dataframe table table-sm table-striped small" data-quarto-postprocess="true" data-border="1">
+<table class="dataframe caption-top table table-sm table-striped small" data-quarto-postprocess="true" data-border="1">
 <thead>
 <tr class="header">
 <th data-quarto-table-cell-role="th"></th>
@@ -5140,15 +5105,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </div>
 </div>
-</div>
 <div id="cell-98" class="cell" data-execution_count="55">
 <div class="sourceCode cell-code" id="cb54"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb54-1"><a href="#cb54-1" aria-hidden="true" tabindex="-1"></a>mdfl_err</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-display" data-execution_count="55">
 <div>
-<div>
 
 
-<table class="dataframe table table-sm table-striped small" data-quarto-postprocess="true" data-border="1">
+<table class="dataframe caption-top table table-sm table-striped small" data-quarto-postprocess="true" data-border="1">
 <thead>
 <tr class="header">
 <th data-quarto-table-cell-role="th"></th>
@@ -5956,15 +5919,13 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </div>
 </div>
 </div>
-</div>
 <div id="cell-99" class="cell" data-execution_count="56">
 <div class="sourceCode cell-code" id="cb55"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb55-1"><a href="#cb55-1" aria-hidden="true" tabindex="-1"></a>model_df_first_diff(mdfl_err)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-display" data-execution_count="56">
 <div>
-<div>
 
 
-<table class="dataframe table table-sm table-striped small" data-quarto-postprocess="true" data-border="1">
+<table class="dataframe caption-top table table-sm table-striped small" data-quarto-postprocess="true" data-border="1">
 <thead>
 <tr class="header">
 <th data-quarto-table-cell-role="th"></th>
@@ -6804,7 +6765,6 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </tbody>
 </table>
 
-</div>
 </div>
 </div>
 </div>
