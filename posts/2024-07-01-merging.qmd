@@ -1,0 +1,92 @@
+---
+title: "Handling merge conflicts on PRs the nice way"
+date: "2024-07-01"
+description: "Quick tip"
+layout: "post"
+toc: true
+categories: [git]
+---
+
+# Introduction
+
+This is a short post about how I prefer to handle merge conflicts.
+There are lots of ways to resolve them, but in my opinion this makes for a clean
+commit log.
+
+# Setup
+
+Let's say you're working on a feature branch and you want to merge it back into main,
+but while you were working, some conflicting commits were introduced:
+
+```{mermaid}
+%%{init: {'theme': 'base'}}%%
+gitGraph
+  commit id: "start"
+  branch feature
+  checkout feature
+  commit id: "feature_change"
+  checkout main
+  commit id: "conflict_change"
+```
+
+When you go to submit your PR you'll see that you have a merge conflict
+to resolve. What do you do?
+
+# Don't merge main in
+
+For whatever reason, the common advice for this (e.g. what you get prompted to do in Azure DevOps)
+is to merge the target branch into the feature branch, resolve the merge conflict there, and then
+retry your PR:
+
+```{mermaid}
+%%{init: {'theme': 'base'}}%%
+gitGraph
+  commit id: "start"
+  branch feature
+  checkout feature
+  commit id: "feature_change"
+  checkout main
+  commit id: "conflict_change"
+  checkout feature
+  merge main id: "resolve"
+  checkout main
+  merge feature id: "complete_pr"
+```
+
+This does work, but it can make reviewing your PR a nightmare
+if a lot has happened on main since you started the feature branch,
+since now all those commits are on your branch and your history of changes
+will look huge.
+
+# Rebase instead
+
+Instead what I recommend is rebasing your feature branch on `main`
+and resolving the merge conflict there. This will make your branch
+look like what it would have been if you'd started it off of `main`
+in it's current state:
+
+```{mermaid}
+%%{init: {'theme': 'base'}}%%
+gitGraph
+  commit id: "start"
+  commit id: "conflict_change"
+  branch feature
+  checkout feature
+  commit id: "resolve"
+  checkout main
+  merge feature id: "complete_pr"
+```
+
+## Note
+
+With this approach you will have to force push as you'll be
+rewriting the remote history of your branch. Only do this for branches where
+you're the sole author, or at least very carefully coordinate with collaborators
+before you do this. For feature branches this typically shouldn't be a problem.
+
+# Conclusion
+
+This doesn't look super different with these toy diagrams,
+but hopefully you can see how the latter solution would look a lot cleaner
+in an active project where there could be tens or hundreds of commits
+between when you start your branch and when you submit your PR.
