@@ -2,14 +2,14 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.4.557">
+<meta name="generator" content="quarto-1.5.52">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 <meta name="dcterms.date" content="2023-02-24">
 <meta name="description" content="I may have bit off a bit more than I could chew">
 
-<title>Ian’s blog - Notes on Kubernetes the hard way</title>
+<title>Notes on Kubernetes the hard way – Ian’s blog</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -119,7 +119,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     </a>
   </div>
             <div id="quarto-search" class="" title="Search"></div>
-          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" role="menu" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
   <span class="navbar-toggler-icon"></span>
 </button>
           <div class="collapse navbar-collapse" id="navbarCollapse">
@@ -135,7 +135,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
   </li>  
 </ul>
           </div> <!-- /navcollapse -->
-          <div class="quarto-navbar-tools">
+            <div class="quarto-navbar-tools">
 </div>
       </div> <!-- /container-fluid -->
     </nav>
@@ -245,18 +245,18 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="basic-setup" class="level2">
 <h2 class="anchored" data-anchor-id="basic-setup">Basic setup</h2>
 <p>I covered this in the templates post, but briefly let’s go over setting up the provider and a connection to my cluster. In my <code>main.tf</code> file I have the following code:</p>
-<pre class="tf"><code>terraform {
-  required_providers {
-    proxmox = {
-      source  = "telmate/proxmox"
-      version = "2.9.11"
-    }
-  }
-}
-provider "proxmox" {
-  pm_tls_insecure = true
-  pm_api_url      = "https://pve1.local.ipreston.net:8006/api2/json"
-}</code></pre>
+<div class="sourceCode" id="cb2"><pre class="sourceCode tf code-with-copy"><code class="sourceCode terraform"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">terraform</span> {</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">required_providers</span> {</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>    proxmox <span class="op">=</span> {</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>      <span class="kw">source</span>  <span class="op">=</span> <span class="st">"telmate/proxmox"</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>      version <span class="op">=</span> <span class="st">"2.9.11"</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a><span class="kw">provider</span> <span class="st">"proxmox"</span> {</span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>  pm_tls_insecure <span class="op">=</span> <span class="va">true</span></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>  pm_api_url      <span class="op">=</span> <span class="st">"https://pve1.local.ipreston.net:8006/api2/json"</span></span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <p>And that’s it for setting up the connection. I have environment variables set by my script above with the username and password to my cluster so I don’t need to provide anything in the code. A quick <code>terraform init</code> followed by <code>terraform plan</code> shows that I’m all set up.</p>
 </section>
 <section id="provision-vms" class="level2">
@@ -265,57 +265,57 @@ provider "proxmox" {
 <section id="create-a-module" class="level3">
 <h3 class="anchored" data-anchor-id="create-a-module">Create a module</h3>
 <p>In the terraform folder I’ll make a <code>modules/ubuntu-vm</code> subdirectory and in that I’ll place two files. First we have <code>variables.tf</code>:</p>
-<pre class="tf"><code>variable "node" {
-  description = "Proxmox node number to deploy to"
-  type        = number
-}
-
-variable "type" {
-  description = "A controller or worker node"
-  type        = string
-}
-
-variable "ip" {
-  description = "The static IP for the VM"
-  type        = string
-}</code></pre>
+<div class="sourceCode" id="cb3"><pre class="sourceCode tf code-with-copy"><code class="sourceCode terraform"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="kw">variable</span> <span class="st">"node"</span> {</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>  description <span class="op">=</span> <span class="st">"Proxmox node number to deploy to"</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>  type        <span class="op">=</span> <span class="dt">number</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a><span class="kw">variable</span> <span class="st">"type"</span> {</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>  description <span class="op">=</span> <span class="st">"A controller or worker node"</span></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>  type        <span class="op">=</span> <span class="dt">string</span></span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a><span class="kw">variable</span> <span class="st">"ip"</span> {</span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>  description <span class="op">=</span> <span class="st">"The static IP for the VM"</span></span>
+<span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a>  type        <span class="op">=</span> <span class="dt">string</span></span>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <p>This is just defining the variables that I’ll need to pass into this module to create a resource. As described above, I want everything else about these nodes to be the same, so this is all I need for variables.</p>
 <p>Then I have a <code>main.tf</code>:</p>
-<pre class="tf"><code>terraform {
-  required_providers {
-    proxmox = {
-      source  = "telmate/proxmox"
-      version = "2.9.11"
-    }
-  }
-}
-
-resource "proxmox_vm_qemu" "ubuntu-vm" {
-  name        = "ubuntu-${var.type}-${var.node}"
-  target_node = "pve${var.node}"
-  onboot      = true
-  oncreate    = true
-  clone       = "ubuntujammytemplate"
-  full_clone  = true
-  agent       = 1
-  os_type     = "cloud-init"
-  cores       = 4
-  cpu         = "host"
-  memory      = 8192
-  bootdisk    = "scsi0"
-  disk {
-    slot     = 0
-    size     = "100G"
-    type     = "scsi"
-    storage  = "local-zfs"
-    iothread = 1
-  }
-  network {
-    model  = "virtio"
-    bridge = "vmbr0"
-  }
-  ipconfig0 = "ip=${var.ip}/24,gw=192.168.85.1"
-}</code></pre>
+<div class="sourceCode" id="cb4"><pre class="sourceCode tf code-with-copy"><code class="sourceCode terraform"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="kw">terraform</span> {</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">required_providers</span> {</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>    proxmox <span class="op">=</span> {</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>      <span class="kw">source</span>  <span class="op">=</span> <span class="st">"telmate/proxmox"</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>      version <span class="op">=</span> <span class="st">"2.9.11"</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a><span class="kw">resource</span> <span class="st">"proxmox_vm_qemu"</span> <span class="st">"ubuntu-vm"</span> {</span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>  name        <span class="op">=</span> <span class="st">"ubuntu-</span><span class="ss">${</span><span class="va">var.type</span><span class="ss">}</span><span class="st">-</span><span class="ss">${</span><span class="va">var.node</span><span class="ss">}</span><span class="st">"</span></span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>  target_node <span class="op">=</span> <span class="st">"pve</span><span class="ss">${</span><span class="va">var.node</span><span class="ss">}</span><span class="st">"</span></span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>  onboot      <span class="op">=</span> <span class="va">true</span></span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a>  oncreate    <span class="op">=</span> <span class="va">true</span></span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a>  clone       <span class="op">=</span> <span class="st">"ubuntujammytemplate"</span></span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a>  full_clone  <span class="op">=</span> <span class="va">true</span></span>
+<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a>  agent       <span class="op">=</span> <span class="dv">1</span></span>
+<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a>  os_type     <span class="op">=</span> <span class="st">"cloud-init"</span></span>
+<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a>  cores       <span class="op">=</span> <span class="dv">4</span></span>
+<span id="cb4-20"><a href="#cb4-20" aria-hidden="true" tabindex="-1"></a>  cpu         <span class="op">=</span> <span class="st">"host"</span></span>
+<span id="cb4-21"><a href="#cb4-21" aria-hidden="true" tabindex="-1"></a>  memory      <span class="op">=</span> <span class="dv">8192</span></span>
+<span id="cb4-22"><a href="#cb4-22" aria-hidden="true" tabindex="-1"></a>  bootdisk    <span class="op">=</span> <span class="st">"scsi0"</span></span>
+<span id="cb4-23"><a href="#cb4-23" aria-hidden="true" tabindex="-1"></a>  disk {</span>
+<span id="cb4-24"><a href="#cb4-24" aria-hidden="true" tabindex="-1"></a>    slot     <span class="op">=</span> <span class="dv">0</span></span>
+<span id="cb4-25"><a href="#cb4-25" aria-hidden="true" tabindex="-1"></a>    size     <span class="op">=</span> <span class="st">"100G"</span></span>
+<span id="cb4-26"><a href="#cb4-26" aria-hidden="true" tabindex="-1"></a>    type     <span class="op">=</span> <span class="st">"scsi"</span></span>
+<span id="cb4-27"><a href="#cb4-27" aria-hidden="true" tabindex="-1"></a>    storage  <span class="op">=</span> <span class="st">"local-zfs"</span></span>
+<span id="cb4-28"><a href="#cb4-28" aria-hidden="true" tabindex="-1"></a>    iothread <span class="op">=</span> <span class="dv">1</span></span>
+<span id="cb4-29"><a href="#cb4-29" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb4-30"><a href="#cb4-30" aria-hidden="true" tabindex="-1"></a>  network {</span>
+<span id="cb4-31"><a href="#cb4-31" aria-hidden="true" tabindex="-1"></a>    model  <span class="op">=</span> <span class="st">"virtio"</span></span>
+<span id="cb4-32"><a href="#cb4-32" aria-hidden="true" tabindex="-1"></a>    bridge <span class="op">=</span> <span class="st">"vmbr0"</span></span>
+<span id="cb4-33"><a href="#cb4-33" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb4-34"><a href="#cb4-34" aria-hidden="true" tabindex="-1"></a>  ipconfig0 <span class="op">=</span> <span class="st">"ip=</span><span class="ss">${</span><span class="va">var.ip</span><span class="ss">}</span><span class="st">/24,gw=192.168.85.1"</span></span>
+<span id="cb4-35"><a href="#cb4-35" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <p>Having to put the required provider up here was a little confusing at first, since I had it defined in the base terraform module, but after some errors and troubleshooting I learned that I have to specify the required provider in every module that uses it. Note that I don’t have the <code>provider</code> block that explicitly points to the actual proxmox instance I want to apply this to, that only lives in the base module. The rest of this block is a standard <a href="https://registry.terraform.io/providers/Telmate/proxmox/latest/docs/resources/vm_qemu">terraform proxmox VM</a> resource where I’ve hard coded in all the parameters I want to be consistent across nodes, and plugged in variables for the parts that are going to change.</p>
 </section>
 <section id="fun-with-loops" class="level3">
@@ -331,26 +331,26 @@ resource "proxmox_vm_qemu" "ubuntu-vm" {
 <span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> i <span class="kw">in</span> <span class="bu">range</span>(<span class="dv">3</span>)</span>
 <span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <p>I can’t nest a for each in terraform, so I have to do some nested for loops in variables to create a map that I can then use for each on. <a href="https://faultbucket.ca/2020/09/terraform-nested-for_each-example/">This blog</a> has basically the same issue so I should be able to follow its logic to produce what I want. After some fiddling around I get the following:</p>
-<pre class="tf"><code>locals {
-  nodetypes = {
-    "controller" = 0
-    "worker"     = 3
-  }
-  vm_attrs_list = flatten([
-    for nodetype, baseoctet in local.nodetypes : [
-      for i in range(3) : {
-        name = "${nodetype}${i}"
-        node = "${i + 1}",
-        type = "${nodetype}",
-        ip   = "192.168.85.${70 + baseoctet + i}"
-      }
-    ]
-  ])
-  vm_attrs_map = {
-    for obj in local.vm_attrs_list : "${obj.name}" =&gt; obj
-  }
-
-}</code></pre>
+<div class="sourceCode" id="cb6"><pre class="sourceCode tf code-with-copy"><code class="sourceCode terraform"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="kw">locals</span> {</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>  nodetypes <span class="op">=</span> {</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>    <span class="st">"controller"</span> <span class="op">=</span> <span class="dv">0</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>    <span class="st">"worker"</span>     <span class="op">=</span> <span class="dv">3</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>  vm_attrs_list <span class="op">=</span> <span class="bu">flatten</span>([</span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> nodetype, baseoctet <span class="cf">in</span> <span class="va">local</span>.nodetypes : [</span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a>      <span class="cf">for</span> i <span class="cf">in</span> <span class="bu">range</span>(<span class="dv">3</span>) : {</span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a>        name <span class="op">=</span> <span class="st">"</span><span class="ss">${</span><span class="va">nodetype</span><span class="ss">}${</span><span class="va">i</span><span class="ss">}</span><span class="st">"</span></span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a>        node <span class="op">=</span> <span class="st">"</span><span class="ss">${</span><span class="va">i + 1</span><span class="ss">}</span><span class="st">"</span>,</span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a>        type <span class="op">=</span> <span class="st">"</span><span class="ss">${</span><span class="va">nodetype</span><span class="ss">}</span><span class="st">"</span>,</span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a>        ip   <span class="op">=</span> <span class="st">"192.168.85.</span><span class="ss">${</span><span class="va">70 + baseoctet + i</span><span class="ss">}</span><span class="st">"</span></span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a>      }</span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a>    ]</span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a>  ])</span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a>  vm_attrs_map <span class="op">=</span> {</span>
+<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> obj <span class="cf">in</span> <span class="va">local</span>.vm_attrs_list : <span class="st">"</span><span class="ss">${</span><span class="va">obj.name</span><span class="ss">}</span><span class="st">"</span> <span class="op">=&gt;</span> obj</span>
+<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a>  }</span>
+<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb6-20"><a href="#cb6-20" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <p>Which is certainly a lot more verbose than python, but whatever. I can check it out before trying to apply it to a resource by using <code>terraform console</code>:</p>
 <div class="sourceCode" id="cb7"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="ex">❯</span> terraform console</span>
 <span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="op">&gt;</span> local.vm_attrs_map</span>
@@ -397,13 +397,13 @@ resource "proxmox_vm_qemu" "ubuntu-vm" {
 <section id="put-it-all-together" class="level2">
 <h2 class="anchored" data-anchor-id="put-it-all-together">Put it all together</h2>
 <p>Now that I’ve got my module created and my map to loop over I can finish up in <code>main.tf</code> in the root of this project:</p>
-<pre class="tf"><code>module "ubuntu_vm" {
-  source   = "./modules/ubuntu-vm"
-  for_each = local.vm_attrs_map
-  node     = each.value.node
-  type     = each.value.type
-  ip       = each.value.ip
-}</code></pre>
+<div class="sourceCode" id="cb8"><pre class="sourceCode tf code-with-copy"><code class="sourceCode terraform"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="kw">module</span> <span class="st">"ubuntu_vm"</span> {</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>  <span class="kw">source</span>   <span class="op">=</span> <span class="st">"./modules/ubuntu-vm"</span></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">for_each</span> <span class="op">=</span> <span class="va">local</span>.vm_attrs_map</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>  node     <span class="op">=</span> <span class="va">each</span>.value.node</span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>  type     <span class="op">=</span> <span class="va">each</span>.value.type</span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>  ip       <span class="op">=</span> <span class="va">each</span>.value.ip</span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a>}</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <p>Nice and easy! I run <code>terraform init</code> again so that the module I created is loaded, then <code>terraform plan</code> to make sure I’m actually getting the 6 nodes I expect. Everything looks good so I run <code>terraform apply</code>… and wait an hour and a half for it to not actually deploy any nodes. When I initially tested terraform back when I was doing templates I did notice that it took a lot longer to deploy via terraform than via the menu, but that was minutes, not hours. Time to figure out what’s going on here.</p>
 <p>As a fun aside to remember for later, as part of troubleshooting I tried updating the proxmox provider from the <code>2.9.11</code> version I was using to the <code>2.9.13</code> release and it just straight up doesn’t work. Everything installs ok but then I get:</p>
 <div class="sourceCode" id="cb9"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="ex">❯</span> terraform plan</span>
@@ -721,18 +721,7 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
     }
     return false;
   }
-  const clipboard = new window.ClipboardJS('.code-copy-button', {
-    text: function(trigger) {
-      const codeEl = trigger.previousElementSibling.cloneNode(true);
-      for (const childEl of codeEl.children) {
-        if (isCodeAnnotation(childEl)) {
-          childEl.remove();
-        }
-      }
-      return codeEl.innerText;
-    }
-  });
-  clipboard.on('success', function(e) {
+  const onCopySuccess = function(e) {
     // button target
     const button = e.trigger;
     // don't keep focus
@@ -764,7 +753,29 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
     }, 1000);
     // clear code selection
     e.clearSelection();
+  }
+  const getTextToCopy = function(trigger) {
+      const codeEl = trigger.previousElementSibling.cloneNode(true);
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+  }
+  const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+    text: getTextToCopy
   });
+  clipboard.on('success', onCopySuccess);
+  if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+    // For code content inside modals, clipBoardJS needs to be initialized with a container option
+    // TODO: Check when it could be a function (https://github.com/zenorocha/clipboard.js/issues/860)
+    const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+      text: getTextToCopy,
+      container: window.document.getElementById('quarto-embedded-source-code-modal')
+    });
+    clipboardModal.on('success', onCopySuccess);
+  }
     var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
     var mailtoRegex = new RegExp(/^mailto:/);
       var filterRegex = new RegExp("https:\/\/blog\.ianpreston\.ca");
@@ -772,7 +783,7 @@ window.document.addEventListener("DOMContentLoaded", function (event) {
         return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
     }
     // Inspect non-navigation links and adorn them if external
- 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool)');
+ 	var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
     for (var i=0; i<links.length; i++) {
       const link = links[i];
       if (!isInternal(link.href)) {
