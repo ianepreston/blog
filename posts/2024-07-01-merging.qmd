@@ -77,6 +77,13 @@ gitGraph
   merge feature id: "complete_pr"
 ```
 
+## Note
+
+With this approach you will have to force push as you'll be
+rewriting the remote history of your branch. Only do this for branches where
+you're the sole author, or at least very carefully coordinate with collaborators
+before you do this. For feature branches this typically shouldn't be a problem.
+
 # Conclusion
 
 This doesn't look super different with these toy diagrams,
