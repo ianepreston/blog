@@ -6,10 +6,10 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
-<meta name="dcterms.date" content="2023-12-26">
-<meta name="description" content="Tiny little quality of life hack">
+<meta name="dcterms.date" content="2024-07-12">
+<meta name="description" content="Maybe I’ll save someone else some suffering">
 
-<title>Setting up internal name resolution in Windows and WSL (probably Linux too) – Ian’s blog</title>
+<title>Parsing XSD schemas in Databricks – Ian’s blog</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -144,16 +144,15 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <header id="title-block-header" class="quarto-title-block default page-columns page-full">
   <div class="quarto-title-banner page-columns page-full">
     <div class="quarto-title column-body">
-      <h1 class="title">Setting up internal name resolution in Windows and WSL (probably Linux too)</h1>
+      <h1 class="title">Parsing XSD schemas in Databricks</h1>
                   <div>
         <div class="description">
-          Tiny little quality of life hack
+          Maybe I’ll save someone else some suffering
         </div>
       </div>
                           <div class="quarto-categories">
-                <div class="quarto-category">linux</div>
-                <div class="quarto-category">WSL</div>
-                <div class="quarto-category">DNS</div>
+                <div class="quarto-category">databricks</div>
+                <div class="quarto-category">spark</div>
               </div>
                   </div>
   </div>
@@ -165,7 +164,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
       <div>
       <div class="quarto-title-meta-heading">Published</div>
       <div class="quarto-title-meta-contents">
-        <p class="date">December 26, 2023</p>
+        <p class="date">July 12, 2024</p>
       </div>
     </div>
     
@@ -182,8 +181,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
    
   <ul>
   <li><a href="#introduction" id="toc-introduction" class="nav-link active" data-scroll-target="#introduction">Introduction</a></li>
-  <li><a href="#on-windows" id="toc-on-windows" class="nav-link" data-scroll-target="#on-windows">On Windows</a></li>
-  <li><a href="#wsl" id="toc-wsl" class="nav-link" data-scroll-target="#wsl">WSL</a></li>
+  <li><a href="#setting-up-for-schema-parsing" id="toc-setting-up-for-schema-parsing" class="nav-link" data-scroll-target="#setting-up-for-schema-parsing">Setting up for schema parsing</a></li>
+  <li><a href="#actually-extracting-the-schema" id="toc-actually-extracting-the-schema" class="nav-link" data-scroll-target="#actually-extracting-the-schema">Actually extracting the schema</a>
+  <ul class="collapse">
+  <li><a href="#add-in-a-failed-record-field" id="toc-add-in-a-failed-record-field" class="nav-link" data-scroll-target="#add-in-a-failed-record-field">Add in a failed record field</a></li>
+  </ul></li>
+  <li><a href="#use-the-schema-in-a-pipeline" id="toc-use-the-schema-in-a-pipeline" class="nav-link" data-scroll-target="#use-the-schema-in-a-pipeline">Use the schema in a pipeline</a></li>
   <li><a href="#conclusion" id="toc-conclusion" class="nav-link" data-scroll-target="#conclusion">Conclusion</a></li>
   </ul>
 </nav>
@@ -197,81 +200,81 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 <section id="introduction" class="level1">
 <h1>Introduction</h1>
-<p>Previously whenever I wanted to connect to a machine on my network I would create an entry in <code>~/.ssh/config</code> that looked something like this</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">Host</span> <span class="op">&lt;</span>host<span class="op">&gt;</span></span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>  <span class="ex">HostName</span> <span class="op">&lt;</span>host<span class="op">&gt;</span>.mydomain.ca</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<p>I might include key or default user information as well, but a lot of the time all I really needed was that. There were two reasons for doing that:</p>
-<ul>
-<li>VS code looks in that file for remote development environments</li>
-<li>It saves me typing <code>ssh &lt;host&gt;.mydomain.ca</code> and lets me just type <code>ssh &lt;host&gt;</code></li>
-</ul>
-<p>The first one this post doesn’t do anything about, but there’s a limited number of machines I need that for. The second doesn’t really seem like a big deal, but I’m lazy. In fact, I’m so lazy that I got annoyed with having to add a record in that file for every host I wanted to connect to, so I looked up how to configure DNS on my workstation to default to my domain if I didn’t put in a FQDN. That’s what this post is about. Read on to find out how.</p>
+<p>Databricks recently announced <a href="https://www.databricks.com/blog/announcing-simplified-xml-data-ingestion">enhanced XML parsing</a>. This is great news, as my organization has a ton of XML that I would like to parse and publish in more user friendly structures. Unfortunately for me, most of the example code and docs assume that your XML inputs have a relatively simple and consistent schema that can be parsed out using a single sample record. My requirements are more complicated than that, as our schema varies depending on the particular type of record being read (different type of forms capturing a subset of all possible inputs), so any sample record I provide will not have a complete schema for all possible records.</p>
+<p>We do have an XML Schema Definition (XSD) file that describes the complete schema of all possible attributes for these records, and there’s a brief snippet in <a href="https://learn.microsoft.com/en-us/azure/databricks/query/formats/xml#xsd-support">the docs</a> that mentions you can use a file like this to create a schema that can be used in parsing XML. In practice, I found a number of tricky aspects to actually getting this working that I’ll document below in case it’s helpful for anyone else.</p>
 </section>
-<section id="on-windows" class="level1">
-<h1>On Windows</h1>
-<p>This is basically cribbed straight from chatGPT:</p>
-<p>To configure your Windows machine so that it can automatically resolve hostnames with a specific domain (like appending <code>mydomain.com</code> to <code>machine1</code> to form <code>machine1.mydomain.com</code>), you need to set up DNS suffix appending. Here’s how to do it:</p>
-<ul>
-<li>Open Network Connections Settings:
-<ul>
-<li>Right-click the network icon in the system tray and select “Open Network &amp; Internet settings”.</li>
-<li>In the settings window, click on “Change adapter options”.</li>
-</ul></li>
-<li>Modify Properties of Your Network Adapter:
-<ul>
-<li>Right-click on the network adapter you are using (it could be Ethernet or Wi-Fi) and select “Properties”. If prompted, provide administrator credentials or confirmation.</li>
-</ul></li>
-<li>Edit TCP/IP Settings:
-<ul>
-<li>In the list of items used by the connection, select “Internet Protocol Version 4 (TCP/IPv4)” or “Internet Protocol Version 6 (TCP/IPv6)” depending on your network configuration.</li>
-<li>Then click “Properties”.</li>
-<li>In the next window, click on the “Advanced” button.</li>
-</ul></li>
-<li>Set the DNS Suffix:
-<ul>
-<li>In the Advanced TCP/IP settings window, go to the “DNS” tab.</li>
-<li>Check the option “Append these DNS suffixes (in order):”.</li>
-<li>Click “Add” and enter your domain name (e.g., mydomain.com).</li>
-<li>Click “Add” after typing each domain. You can add multiple domains if necessary.</li>
-</ul></li>
-<li>Save Your Changes:
-<ul>
-<li>Click “OK” on all open windows to save your changes.</li>
-</ul></li>
-<li>Test the Configuration:
-<ul>
-<li>Open Command Prompt or PowerShell.</li>
-<li>Try to ping or connect to a device using only its hostname (e.g., ping machine1).</li>
-<li>If everything is configured correctly, Windows will automatically append the DNS suffix and resolve <code>machine1</code> to <code>machine1.mydomain.com</code>.</li>
-</ul></li>
-<li>Note for Dynamic DNS Environments:
-<ul>
-<li>If you’re in a dynamic DNS environment, like a corporate network using Active Directory, these settings might be managed by your network administrator via DHCP or Group Policy.</li>
-</ul></li>
-</ul>
-<p>Remember, these settings apply to the network adapter you configure. If you switch between different networks (e.g., from Wi-Fi to Ethernet), you may need to configure each adapter separately.</p>
+<section id="setting-up-for-schema-parsing" class="level1">
+<h1>Setting up for schema parsing</h1>
+<p>The first hurdle was figuring out how to actually call the schema parsing method.</p>
+<p>From <a href="https://learn.microsoft.com/en-us/azure/databricks/archive/connectors/spark-xml-library#xsd-support">the docs</a> I should be able to run something like this in scala (no python interface) and get a schema object:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode scala code-with-copy"><code class="sourceCode scala"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> com<span class="op">.</span>databricks<span class="op">.</span>spark<span class="op">.</span>xml<span class="op">.</span>util<span class="op">.</span>XSDToSchema</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> java<span class="op">.</span>nio<span class="op">.</span>file<span class="op">.</span>Paths</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="kw">val</span> schema <span class="op">=</span> XSDToSchema<span class="op">.</span><span class="fu">read</span><span class="op">(</span>Paths<span class="op">.</span><span class="fu">get</span><span class="op">(</span><span class="st">"/path/to/your.xsd"</span><span class="op">))</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="kw">val</span> df <span class="op">=</span> spark<span class="op">.</span>read<span class="op">.</span><span class="fu">schema</span><span class="op">(</span>schema<span class="op">)....</span><span class="fu">xml</span><span class="op">(...)</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Unfortunately when I tried to run that in databricks (under various cluster types and runtime versions) I got an error that <code>XSDToSchema</code> did not actually exist.</p>
+<p>After a bunch of searching around I found the <a href="https://github.com/databricks/spark-xml">databricks/spark-xml</a> repo, which did seem to have that functionality. After adding <code>com.databricks:spark-xml_2.12:0.18.0</code> to a cluster I was able to actually call that function.</p>
+<p><strong>NOTE</strong> As best I understand it, this library might conflict with the databricks xml parsing libraries, so it should only be used for schema extraction. Use a separate cluster to actually do the xml parsing with the extracted schema.</p>
 </section>
-<section id="wsl" class="level1">
-<h1>WSL</h1>
-<p>In theory this part should just work if Windows is configured correctly, but after some reboots and fiddling I couldn’t get it to go. So I did a manual override. There’s two parts to this</p>
-<ul>
-<li><p>Set <code>/etc/wsl.conf</code> to not auto-generate <code>/etc/resolv.conf</code></p>
-<ul>
-<li>Put an entry in your <code>/etc/wsl.conf</code> that looks like the following:</li>
-</ul>
-<div class="sourceCode" id="cb2"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ex">[network]</span></span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="va">generateResolvConf</span><span class="op">=</span>false</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<ul>
-<li>Restart wsl (or just your whole computer) with <code>wsl --restart</code> from powershell</li>
-</ul></li>
-<li><p>Update <code>/etc/resolv.conf</code> to look something like this:</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="ex">nameserver</span> <span class="op">&lt;</span>your DNS IP<span class="op">&gt;</span></span>
-<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="ex">search</span> <span class="op">&lt;</span>your.domain<span class="op">&gt;</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div></li>
-</ul>
+<section id="actually-extracting-the-schema" class="level1">
+<h1>Actually extracting the schema</h1>
+<p>Once you’ve got the schema out, the next thing to do is get it into a format that’s useful for feeding into <code>read_xml</code>. This is relatively straightforward but not well documented at all.</p>
+<p>This bit of scala gets you a json representation of your schema:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode scala code-with-copy"><code class="sourceCode scala"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> com<span class="op">.</span>databricks<span class="op">.</span>spark<span class="op">.</span>xml<span class="op">.</span>util<span class="op">.</span>XSDToSchema</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> java<span class="op">.</span>nio<span class="op">.</span>file<span class="op">.</span>Paths</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> java<span class="op">.</span>io<span class="op">.</span>_</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="kw">import</span> org<span class="op">.</span>apache<span class="op">.</span>spark<span class="op">.</span>sql<span class="op">.</span>types<span class="op">.{</span>StructType<span class="op">,</span> StructField<span class="op">,</span> StringType<span class="op">}</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="kw">val</span> schema <span class="op">=</span> XSDToSchema<span class="op">.</span><span class="fu">read</span><span class="op">(</span>Paths<span class="op">.</span><span class="fu">get</span><span class="op">(</span><span class="st">"path/to/xsd_file.xsd"</span><span class="op">))</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="kw">val</span> topField <span class="op">=</span> <span class="fu">schema</span><span class="op">(</span><span class="st">"TopLevelName"</span><span class="op">).</span>dataType<span class="op">.</span>asInstanceOf<span class="op">[</span>StructType<span class="op">]</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="kw">val</span> schemaStr <span class="op">=</span> topField<span class="op">.</span>json</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a><span class="kw">val</span> file <span class="op">=</span> <span class="kw">new</span> <span class="ex">File</span><span class="op">(</span><span class="st">"/path/to/output/schema.json"</span><span class="op">)</span></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a><span class="kw">val</span> bw <span class="op">=</span> <span class="kw">new</span> <span class="ex">BufferedWriter</span><span class="op">(</span><span class="kw">new</span> <span class="ex">FileWriter</span><span class="op">(</span>file<span class="op">))</span></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>bw<span class="op">.</span><span class="fu">write</span><span class="op">(</span>schemaStr<span class="op">)</span></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>bw<span class="op">.</span><span class="fu">close</span><span class="op">()</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>In my case the XSD had a top level struct as if the whole thing was going to be one dataframe. I actually wanted it to be a column, so I had to drill down one level. Depending on your particular use case you’ll have to modify that.</p>
+<section id="add-in-a-failed-record-field" class="level2">
+<h2 class="anchored" data-anchor-id="add-in-a-failed-record-field">Add in a failed record field</h2>
+<p>I don’t want my whole pipeline to fall over if I hit an invalid record, so I’ll want to specify <code>PERMISSIVE</code> mode in my XML parsing code. If I do that it expects there to be a rescue struct to put the failed xml within the target. I’m calling mine <code>corruptxml</code> so I switch over to python, add that in, and write it out as a nicely formatted json. Even if you don’t want to add this in it’s probably still worth making a round trip through python. The json that comes out of the scala step above is valid but it’s one single line. If you put it in python first you get a more readably formatted multi line json at the end.</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> pathlib <span class="im">import</span> Path</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="im">import</span> json</span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>ddl_base_path <span class="op">=</span> Path(<span class="st">"/path/to/output/schema.json"</span>)</span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="cf">with</span> <span class="bu">open</span>(ddl_base_path, <span class="st">"r"</span>) <span class="im">as</span> f:</span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>    ddl_base <span class="op">=</span> f.read()</span>
+<span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>ddl_dict <span class="op">=</span> json.loads(ddl_base)</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a><span class="co"># Have to have this field in the schema to use PERMISSIVE mode when reading</span></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>ddl_dict[<span class="st">"fields"</span>].append({<span class="st">"name"</span>: <span class="st">"corruptxml"</span>, <span class="st">"type"</span>: <span class="st">"string"</span>, <span class="st">"nullable"</span>: <span class="va">True</span>})</span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>ddl_clean_path <span class="op">=</span> Path(<span class="st">"/path/to/output/schema.json"</span>)</span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a><span class="cf">with</span> <span class="bu">open</span>(ddl_clean_path, <span class="st">"w"</span>) <span class="im">as</span> f:</span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>    f.write(json.dumps(ddl_dict, indent<span class="op">=</span><span class="dv">4</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</section>
+</section>
+<section id="use-the-schema-in-a-pipeline" class="level1">
+<h1>Use the schema in a pipeline</h1>
+<p>In my use case I have an existing DataFrame with a column called <code>RPT_DATA</code> that I want to parse. My code looks something like this:</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>    from_xml_opts <span class="op">=</span> {</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>        <span class="st">"mode"</span>: <span class="st">"PERMISSIVE"</span>,</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>        <span class="st">"columnNameOfCorruptRecord"</span>: <span class="st">"corruptxml"</span>,</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>    }</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>    ddl_path <span class="op">=</span> Path(<span class="st">"schema_ddl.json"</span>)</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>    <span class="cf">with</span> <span class="bu">open</span>(ddl_path, <span class="st">"r"</span>) <span class="im">as</span> f:</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a>        ddl_str <span class="op">=</span> f.read()</span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a>    parsed_df <span class="op">=</span> (</span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>        xml_data_df</span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>        <span class="co"># illegal escape character</span></span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>        .withColumn(<span class="st">"RPT_DATA"</span>, regexp_replace(col(<span class="st">"RPT_DATA"</span>), <span class="vs">r"\u001a"</span>, <span class="st">""</span>))</span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>        <span class="co"># illegal escape character</span></span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>        .withColumn(<span class="st">"RPT_DATA"</span>, regexp_replace(col(<span class="st">"RPT_DATA"</span>), <span class="vs">r"&amp;#x1A;"</span>, <span class="st">""</span>))</span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a>        <span class="co"># illegal escape character</span></span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a>        .withColumn(<span class="st">"RPT_DATA"</span>, regexp_replace(col(<span class="st">"RPT_DATA"</span>), <span class="vs">r"&amp;#x\d;"</span>, <span class="st">""</span>))</span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a>        <span class="co"># emojis</span></span>
+<span id="cb4-17"><a href="#cb4-17" aria-hidden="true" tabindex="-1"></a>        .withColumn(<span class="st">"RPT_DATA"</span>, regexp_replace(col(<span class="st">"RPT_DATA"</span>), <span class="vs">r"\&amp;#\d</span><span class="sc">{5}</span><span class="vs">;"</span>, <span class="st">""</span>))</span>
+<span id="cb4-18"><a href="#cb4-18" aria-hidden="true" tabindex="-1"></a>        .withColumn(<span class="st">"report_xml_dat"</span>, from_xml(xml_data_df.RPT_DATA, ddl_str, from_xml_opts))</span>
+<span id="cb4-19"><a href="#cb4-19" aria-hidden="true" tabindex="-1"></a>    )</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>In my case I had to parse out some illegal characters from the strings before I could get it working. Depending on your inputs those might not be required.</p>
 </section>
 <section id="conclusion" class="level1">
 <h1>Conclusion</h1>
-<p>This is a small little quality of life hack. It doesn’t save a ton of time, but it also doesn’t take a ton of time to do, and at least for me while I’ve been experimenting with spinning up and tearing down a bunch of VMs it’s been worth the few minutes it took to figure out and set up.</p>
+<p>Parsing out a schema from an XSD and using it to turn a string of XML into a valid <code>StructField</code> isn’t too bad and doesn’t take a ton of code - if you can actually find out how to do it. I spent a ton of time googling, trying things that broke, and going back and forth with Databricks support to get this working so I want to preserve it.</p>
 
 
 </section>
