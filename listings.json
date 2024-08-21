@@ -2,6 +2,7 @@
   {
     "listing": "/index.html",
     "items": [
+      "/posts/2024-08-21-for-each-jobs.html",
       "/posts/2024-07-12-xsd-databricks.html",
       "/posts/2024-07-01-merging.html",
       "/posts/2024-06-30-nix.html",
@@ -15,10 +16,10 @@
       "/posts/2023-11-12-xcp-ng.html",
       "/posts/2023-07-06-network-automation.html",
       "/posts/2023-06-04-ansible-autofs.html",
-      "/posts/2023-06-04-nvidia-notes.html",
-      "/posts/2023-06-04-odbc-drivers-ansible.html",
       "/posts/2023-06-04-rootless-docker.html",
       "/posts/2023-06-04-ansible-ad-users.html",
+      "/posts/2023-06-04-nvidia-notes.html",
+      "/posts/2023-06-04-odbc-drivers-ansible.html",
       "/posts/2023-04-09-network-rework.html",
       "/posts/2023-04-08-managed-switch.html",
       "/posts/2023-02-24-k8s-the-hard-way.html",

@@ -6,10 +6,10 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
-<meta name="dcterms.date" content="2021-04-10">
-<meta name="description" content="The bigger posts and projects I’ve worked on that I want to share.">
+<meta name="dcterms.date" content="2024-08-21">
+<meta name="description" content="Maybe I’ll save someone else some suffering">
 
-<title>My Portfolio – Ian’s blog</title>
+<title>For each tasks in Databricks asset bundles – Ian’s blog</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -21,6 +21,40 @@ ul.task-list li input[type="checkbox"] {
   width: 0.8em;
   margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
   vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { display: inline-block; text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
 }
 </style>
 
@@ -110,13 +144,16 @@ ul.task-list li input[type="checkbox"] {
 <header id="title-block-header" class="quarto-title-block default page-columns page-full">
   <div class="quarto-title-banner page-columns page-full">
     <div class="quarto-title column-body">
-      <h1 class="title">My Portfolio</h1>
+      <h1 class="title">For each tasks in Databricks asset bundles</h1>
                   <div>
         <div class="description">
-          The bigger posts and projects I’ve worked on that I want to share.
+          Maybe I’ll save someone else some suffering
         </div>
       </div>
-                </div>
+                          <div class="quarto-categories">
+                <div class="quarto-category">databricks</div>
+              </div>
+                  </div>
   </div>
     
   
@@ -126,7 +163,7 @@ ul.task-list li input[type="checkbox"] {
       <div>
       <div class="quarto-title-meta-heading">Published</div>
       <div class="quarto-title-meta-contents">
-        <p class="date">April 10, 2021</p>
+        <p class="date">August 21, 2024</p>
       </div>
     </div>
     
@@ -137,28 +174,8 @@ ul.task-list li input[type="checkbox"] {
   </header><div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
 <!-- sidebar -->
 <!-- margin-sidebar -->
-    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
-        <nav id="TOC" role="doc-toc" class="toc-active">
-    <h2 id="toc-title">On this page</h2>
-   
-  <ul>
-  <li><a href="#intro" id="toc-intro" class="nav-link active" data-scroll-target="#intro">Intro</a></li>
-  <li><a href="#stats_can-package" id="toc-stats_can-package" class="nav-link" data-scroll-target="#stats_can-package">stats_can package</a></li>
-  <li><a href="#terra-mystica-faction-selection-model" id="toc-terra-mystica-faction-selection-model" class="nav-link" data-scroll-target="#terra-mystica-faction-selection-model">Terra Mystica faction selection model</a></li>
-  <li><a href="#rent-or-own-model" id="toc-rent-or-own-model" class="nav-link" data-scroll-target="#rent-or-own-model">Rent or Own model</a></li>
-  <li><a href="#data-structures-and-algorithms" id="toc-data-structures-and-algorithms" class="nav-link" data-scroll-target="#data-structures-and-algorithms">Data Structures and Algorithms</a></li>
-  <li><a href="#bigger-posts" id="toc-bigger-posts" class="nav-link" data-scroll-target="#bigger-posts">Bigger posts</a>
-  <ul class="collapse">
-  <li><a href="#homelab-cluster" id="toc-homelab-cluster" class="nav-link" data-scroll-target="#homelab-cluster">Homelab cluster</a></li>
-  <li><a href="#mortgage-modeling" id="toc-mortgage-modeling" class="nav-link" data-scroll-target="#mortgage-modeling">Mortgage modeling</a></li>
-  <li><a href="#where-to-live-app" id="toc-where-to-live-app" class="nav-link" data-scroll-target="#where-to-live-app">Where to live app</a></li>
-  <li><a href="#paper-reproduction---albertas-fiscal-responses-to-fluctuations-in-non-renewable-resource-revenue-in-python" id="toc-paper-reproduction---albertas-fiscal-responses-to-fluctuations-in-non-renewable-resource-revenue-in-python" class="nav-link" data-scroll-target="#paper-reproduction---albertas-fiscal-responses-to-fluctuations-in-non-renewable-resource-revenue-in-python">Paper Reproduction - “Alberta’s Fiscal Responses To Fluctuations In Non-Renewable-Resource Revenue” in python</a></li>
-  <li><a href="#automating-provisioning-arch" id="toc-automating-provisioning-arch" class="nav-link" data-scroll-target="#automating-provisioning-arch">Automating provisioning Arch</a></li>
-  <li><a href="#python-packaging-guide" id="toc-python-packaging-guide" class="nav-link" data-scroll-target="#python-packaging-guide">Python packaging guide</a></li>
-  <li><a href="#setting-up-a-data-science-environment-in-windows" id="toc-setting-up-a-data-science-environment-in-windows" class="nav-link" data-scroll-target="#setting-up-a-data-science-environment-in-windows">Setting up a data science environment in Windows</a></li>
-  </ul></li>
-  </ul>
-</nav>
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar zindex-bottom">
+        
     </div>
 <!-- main -->
 <main class="content quarto-banner-title-block" id="quarto-document-content">
@@ -167,67 +184,40 @@ ul.task-list li input[type="checkbox"] {
 
 
 
-<section id="intro" class="level1">
-<h1>Intro</h1>
-<p>Some of the posts on this blog are pretty big guides or documents that I like to reference and refer others to regularly. In addition, I have a few other projects that I haven’t written about, but would still be nice to share. This post will compile all the bigger posts and projects I’ve worked on as one easy to reference article.</p>
-</section>
-<section id="stats_can-package" class="level1">
-<h1>stats_can package</h1>
-<p>I am the creator and maintainer of an open source package called stats_can. It provides a python interface to data and metadata from <a href="https://www.statcan.gc.ca/eng/start">Statistics Canada</a>. You can read the documentation for it <a href="https://stats-can.readthedocs.io/en/latest/">here</a>, the code is available <a href="https://github.com/ianepreston/stats_can">here</a>. You can also see a talk I gave on what goes into building and maintaining the library <a href="https://www.youtube.com/watch?v=SJzg7HnISxw">here</a>. Unfortunately the first few minutes of the talk were not recorded, but the full slide deck is available <a href="https://docs.google.com/presentation/d/1ijCHBcqwYRbm3ZuHEJajwq5q89HPCu25UzUV2m-dx7Q/edit?usp=drivesdk">here</a>.</p>
-</section>
-<section id="terra-mystica-faction-selection-model" class="level1">
-<h1>Terra Mystica faction selection model</h1>
-<p>This is a project I worked on for a friend that’s really into the board game <a href="https://boardgamegeek.com/boardgame/120677/terra-mystica">Terra Mystica</a>. It scrapes a few hundred thousand games off of an <a href="https://terra.snellman.net/">online Terra Mystica gaming site</a>, ingests and cleans the game data, and then trains a model to help determine which faction you should play, based on the starting layout of the game. Right now the model is a pretty simple linear regression. At some point I’d like to come back to this and try some bayesian methods, both to learn more about them, and to see if I can improve performance. You can see the code for the project <a href="https://github.com/ianepreston/terra-mystica-models">here</a>. The notebooks folder in that repository walks through the development process and was used to provide status updates to the friend I was building the app for. I also built a very rudimentary webapp that will let you plug in the starting conditions for the game, and then return a ranked list of all the factions based on those inputs. It’s hosted on the free tier of Azure, so it’s quite slow, but it’s available <a href="https://tmmodel.azurewebsites.net/">here</a>. You can also pull down and deploy the docker container the webapp and model are stored in <a href="https://hub.docker.com/repository/docker/ianepreston/terra_mystica">here</a>.</p>
-</section>
-<section id="rent-or-own-model" class="level1">
-<h1>Rent or Own model</h1>
-<p>This package is designed to help me understand the financial trade offs between renting or owning a home. Other online calculators exist, but they’re typically designed for the US, and even the Canadian ones I could find were meant for Ontario. Since I live in Alberta, and I like this sort of thing, I thought it would be fun to build my own. You can check out the code <a href="https://github.com/ianepreston/rentorown">here</a>. From the readme on that page, or at <a href="https://mybinder.org/v2/gh/ianepreston/rentorown/HEAD?urlpath=lab/tree/index.ipynb">this link</a> you can open a <a href="https://mybinder.org/">binder</a> container that will let you play around with it in a Jupyter notebook. At some point in the future I might turn it into a full fledged web app, but for now the notebook suits my needs.</p>
-</section>
-<section id="data-structures-and-algorithms" class="level1">
-<h1>Data Structures and Algorithms</h1>
-<p>My job and interests are both more directly related to data science/engineering than classic software engineering. With that said, I do still like to code, and I think having a solid grasps of at least the basics of CS is handy for anyone who spends a lot of time writing code. To that end, in addition to completing a <a href="https://www.athabascau.ca/syllabi/comp/comp272.php">Data Structures and Algorithms course at Athabasca University</a> I like to do the <a href="https://adventofcode.com/">Advent of Code</a> challenges every year:</p>
-<ul>
-<li>Here’s my <a href="https://github.com/ianepreston/scratch/tree/main/advent-of-code">2022 advent</a>. I’ll also use this one for future years. In addition to putting everything in a package as I’d done in previous years, this year was the first one where I set up my development environment in a <a href="https://containers.dev/">dev container</a> and a lot of what I learned went into building my <a href="https://github.com/ianepreston/devcontainers">devcontainers</a> repo. I also built up documentation and a write up of my notes on the puzzle solutions that were published to <a href="https://ians-advent-of-code.readthedocs.io/en/latest/index.html">readthedocs</a>.</li>
-<li>Here’s my <a href="https://github.com/ianepreston/scratch/tree/main/advent_2021">2021 advent</a>. This year I made a little data pipeline with a docker file to scrape and read in the puzzle inputs automatically.</li>
-<li>Here’s my <a href="https://github.com/ianepreston/scratch/tree/main/advent_2020">2020 advent</a>. This year I was also learning package development and type hinting, so the repository and code are really overengineered for what should be a daily coding kata. It was fun to work on though and I learned a lot</li>
-<li>I didn’t fully complete the <a href="https://github.com/ianepreston/scratch/tree/main/advent_2019">2019 advent</a>. That was the year you implemented an assembly language emulator and built on it through the course of the project. Between that (not really my area of interest) and a whole lot of really tedious maze problems near the end (maybe I should come back to those) I didn’t really have the motivation to complete the last few days. That was the first year I coded along live though, so that was a good challenge.</li>
-<li>My <a href="https://github.com/ianepreston/scratch/tree/main/advent_2018">2018 advent</a> is a bit of a weird one. I used the advent challenges as the material for a weekly coding tutorial I ran at work. To facilitate that format some of the code is done in jupyter, and a lot of the solutions are less efficient/elegant than I might have done in another context, but they worked to illustrate whatever concept I was covering at the time.</li>
-</ul>
-</section>
-<section id="bigger-posts" class="level1">
-<h1>Bigger posts</h1>
-<p>This section will include links to the larger and more involved blog posts I’ve made.</p>
-<section id="homelab-cluster" class="level2">
-<h2 class="anchored" data-anchor-id="homelab-cluster">Homelab cluster</h2>
-<p>I’ve been learning about proxmox, virtualization, and kubernetes in my homelab. The first in the series on configuring proxmox is <a href="../posts/2022-11-21-proxmox.html">here</a>. I also took a stab at getting <a href="https://github.com/kelseyhightower/kubernetes-the-hard-way">kubernetes the hard way</a> going on my local setup, and got most of the way through it before realizing there were a lot of differences between my home setup and the cloud and that there was some more fundamental learning I’d have to do before that exercise was super helpful. I did learn a decent amount though, some about kubernetes, more about terraform.</p>
-</section>
-<section id="mortgage-modeling" class="level2">
-<h2 class="anchored" data-anchor-id="mortgage-modeling">Mortgage modeling</h2>
-<p>When I was in the process of planning to buy my house, I wanted to understand whether it made sense to go with a variable or fixed rate mortgage. As part of that analysis I pulled some historical data in and did some analysis of how that decision would have worked out for me over the last few decades. The post is <a href="../posts/2022-03-17-mortgage.html">here</a>.</p>
-</section>
-<section id="where-to-live-app" class="level2">
-<h2 class="anchored" data-anchor-id="where-to-live-app">Where to live app</h2>
-<p>This post documents the process I went through to build a where to live app. It scrapes listings from rental and sales sites daily, and then combines them with other data sets like commute times, grocery store locations, and flood risk to produce personalized lists of candidate listings. The blog describes the implementation in more detail, along with some important lessons I learned and links to the code. The blog post is <a href="../posts/2021-12-30-wheretolive.html">here</a>.</p>
-</section>
-<section id="paper-reproduction---albertas-fiscal-responses-to-fluctuations-in-non-renewable-resource-revenue-in-python" class="level2">
-<h2 class="anchored" data-anchor-id="paper-reproduction---albertas-fiscal-responses-to-fluctuations-in-non-renewable-resource-revenue-in-python">Paper Reproduction - “Alberta’s Fiscal Responses To Fluctuations In Non-Renewable-Resource Revenue” in python</h2>
-<p>This is a paper reproduction I did of a paper that was published by the University of Calgary’s school of public policy. In the course of reproducing the paper I actually found a data error in the original paper. After correcting the error the conclusions of the paper do not appear to be supported. An interesting exercise in coding, and reproducibility in science. The blog post is <a href="../posts/2021-02-26-ferede.html">here</a>.</p>
-</section>
-<section id="automating-provisioning-arch" class="level2">
-<h2 class="anchored" data-anchor-id="automating-provisioning-arch">Automating provisioning Arch</h2>
-<p>I use Arch Linux btw. <a href="../posts/2020-11-26-arch-tldr.html">This post</a> links to a 3 part post series I did about automating the setup of my workstations and servers. It goes from a detailed breakdown of the bash script that’s used to get a bare bones arch install, through to using <a href="https://www.ansible.com/">ansible</a> to do all the system configuration, software install, and server setup (mostly a bunch of docker containers), followed by setting up a user profile using <a href="https://github.com/thoughtbot/rcm">rcm</a>.</p>
-</section>
-<section id="python-packaging-guide" class="level2">
-<h2 class="anchored" data-anchor-id="python-packaging-guide">Python packaging guide</h2>
-<p>There are lots of great guides on how to build a python package. I’m personally a big fan of <a href="https://cjolowicz.github.io/posts/hypermodern-python-01-setup/">hypermodern python</a> and use its accompanying <a href="https://cookiecutter.readthedocs.io/en/1.7.2/">cookiecutter</a> whenever I’m setting up a new project. But there’s not much out there that walks you through all the phases between just having a script that you can run up to building a full blown package. Also, most guides don’t cover conda, and I find the conda docs are really tuned towards people who are bundling C code or something else with their package, not just making a pure python package. To bridge this gap, and to help cement my own understanding of packaging, I wrote <a href="../posts/2020-07-09-pypack.html">this guide</a>.</p>
-</section>
-<section id="setting-up-a-data-science-environment-in-windows" class="level2">
-<h2 class="anchored" data-anchor-id="setting-up-a-data-science-environment-in-windows">Setting up a data science environment in Windows</h2>
-<p><a href="../posts/2020-02-15-windows-ds-software.html">This guide</a> is for everyone out there that only has a locked down Windows machine, but still wants to work with data in python. Almost all the guides I could find online assumed you had a Mac or Linux machine, and even the Windows ones often assumed you had administrative rights. This guide gets you set up with conda, git, and vs code, all without elevated privilege. The only thing I haven’t managed to do in a Windows environment is build a python package. I’m sure it’s doable, but this guide is for those writing scripts/notebooks.</p>
+<p>This is just a quick post because I couldn’t find good documentation for defining tasks in a loop format in databricks.</p>
+<p>Let’s say I have a block in a <a href="https://learn.microsoft.com/en-us/azure/databricks/dev-tools/bundles/">DAB</a> deployment that looks like this:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode yml code-with-copy"><code class="sourceCode yaml"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">tasks</span><span class="kw">:</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">task_key</span><span class="kw">:</span><span class="at"> </span><span class="st">"task_for_table_a"</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">notebook_task</span><span class="kw">:</span></span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">base_parameters</span><span class="kw">:</span></span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="at">                </span><span class="fu">table</span><span class="kw">:</span><span class="at"> </span><span class="st">"table_a"</span></span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">notebook_path</span><span class="kw">:</span><span class="at"> </span><span class="st">"../jobs/table_task.py"</span></span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">task_key</span><span class="kw">:</span><span class="at"> </span><span class="st">"task_for_table_b"</span></span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">notebook_task</span><span class="kw">:</span></span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">base_parameters</span><span class="kw">:</span></span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a><span class="at">                </span><span class="fu">table</span><span class="kw">:</span><span class="at"> </span><span class="st">"table_b"</span></span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">notebook_path</span><span class="kw">:</span><span class="at"> </span><span class="st">"../jobs/table_task.py"</span></span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">task_key</span><span class="kw">:</span><span class="at"> </span><span class="st">"task_for_table_c"</span></span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">notebook_task</span><span class="kw">:</span></span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">base_parameters</span><span class="kw">:</span></span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a><span class="at">                </span><span class="fu">table</span><span class="kw">:</span><span class="at"> </span><span class="st">"table_c"</span></span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">notebook_path</span><span class="kw">:</span><span class="at"> </span><span class="st">"../jobs/table_task.py"</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>And I want to convert it into a <code>for_each_task</code> The <a href="https://docs.databricks.com/api/azure/workspace/jobs/create#tasks-for_each_task">api docs</a> describe a for_each_task as having an <code>inputs</code> field, a <code>concurrency</code> field, and then a <code>task</code> field that defines the task that will be run for each element of the array.</p>
+<p>That’s all good, but they don’t actually show how to structure that <code>inputs</code> field or pass it into the looping task. This snippet below shows how it works.</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode yml code-with-copy"><code class="sourceCode yaml"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">tasks</span><span class="kw">:</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">task_key</span><span class="kw">:</span><span class="at"> </span><span class="st">"task_for_tables"</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">for_each_task</span><span class="kw">:</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">inputs</span><span class="kw">:</span><span class="at"> </span><span class="st">"[</span><span class="sc">\"</span><span class="st">table_a</span><span class="sc">\"</span><span class="st">,</span><span class="sc">\"</span><span class="st">table_b</span><span class="sc">\"</span><span class="st">,</span><span class="sc">\"</span><span class="st">table_c</span><span class="sc">\"</span><span class="st">]"</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">concurrency</span><span class="kw">:</span><span class="at"> </span><span class="dv">1</span><span class="co"> # or whatever</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">task</span><span class="kw">:</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="at">                </span><span class="fu">task_key</span><span class="kw">:</span><span class="at"> </span><span class="st">"task_for_tables_loop"</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a><span class="at">                </span><span class="fu">notebook_task</span><span class="kw">:</span></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a><span class="at">                    </span><span class="fu">base_parameters</span><span class="kw">:</span></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a><span class="at">                        </span><span class="fu">table</span><span class="kw">:</span><span class="at"> </span><span class="st">"{{input}}"</span></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a><span class="at">                    </span><span class="fu">notebook_path</span><span class="kw">:</span><span class="at"> </span><span class="st">"../jobs/table_task.py"</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Note the weird formatting for inputs and the need to define an inner and outer task key. I think the string can be any json style string, so if you wanted more complex inputs you could create a list of maps instead of the list of strings in this example. I think you can pass stuff in from another task to define inputs, but I didn’t have a requirement for that so I haven’t tested it.</p>
 
 
-</section>
-</section>
 
 </main> <!-- /main -->
 <script id="quarto-html-after-body" type="application/javascript">
