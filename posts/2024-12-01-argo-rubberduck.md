@@ -1,7 +1,7 @@
 ---
 title: "Rubber ducking my Argo CD app of apps issue"
 date: "2024-12-01"
-description: "Hopefully typing it out will help me solve it."
+description: "Update: I fixed it"
 layout: "post"
 toc: true
 categories: [argocd, kubernetes]
@@ -153,6 +153,52 @@ to override the branch and env settings:
 ```yaml
 targetBranch: dev
 targetEnv: dev
+```
+
+### Applied app of apps
+
+Running `helm template app-of-apps . --values values.yaml --values-dev.yaml` I can see the app rendering
+what I think is correctly:
+
+```yaml
+---
+# Source: app-of-apps/templates/apps.yaml
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: metallb
+  namespace: argocd
+  finalizers:
+  - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/ianepreston/homelab.git
+    targetRevision: dev
+    path: k8s/services/metallb
+  # Should let apps change sync policy without app of apps resetting it
+  syncPolicy:
+    syncOptions:
+      - RespectIgnoreDifferences=true
+  ignoreDifferences:
+    - group: "*"
+      kind: "Application"
+      namespace: "*"
+      jsonPointers:
+        - /spec/syncPolicy/automated
+        - /metadata/annotations/argocd.argoproj.io~1refresh
+        - /operation
+  helm:
+    valueFiles:
+      - values.yaml
+      - values-dev.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: metallb-system
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
 ```
 
 ## Metallb
@@ -316,3 +362,67 @@ and dump it on some forums and see if anyone can help me.
 If they do or I figure it out on my own I'll update this
 with the solution.
 
+# Update with a fix
+
+The next thing I tried was deleting my app of apps, templating it out,
+and applying it with `kubectl`:
+
+```bash
+❯ helm template app-of-apps . --debug --values values.yaml --values values-dev.yaml
+install.go:222: [debug] Original chart version: ""
+install.go:239: [debug] CHART PATH: /home/ipreston/homelab/k8s/argo/app-of-apps
+
+---
+# Source: app-of-apps/templates/apps.yaml
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: metallb
+  namespace: argocd
+  finalizers:
+  - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/ianepreston/homelab.git
+    targetRevision: dev
+    path: k8s/services/metallb
+  # Should let apps change sync policy without app of apps resetting it
+  syncPolicy:
+    syncOptions:
+      - RespectIgnoreDifferences=true
+  ignoreDifferences:
+    - group: "*"
+      kind: "Application"
+      namespace: "*"
+      jsonPointers:
+        - /spec/syncPolicy/automated
+        - /metadata/annotations/argocd.argoproj.io~1refresh
+        - /operation
+  helm:
+    valueFiles:
+      - values.yaml
+      - values-dev.yaml
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: metallb-system
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+```
+
+Applying this led to this error:
+
+```bash
+❯ kubectl apply -f metallbtest.yaml
+Error from server (BadRequest): error when creating "metallbtest.yaml": Application in version "v1alpha1" cannot be handled as a Application: strict decoding error: unknown field "spec.helm"
+```
+
+Which led me to realize that `helm` is supposed to be under `spec.source`, not just `spec`. So it was an indentation error.
+
+I'm sure that error was somewhere in the error log for my app of apps
+deploy but I sure didn't see it.
+
+This was super annoying but I learned some valuable lessons
+about helm, troubleshooting, and argo, so overall I guess it's a win.
