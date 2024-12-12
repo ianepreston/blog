@@ -2,6 +2,7 @@
   {
     "listing": "/index.html",
     "items": [
+      "/posts/2024-12-12-azdo-terraform.html",
       "/posts/2024-12-01-argo-rubberduck.html",
       "/posts/2024-08-21-for-each-jobs.html",
       "/posts/2024-07-12-xsd-databricks.html",
