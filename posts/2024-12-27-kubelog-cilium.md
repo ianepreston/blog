@@ -19,6 +19,14 @@ go back and figure out what I did.
 In this inaugural post I'm going to talk about setting up [cilium](https://cilium.io/)
 as my [CNI](https://kubernetes.io/docs/concepts/extend-kubernetes/compute-storage-net/network-plugins/).
 
+## Update
+
+I went back and set this up so that [argocd](https://argo-cd.readthedocs.io/en/stable/)
+can take over managing cilium once it's loaded up. The main components
+are the same but the structure of some files is slightly different.
+
+This post has been updated to reflect that.
+
 # Background on my setup
 
 For this project I started with a Talos Linux cluster of 3 nodes running
@@ -144,25 +152,73 @@ talosctl bootstrap -n 192.168.40.11
 Where `cilium.sh` is:
 
 ```bash
-helm repo add cilium https://helm.cilium.io/
-helm repo update
-helm install \
-    cilium \
+#!/bin/env bash
+echo "Installing cilium"
+CILIUM_CHART=$(cat ../../k8s/dev/services/cilium/chart/Chart.yaml)
+CILIUM_REPO=$(echo "$CILIUM_CHART" | yq eval '.dependencies[0].repository' -)
+CILIUM_VERSION=$(echo "$CILIUM_CHART" | yq eval '.dependencies[0].version')
+echo "cilium repo: $CILIUM_REPO"
+echo "cilium version: $CILIUM_VERSION"
+helm repo add cilium $CILIUM_REPO
+cat ../../k8s/dev/services/cilium/chart/values.yaml | yq '.["cilium"]' |\
+  helm install cilium \
     cilium/cilium \
-    --version 1.16.5 \
+    --version $CILIUM_VERSION \
     --namespace kube-system \
-    --set ipam.mode=kubernetes \
-    --set kubeProxyReplacement=true \
-    --set securityContext.capabilities.ciliumAgent="{CHOWN,KILL,NET_ADMIN,NET_RAW,IPC_LOCK,SYS_ADMIN,SYS_RESOURCE,DAC_OVERRIDE,FOWNER,SETGID,SETUID}" \
-    --set securityContext.capabilities.cleanCiliumState="{NET_ADMIN,SYS_ADMIN,SYS_RESOURCE}" \
-    --set cgroup.autoMount.enabled=false \
-    --set cgroup.hostRoot=/sys/fs/cgroup \
-    --set k8sServiceHost=localhost \
-    --set k8sServicePort=7445
+    --values -
 ```
 
 Why that version of it allows me to set the capabilities and the job approach
 didn't is beyond me at this point.
+
+The actual specification of the version of cilium to install and
+the extra parameters to pass to the helm install
+are in a separate folder where they can be managed by argo once
+the cluster is started. The chart part looks like this:
+
+```yaml
+dependencies:
+  - name: cilium
+    version: "1.16.5"
+    repository: https://helm.cilium.io/
+```
+
+And the values file looks like this:
+
+```yaml
+cilium:
+  ipam:
+    mode: kubernetes
+  kubeProxyReplacement: true
+  securityContext:
+    capabilities:
+      ciliumAgent:
+        - "CHOWN"
+        - "KILL"
+        - "NET_ADMIN"
+        - "NET_RAW"
+        - "IPC_LOCK"
+        - "SYS_ADMIN"
+        - "SYS_RESOURCE"
+        - "DAC_OVERRIDE"
+        - "FOWNER"
+        - "SETGID"
+        - "SETUID"
+      cleanCiliumState:
+        - "NET_ADMIN"
+        - "SYS_ADMIN"
+        - "SYS_RESOURCE"
+  cgroup:
+    autoMount:
+      enabled: false
+    hostRoot: "/sys/fs/cgroup/"
+  k8sServiceHost: localhost
+  k8sServicePort: 7445
+```
+
+Same content, but now if I need to do patches or update other
+configuration in the future it will be handled by argo, and if I
+bootstrap a fresh cluster it will also pick up the latest versions.
 
 # Conclusion
 
@@ -178,4 +234,11 @@ script parse out what version of cilium I'm managing in argo
 so I don't bootstrap clusters with an old version or have to manage
 patching versions in two places. That's a bit overengineered for how
 often I think I'm going to bootstrap clusters though so maybe I won't
+
+*Edit* I did it anyway, it follows the same pattern as the other
+stuff I bootstrap in my cluster so it wasn't a big deal. Besides
+some dumb issues like figuring out how to correctly format the
+yaml for values and accidentally installing it into the `argocd`
+rather than `kube-system` namespace (oops) there were no problems
+getting this going in argo.
 
