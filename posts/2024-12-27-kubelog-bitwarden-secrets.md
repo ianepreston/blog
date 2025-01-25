@@ -19,6 +19,15 @@ go back and figure out what I did.
 In this post I'm going to talk about setting up [external secrets](https://external-secrets.io/latest/)
 with the [bitwarden secrets manager](https://bitwarden.com/products/secrets-manager/) backend.
 
+## Addendum
+
+I ran into issues with certificate renewals not being picked up
+by my bitwarden sdk deployment and causing errors in syncing secrets.
+I have a possible fix applied that I'll describe in the relevant
+sections in this update to the post, but I can't be totally sure it's
+worked until I've been running it a while longer. I wanted to get my
+current attempt documented while it was fresh in my mind though.
+
 # Background on my setup
 
 For this project I started with a Talos Linux cluster of 3 nodes.
@@ -384,6 +393,44 @@ into the particulars of why they're set the way they are.
 Now that I've created the spec I need to apply it in my bootstrap script,
 which is simply done by adding `kubectl apply -f ../services/externalsecrets/chart/templates/bitwarden-self-signed-cert.yaml`
 to it.
+
+### Handling certificate rotation
+
+Note that in my config above my certificates will expire after a
+period of time and auto renew. After deploying and leaving it alone
+for a while I came back to find my apps in a degraded state with
+all my external secrets showing a `SecretSyncError`. When I run a describe
+on one of the secrets I see TLS errors with the bitwarden sdk container
+suggesting my certificates have expired. Checking the certificates themselves
+I can see that they're valid, so it seems likely the deployment that's attaching
+them as secrets isn't picking up the change. Restarting my bitwarden sdk
+deployment seems to fix the issue but isn't exactly sustainable.
+
+My current approach is to add [reloader](https://github.com/stakater/Reloader)
+to my stack and update my external secrets install to add some annotations to the
+sdk server so it will restart if those secrets are restarted like so:
+
+```yaml
+external-secrets:
+  installCRDs: true
+  bitwarden-sdk-server:
+    enabled: true
+    podAnnotations:
+        secret.reloader.stakater.com/reload: "bitwarden-css-certs,bitwarden-secrets-manager,bitwarden-secrets-manager-secrets,bitwarden-tls-certs,bitwarden-access-token"
+```
+
+I don't know if this will work for sure yet, I'm waiting for my certificates to
+renew again to find out. I don't think I need to add reloader to my bootstrap
+scripts, as the certificates will be valid for a little while when I start up
+a cluster and not long after that argo should handle installing it naturally.
+
+One other odd thing was my external secrets didn't seem to recover from the TLS
+error on their own once the deployment was restarted. I had to manually refresh
+them following [this FAQ section](https://external-secrets.io/latest/introduction/faq/#can-i-manually-trigger-a-secret-refresh)
+I'm hoping that was either just me being impatient or that triggering
+the reload of the deployment so I don't get stuck with that issue
+will resolve that problem but I'll have to wait and see. If it happens
+again I'll have to come up with a more durable solution.
 
 ## Configure the secret store
 
