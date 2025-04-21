@@ -6,10 +6,10 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
-<meta name="dcterms.date" content="2023-12-26">
-<meta name="description" content="Tiny little quality of life hack">
+<meta name="dcterms.date" content="2025-04-20">
+<meta name="description" content="Stuff I learned that doesn’t fit elsewhere">
 
-<title>Setting up internal name resolution in Windows and WSL (probably Linux too) – Ian’s blog</title>
+<title>My first k8s build log - couple random config things – Ian’s blog</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -144,16 +144,15 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <header id="title-block-header" class="quarto-title-block default page-columns page-full">
   <div class="quarto-title-banner page-columns page-full">
     <div class="quarto-title column-body">
-      <h1 class="title">Setting up internal name resolution in Windows and WSL (probably Linux too)</h1>
+      <h1 class="title">My first k8s build log - couple random config things</h1>
                   <div>
         <div class="description">
-          Tiny little quality of life hack
+          Stuff I learned that doesn’t fit elsewhere
         </div>
       </div>
                           <div class="quarto-categories">
-                <div class="quarto-category">linux</div>
-                <div class="quarto-category">WSL</div>
-                <div class="quarto-category">DNS</div>
+                <div class="quarto-category">kubernetes</div>
+                <div class="quarto-category">talos</div>
               </div>
                   </div>
   </div>
@@ -165,7 +164,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
       <div>
       <div class="quarto-title-meta-heading">Published</div>
       <div class="quarto-title-meta-contents">
-        <p class="date">December 26, 2023</p>
+        <p class="date">April 20, 2025</p>
       </div>
     </div>
     
@@ -182,9 +181,8 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
    
   <ul>
   <li><a href="#introduction" id="toc-introduction" class="nav-link active" data-scroll-target="#introduction">Introduction</a></li>
-  <li><a href="#on-windows" id="toc-on-windows" class="nav-link" data-scroll-target="#on-windows">On Windows</a></li>
-  <li><a href="#wsl" id="toc-wsl" class="nav-link" data-scroll-target="#wsl">WSL</a></li>
-  <li><a href="#conclusion" id="toc-conclusion" class="nav-link" data-scroll-target="#conclusion">Conclusion</a></li>
+  <li><a href="#patches-for-talconfig" id="toc-patches-for-talconfig" class="nav-link" data-scroll-target="#patches-for-talconfig">Patches for talconfig</a></li>
+  <li><a href="#combining-helm-apps-with-custom-resources" id="toc-combining-helm-apps-with-custom-resources" class="nav-link" data-scroll-target="#combining-helm-apps-with-custom-resources">Combining helm apps with custom resources</a></li>
   </ul>
 </nav>
     </div>
@@ -197,81 +195,123 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 <section id="introduction" class="level1">
 <h1>Introduction</h1>
-<p>Previously whenever I wanted to connect to a machine on my network I would create an entry in <code>~/.ssh/config</code> that looked something like this</p>
-<div class="sourceCode" id="cb1"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">Host</span> <span class="op">&lt;</span>host<span class="op">&gt;</span></span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>  <span class="ex">HostName</span> <span class="op">&lt;</span>host<span class="op">&gt;</span>.mydomain.ca</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<p>I might include key or default user information as well, but a lot of the time all I really needed was that. There were two reasons for doing that:</p>
-<ul>
-<li>VS code looks in that file for remote development environments</li>
-<li>It saves me typing <code>ssh &lt;host&gt;.mydomain.ca</code> and lets me just type <code>ssh &lt;host&gt;</code></li>
-</ul>
-<p>The first one this post doesn’t do anything about, but there’s a limited number of machines I need that for. The second doesn’t really seem like a big deal, but I’m lazy. In fact, I’m so lazy that I got annoyed with having to add a record in that file for every host I wanted to connect to, so I looked up how to configure DNS on my workstation to default to my domain if I didn’t put in a FQDN. That’s what this post is about. Read on to find out how.</p>
+<p>While messing around with setting up storage I learned a couple other neat things about setting up my cluster that don’t really fit elsewhere, but I don’t want to lose them.</p>
+<p>Both of these tips come from checking out <a href="https://github.com/kevindurb/k8s">kevindurb’s repo</a> so big shoutout to him.</p>
 </section>
-<section id="on-windows" class="level1">
-<h1>On Windows</h1>
-<p>This is basically cribbed straight from chatGPT:</p>
-<p>To configure your Windows machine so that it can automatically resolve hostnames with a specific domain (like appending <code>mydomain.com</code> to <code>machine1</code> to form <code>machine1.mydomain.com</code>), you need to set up DNS suffix appending. Here’s how to do it:</p>
-<ul>
-<li>Open Network Connections Settings:
-<ul>
-<li>Right-click the network icon in the system tray and select “Open Network &amp; Internet settings”.</li>
-<li>In the settings window, click on “Change adapter options”.</li>
-</ul></li>
-<li>Modify Properties of Your Network Adapter:
-<ul>
-<li>Right-click on the network adapter you are using (it could be Ethernet or Wi-Fi) and select “Properties”. If prompted, provide administrator credentials or confirmation.</li>
-</ul></li>
-<li>Edit TCP/IP Settings:
-<ul>
-<li>In the list of items used by the connection, select “Internet Protocol Version 4 (TCP/IPv4)” or “Internet Protocol Version 6 (TCP/IPv6)” depending on your network configuration.</li>
-<li>Then click “Properties”.</li>
-<li>In the next window, click on the “Advanced” button.</li>
-</ul></li>
-<li>Set the DNS Suffix:
-<ul>
-<li>In the Advanced TCP/IP settings window, go to the “DNS” tab.</li>
-<li>Check the option “Append these DNS suffixes (in order):”.</li>
-<li>Click “Add” and enter your domain name (e.g., mydomain.com).</li>
-<li>Click “Add” after typing each domain. You can add multiple domains if necessary.</li>
-</ul></li>
-<li>Save Your Changes:
-<ul>
-<li>Click “OK” on all open windows to save your changes.</li>
-</ul></li>
-<li>Test the Configuration:
-<ul>
-<li>Open Command Prompt or PowerShell.</li>
-<li>Try to ping or connect to a device using only its hostname (e.g., ping machine1).</li>
-<li>If everything is configured correctly, Windows will automatically append the DNS suffix and resolve <code>machine1</code> to <code>machine1.mydomain.com</code>.</li>
-</ul></li>
-<li>Note for Dynamic DNS Environments:
-<ul>
-<li>If you’re in a dynamic DNS environment, like a corporate network using Active Directory, these settings might be managed by your network administrator via DHCP or Group Policy.</li>
-</ul></li>
-</ul>
-<p>Remember, these settings apply to the network adapter you configure. If you switch between different networks (e.g., from Wi-Fi to Ethernet), you may need to configure each adapter separately.</p>
+<section id="patches-for-talconfig" class="level1">
+<h1>Patches for talconfig</h1>
+<p>In all the docs and other repos I’d seen before this point patches were added as strings inside the talhelper config. So I had sections looking like this:</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode yaml code-with-copy"><code class="sourceCode yaml"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">patches</span><span class="kw">:</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="kw">  - </span><span class="ch">|-</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>    cluster:</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>      apiServer:</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>        admissionControl:</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>          - name: PodSecurity</span>
+<span id="cb1-7"><a href="#cb1-7" aria-hidden="true" tabindex="-1"></a>            configuration:</span>
+<span id="cb1-8"><a href="#cb1-8" aria-hidden="true" tabindex="-1"></a>              apiVersion: pod-security.admission.config.k8s.io/v1beta1</span>
+<span id="cb1-9"><a href="#cb1-9" aria-hidden="true" tabindex="-1"></a>              kind: PodSecurityConfiguration</span>
+<span id="cb1-10"><a href="#cb1-10" aria-hidden="true" tabindex="-1"></a>              exemptions:</span>
+<span id="cb1-11"><a href="#cb1-11" aria-hidden="true" tabindex="-1"></a>                namespaces:</span>
+<span id="cb1-12"><a href="#cb1-12" aria-hidden="true" tabindex="-1"></a>                  - openebs</span>
+<span id="cb1-13"><a href="#cb1-13" aria-hidden="true" tabindex="-1"></a>      proxy:</span>
+<span id="cb1-14"><a href="#cb1-14" aria-hidden="true" tabindex="-1"></a>        disabled: true</span>
+<span id="cb1-15"><a href="#cb1-15" aria-hidden="true" tabindex="-1"></a><span class="fu">controlPlane</span><span class="kw">:</span></span>
+<span id="cb1-16"><a href="#cb1-16" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">nodeLabels</span><span class="kw">:</span></span>
+<span id="cb1-17"><a href="#cb1-17" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">openebs.io/engine</span><span class="kw">:</span><span class="at"> </span><span class="st">"mayastor"</span></span>
+<span id="cb1-18"><a href="#cb1-18" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">patches</span><span class="kw">:</span></span>
+<span id="cb1-19"><a href="#cb1-19" aria-hidden="true" tabindex="-1"></a><span class="kw">    - </span><span class="ch">|-</span></span>
+<span id="cb1-20"><a href="#cb1-20" aria-hidden="true" tabindex="-1"></a>      machine:</span>
+<span id="cb1-21"><a href="#cb1-21" aria-hidden="true" tabindex="-1"></a>        sysctls:</span>
+<span id="cb1-22"><a href="#cb1-22" aria-hidden="true" tabindex="-1"></a>          vm.nr_hugepages: "1024"</span>
+<span id="cb1-23"><a href="#cb1-23" aria-hidden="true" tabindex="-1"></a><span class="kw">    - </span><span class="ch">|-</span></span>
+<span id="cb1-24"><a href="#cb1-24" aria-hidden="true" tabindex="-1"></a>      - op: add</span>
+<span id="cb1-25"><a href="#cb1-25" aria-hidden="true" tabindex="-1"></a>        path: /machine/kubelet/extraMounts</span>
+<span id="cb1-26"><a href="#cb1-26" aria-hidden="true" tabindex="-1"></a>        value:</span>
+<span id="cb1-27"><a href="#cb1-27" aria-hidden="true" tabindex="-1"></a>          - destination: /var/openebs/local</span>
+<span id="cb1-28"><a href="#cb1-28" aria-hidden="true" tabindex="-1"></a>            type: bind</span>
+<span id="cb1-29"><a href="#cb1-29" aria-hidden="true" tabindex="-1"></a>            source: /var/openebs/local</span>
+<span id="cb1-30"><a href="#cb1-30" aria-hidden="true" tabindex="-1"></a>            options:</span>
+<span id="cb1-31"><a href="#cb1-31" aria-hidden="true" tabindex="-1"></a>              - bind</span>
+<span id="cb1-32"><a href="#cb1-32" aria-hidden="true" tabindex="-1"></a>              - rshared</span>
+<span id="cb1-33"><a href="#cb1-33" aria-hidden="true" tabindex="-1"></a>              - rw</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>It works, but it looks gross and you don’t get any nice yaml syntax highlighting in your editor.</p>
+<p>What I learned you can do instead is make individual patch yaml files (similar to what I was doing before switching to talhelper) and then point to them. So instead of the above I had patch files like</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode yaml code-with-copy"><code class="sourceCode yaml"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">cluster</span><span class="kw">:</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">apiServer</span><span class="kw">:</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">admissionControl</span><span class="kw">:</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">name</span><span class="kw">:</span><span class="at"> PodSecurity</span></span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">configuration</span><span class="kw">:</span></span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">apiVersion</span><span class="kw">:</span><span class="at"> pod-security.admission.config.k8s.io/v1beta1</span></span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">kind</span><span class="kw">:</span><span class="at"> PodSecurityConfiguration</span></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">exemptions</span><span class="kw">:</span></span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">namespaces</span><span class="kw">:</span></span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="kw">-</span><span class="at"> openebs</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>and</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode yaml code-with-copy"><code class="sourceCode yaml"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="fu">machine</span><span class="kw">:</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">sysctls</span><span class="kw">:</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">vm.nr_hugepages</span><span class="kw">:</span><span class="at"> </span><span class="st">"1024"</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">nodeLabels</span><span class="kw">:</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">openebs.io/engine</span><span class="kw">:</span><span class="at"> </span><span class="st">"mayastor"</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>and</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode yaml code-with-copy"><code class="sourceCode yaml"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="fu">machine</span><span class="kw">:</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">kubelet</span><span class="kw">:</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="fu">extraMounts</span><span class="kw">:</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="kw">-</span><span class="at"> </span><span class="fu">destination</span><span class="kw">:</span><span class="at"> /var/local</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">type</span><span class="kw">:</span><span class="at"> bind</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">source</span><span class="kw">:</span><span class="at"> /var/local</span></span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">options</span><span class="kw">:</span></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> bind</span></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> rshared</span></span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="kw">-</span><span class="at"> rw</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>That I could then reference in <code>talconfig.yaml</code>:</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode yaml code-with-copy"><code class="sourceCode yaml"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="fu">controlPlane</span><span class="kw">:</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">patches</span><span class="kw">:</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="st">"@./patches/mayastor-cp.yaml"</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="st">"@./patches/mayastor.yaml"</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="st">"@./patches/var-local.yaml"</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>This cleans things up considerably, and also makes it easier to keep track of what things are doing what. For instance I can combine the hugepages config and nodelabel configs into a mayastor patch that I know to apply on any node that will be running a mayastor disk pool. I didn’t end up going with mayastor for storage but this idea will carry over.</p>
 </section>
-<section id="wsl" class="level1">
-<h1>WSL</h1>
-<p>In theory this part should just work if Windows is configured correctly, but after some reboots and fiddling I couldn’t get it to go. So I did a manual override. There’s two parts to this</p>
-<ul>
-<li><p>Set <code>/etc/wsl.conf</code> to not auto-generate <code>/etc/resolv.conf</code></p>
-<ul>
-<li>Put an entry in your <code>/etc/wsl.conf</code> that looks like the following:</li>
-</ul>
-<div class="sourceCode" id="cb2"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ex">[network]</span></span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="va">generateResolvConf</span><span class="op">=</span>false</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<ul>
-<li>Restart wsl (or just your whole computer) with <code>wsl --restart</code> from powershell</li>
-</ul></li>
-<li><p>Update <code>/etc/resolv.conf</code> to look something like this:</p>
-<div class="sourceCode" id="cb3"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="ex">nameserver</span> <span class="op">&lt;</span>your DNS IP<span class="op">&gt;</span></span>
-<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="ex">search</span> <span class="op">&lt;</span>your.domain<span class="op">&gt;</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div></li>
-</ul>
-</section>
-<section id="conclusion" class="level1">
-<h1>Conclusion</h1>
-<p>This is a small little quality of life hack. It doesn’t save a ton of time, but it also doesn’t take a ton of time to do, and at least for me while I’ve been experimenting with spinning up and tearing down a bunch of VMs it’s been worth the few minutes it took to figure out and set up.</p>
+<section id="combining-helm-apps-with-custom-resources" class="level1">
+<h1>Combining helm apps with custom resources</h1>
+<p>For several of my apps I’ve wanted to install the base app with helm, but then have also had to install custom resources to go with them. Things like a <code>ClusterSecretStore</code> to go along with external secrets.</p>
+<p>The way I’ve done this to date is to make a custom helm chart and list the parent app as a dependency. This works, but it feels a bit heavy for specifying a chart and then a couple extra resources. Instead I learned that I can just give my argo app multiple <code>sources</code> and specify my repo pointing to a resources folder as well as a helm source along with the custom values for that chart. Again using openebs as an example, it looks something like this:</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode yaml code-with-copy"><code class="sourceCode yaml"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="at">  </span><span class="fu">sources</span><span class="kw">:</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">repoURL</span><span class="kw">:</span><span class="at"> https://openebs.github.io/openebs</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">targetRevision</span><span class="kw">:</span><span class="at"> </span><span class="fl">4.2.0</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">chart</span><span class="kw">:</span><span class="at"> openebs</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">helm</span><span class="kw">:</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a><span class="at">        </span><span class="fu">valuesObject</span><span class="kw">:</span></span>
+<span id="cb6-7"><a href="#cb6-7" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">localpv-provisioner</span><span class="kw">:</span></span>
+<span id="cb6-8"><a href="#cb6-8" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">localpv</span><span class="kw">:</span></span>
+<span id="cb6-9"><a href="#cb6-9" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="fu">basePath</span><span class="kw">:</span><span class="at"> </span><span class="st">"/var/local/openebs"</span></span>
+<span id="cb6-10"><a href="#cb6-10" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">hostpathClass</span><span class="kw">:</span></span>
+<span id="cb6-11"><a href="#cb6-11" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="fu">enabled</span><span class="kw">:</span><span class="at"> </span><span class="ch">true</span></span>
+<span id="cb6-12"><a href="#cb6-12" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="fu">name</span><span class="kw">:</span><span class="at"> openebs-hostpath</span></span>
+<span id="cb6-13"><a href="#cb6-13" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="fu">isDefaultClass</span><span class="kw">:</span><span class="at"> </span><span class="ch">false</span></span>
+<span id="cb6-14"><a href="#cb6-14" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="fu">basePath</span><span class="kw">:</span><span class="at"> </span><span class="st">"/var/local/openebs"</span></span>
+<span id="cb6-15"><a href="#cb6-15" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">mayastor</span><span class="kw">:</span></span>
+<span id="cb6-16"><a href="#cb6-16" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">etcd</span><span class="kw">:</span></span>
+<span id="cb6-17"><a href="#cb6-17" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="fu">localpvScConfig</span><span class="kw">:</span></span>
+<span id="cb6-18"><a href="#cb6-18" aria-hidden="true" tabindex="-1"></a><span class="at">                </span><span class="fu">basePath</span><span class="kw">:</span><span class="at"> </span><span class="st">"/var/local/openebs"</span></span>
+<span id="cb6-19"><a href="#cb6-19" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">loki-stack</span><span class="kw">:</span></span>
+<span id="cb6-20"><a href="#cb6-20" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="fu">localpvScConfig</span><span class="kw">:</span></span>
+<span id="cb6-21"><a href="#cb6-21" aria-hidden="true" tabindex="-1"></a><span class="at">                </span><span class="fu">basePath</span><span class="kw">:</span><span class="at"> </span><span class="st">"/var/local/openebs"</span></span>
+<span id="cb6-22"><a href="#cb6-22" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">io_engine</span><span class="kw">:</span></span>
+<span id="cb6-23"><a href="#cb6-23" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="fu">envcontext</span><span class="kw">:</span><span class="at"> </span><span class="st">"iova-mode=pa"</span></span>
+<span id="cb6-24"><a href="#cb6-24" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">csi</span><span class="kw">:</span></span>
+<span id="cb6-25"><a href="#cb6-25" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="fu">node</span><span class="kw">:</span></span>
+<span id="cb6-26"><a href="#cb6-26" aria-hidden="true" tabindex="-1"></a><span class="at">                </span><span class="fu">initContainers</span><span class="kw">:</span></span>
+<span id="cb6-27"><a href="#cb6-27" aria-hidden="true" tabindex="-1"></a><span class="at">                  </span><span class="fu">enabled</span><span class="kw">:</span><span class="at"> </span><span class="ch">false</span></span>
+<span id="cb6-28"><a href="#cb6-28" aria-hidden="true" tabindex="-1"></a><span class="at">          </span><span class="fu">engines</span><span class="kw">:</span></span>
+<span id="cb6-29"><a href="#cb6-29" aria-hidden="true" tabindex="-1"></a><span class="at">            </span><span class="fu">local</span><span class="kw">:</span></span>
+<span id="cb6-30"><a href="#cb6-30" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="fu">lvm</span><span class="kw">:</span></span>
+<span id="cb6-31"><a href="#cb6-31" aria-hidden="true" tabindex="-1"></a><span class="at">                </span><span class="fu">enabled</span><span class="kw">:</span><span class="at"> </span><span class="ch">false</span></span>
+<span id="cb6-32"><a href="#cb6-32" aria-hidden="true" tabindex="-1"></a><span class="at">              </span><span class="fu">zfs</span><span class="kw">:</span></span>
+<span id="cb6-33"><a href="#cb6-33" aria-hidden="true" tabindex="-1"></a><span class="at">                </span><span class="fu">enabled</span><span class="kw">:</span><span class="at"> </span><span class="ch">false</span></span>
+<span id="cb6-34"><a href="#cb6-34" aria-hidden="true" tabindex="-1"></a><span class="at">    </span><span class="kw">-</span><span class="at"> </span><span class="fu">repoURL</span><span class="kw">:</span><span class="at"> https://github.com/ianepreston/homelab.git</span></span>
+<span id="cb6-35"><a href="#cb6-35" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">path</span><span class="kw">:</span><span class="at"> k8s/dev/storage/openebs/resources</span></span>
+<span id="cb6-36"><a href="#cb6-36" aria-hidden="true" tabindex="-1"></a><span class="at">      </span><span class="fu">targetRevision</span><span class="kw">:</span><span class="at"> HEAD</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Not too shabby. I’m not going to bother converting my existing apps to this pattern, but I’ll keep it in mind for future ones for sure.</p>
 
 
 </section>

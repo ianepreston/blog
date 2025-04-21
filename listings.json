@@ -2,6 +2,9 @@
   {
     "listing": "/index.html",
     "items": [
+      "/posts/2025-04-20-k8s-storage.html",
+      "/posts/2025-04-20-k8s-configs.html",
+      "/posts/2025-04-20-reset-talos.html",
       "/posts/2025-03-23-talhelper.html",
       "/posts/2025-01-04-kubelog-argo.html",
       "/posts/2024-12-27-kubelog-bitwarden-secrets.html",

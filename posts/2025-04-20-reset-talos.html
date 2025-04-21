@@ -6,10 +6,10 @@
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
-<meta name="dcterms.date" content="2024-07-01">
-<meta name="description" content="Quick tip">
+<meta name="dcterms.date" content="2025-04-20">
+<meta name="description" content="GitOps is starting to pay for itself">
 
-<title>Handling merge conflicts on PRs the nice way – Ian’s blog</title>
+<title>My first k8s build log - resetting – Ian’s blog</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -21,6 +21,40 @@ ul.task-list li input[type="checkbox"] {
   width: 0.8em;
   margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
   vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { display: inline-block; text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
 }
 </style>
 
@@ -68,9 +102,6 @@ ul.task-list li input[type="checkbox"] {
     "search-label": "Search"
   }
 }</script>
-<script src="../site_libs/quarto-diagram/mermaid.min.js"></script>
-<script src="../site_libs/quarto-diagram/mermaid-init.js"></script>
-<link href="../site_libs/quarto-diagram/mermaid.css" rel="stylesheet">
 
 
 <link rel="stylesheet" href="../styles.css">
@@ -113,14 +144,15 @@ ul.task-list li input[type="checkbox"] {
 <header id="title-block-header" class="quarto-title-block default page-columns page-full">
   <div class="quarto-title-banner page-columns page-full">
     <div class="quarto-title column-body">
-      <h1 class="title">Handling merge conflicts on PRs the nice way</h1>
+      <h1 class="title">My first k8s build log - resetting</h1>
                   <div>
         <div class="description">
-          Quick tip
+          GitOps is starting to pay for itself
         </div>
       </div>
                           <div class="quarto-categories">
-                <div class="quarto-category">git</div>
+                <div class="quarto-category">kubernetes</div>
+                <div class="quarto-category">talos</div>
               </div>
                   </div>
   </div>
@@ -132,7 +164,7 @@ ul.task-list li input[type="checkbox"] {
       <div>
       <div class="quarto-title-meta-heading">Published</div>
       <div class="quarto-title-meta-contents">
-        <p class="date">July 1, 2024</p>
+        <p class="date">April 20, 2025</p>
       </div>
     </div>
     
@@ -149,13 +181,9 @@ ul.task-list li input[type="checkbox"] {
    
   <ul>
   <li><a href="#introduction" id="toc-introduction" class="nav-link active" data-scroll-target="#introduction">Introduction</a></li>
-  <li><a href="#setup" id="toc-setup" class="nav-link" data-scroll-target="#setup">Setup</a></li>
-  <li><a href="#dont-merge-main-in" id="toc-dont-merge-main-in" class="nav-link" data-scroll-target="#dont-merge-main-in">Don’t merge main in</a></li>
-  <li><a href="#rebase-instead" id="toc-rebase-instead" class="nav-link" data-scroll-target="#rebase-instead">Rebase instead</a>
-  <ul class="collapse">
-  <li><a href="#note" id="toc-note" class="nav-link" data-scroll-target="#note">Note</a></li>
-  </ul></li>
-  <li><a href="#conclusion" id="toc-conclusion" class="nav-link" data-scroll-target="#conclusion">Conclusion</a></li>
+  <li><a href="#wipe-the-nodes" id="toc-wipe-the-nodes" class="nav-link" data-scroll-target="#wipe-the-nodes">Wipe the nodes</a></li>
+  <li><a href="#reinstall-talos" id="toc-reinstall-talos" class="nav-link" data-scroll-target="#reinstall-talos">Reinstall talos</a></li>
+  <li><a href="#bootstrap-scripts" id="toc-bootstrap-scripts" class="nav-link" data-scroll-target="#bootstrap-scripts">Bootstrap scripts</a></li>
   </ul>
 </nav>
     </div>
@@ -168,91 +196,54 @@ ul.task-list li input[type="checkbox"] {
 
 <section id="introduction" class="level1">
 <h1>Introduction</h1>
-<p>This is a short post about how I prefer to handle merge conflicts. There are lots of ways to resolve them, but in my opinion this makes for a clean commit log.</p>
+<p>As I’ve been messing around with setting up this cluster, particularly when it comes to persistent storage, I’ve found that sometimes I want to start with a clean slate. Technically I’m sure there’s a better way to recover from some of the messes I’ve gotten into, and I generally try for quite a while before I resort to pulling the plug, but this is a dev cluster so being able to tear it down and start again is important. Plus, this helps me prove out that all the other GitOps type stuff I’m trying to do works and sneaky state mutations haven’t been added in.</p>
 </section>
-<section id="setup" class="level1">
-<h1>Setup</h1>
-<p>Let’s say you’re working on a feature branch and you want to merge it back into main, but while you were working, some conflicting commits were introduced:</p>
-<div class="cell" data-layout-align="default">
-<div class="cell-output-display">
-<div>
-<p></p><figure class="figure"><p></p>
-<div>
-<pre class="mermaid mermaid-js">%%{init: {'theme': 'base'}}%%
-gitGraph
-  commit id: "start"
-  branch feature
-  checkout feature
-  commit id: "feature_change"
-  checkout main
-  commit id: "conflict_change"
-</pre>
-</div>
-<p></p></figure><p></p>
-</div>
-</div>
-</div>
-<p>When you go to submit your PR you’ll see that you have a merge conflict to resolve. What do you do?</p>
+<section id="wipe-the-nodes" class="level1">
+<h1>Wipe the nodes</h1>
+<p>The first part is pretty straightforward, I just knock out all my nodes and put them back in maintenance. <code>--graceful=false</code> because the last node won’t be able to leave the cluster operable and that’s fine. <code>--reboot</code> so it comes back up instead of shutting down (which I guess is default behaviour?)</p>
+<div class="sourceCode" id="cb1"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">talosctl</span> reset <span class="at">--system-labels-to-wipe</span> EPHEMERAL,STATE <span class="at">--reboot</span> <span class="at">--graceful</span><span class="op">=</span>false <span class="at">--wait</span><span class="op">=</span>false <span class="at">-n</span> 192.168.40.11<span class="kw">;</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="ex">talosctl</span> reset <span class="at">--system-labels-to-wipe</span> EPHEMERAL,STATE <span class="at">--reboot</span> <span class="at">--graceful</span><span class="op">=</span>false <span class="at">--wait</span><span class="op">=</span>false <span class="at">-n</span> 192.168.40.7<span class="kw">;</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="ex">talosctl</span> reset <span class="at">--system-labels-to-wipe</span> EPHEMERAL,STATE <span class="at">--reboot</span> <span class="at">--graceful</span><span class="op">=</span>false <span class="at">--wait</span><span class="op">=</span>false <span class="at">-n</span> 192.168.40.9<span class="kw">;</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Ok that’s got them all wiped, make sure they’re back up in insecure mode:</p>
+<div class="sourceCode" id="cb2"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="ex">talosctl</span> get disks <span class="at">--insecure</span> <span class="at">-n</span> 192.168.40.11<span class="kw">;</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a><span class="ex">talosctl</span> get disks <span class="at">--insecure</span> <span class="at">-n</span> 192.168.40.9<span class="kw">;</span></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="ex">talosctl</span> get disks <span class="at">--insecure</span> <span class="at">-n</span> 192.168.40.7<span class="kw">;</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </section>
-<section id="dont-merge-main-in" class="level1">
-<h1>Don’t merge main in</h1>
-<p>For whatever reason, the common advice for this (e.g.&nbsp;what you get prompted to do in Azure DevOps) is to merge the target branch into the feature branch, resolve the merge conflict there, and then retry your PR:</p>
-<div class="cell" data-layout-align="default">
-<div class="cell-output-display">
-<div>
-<p></p><figure class="figure"><p></p>
-<div>
-<pre class="mermaid mermaid-js">%%{init: {'theme': 'base'}}%%
-gitGraph
-  commit id: "start"
-  branch feature
-  checkout feature
-  commit id: "feature_change"
-  checkout main
-  commit id: "conflict_change"
-  checkout feature
-  merge main id: "resolve"
-  checkout main
-  merge feature id: "complete_pr"
-</pre>
-</div>
-<p></p></figure><p></p>
-</div>
-</div>
-</div>
-<p>This does work, but it can make reviewing your PR a nightmare if a lot has happened on main since you started the feature branch, since now all those commits are on your branch and your history of changes will look huge.</p>
+<section id="reinstall-talos" class="level1">
+<h1>Reinstall talos</h1>
+<p>Use talhelper to generate the apply command with the insecure flag and run it:</p>
+<div class="sourceCode" id="cb3"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="ex">talhelper</span> gencommand apply <span class="at">--extra-flags</span> <span class="at">--insecure</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a><span class="ex">talosctl</span> apply-config <span class="at">--talosconfig</span><span class="op">=</span>./clusterconfig/talosconfig <span class="at">--nodes</span><span class="op">=</span>192.168.40.11 <span class="at">--file</span><span class="op">=</span>./clusterconfig/dk8s-d-hpp-1-lab.yaml <span class="at">--insecure</span><span class="kw">;</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a><span class="ex">talosctl</span> apply-config <span class="at">--talosconfig</span><span class="op">=</span>./clusterconfig/talosconfig <span class="at">--nodes</span><span class="op">=</span>192.168.40.7 <span class="at">--file</span><span class="op">=</span>./clusterconfig/dk8s-d-hpp-2-lab.yaml <span class="at">--insecure</span><span class="kw">;</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a><span class="ex">talosctl</span> apply-config <span class="at">--talosconfig</span><span class="op">=</span>./clusterconfig/talosconfig <span class="at">--nodes</span><span class="op">=</span>192.168.40.9 <span class="at">--file</span><span class="op">=</span>./clusterconfig/dk8s-d-hpp-3-lab.yaml <span class="at">--insecure</span><span class="kw">;</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Check the dashboard on all nodes and make sure they’re up and ready for bootstrapping. All nodes are showing they’re in the “Booting” stage, I see 3 nodes listed in the cluster, and messages in the logs about waiting for <code>etcd</code> to be available. Let’s bootstrap:</p>
+<div class="sourceCode" id="cb4"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="ex">talosctl</span> bootstrap <span class="at">-n</span> 192.168.40.7 <span class="at">-e</span> 192.168.40.7</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 </section>
-<section id="rebase-instead" class="level1">
-<h1>Rebase instead</h1>
-<p>Instead what I recommend is rebasing your feature branch on <code>main</code> and resolving the merge conflict there. This will make your branch look like what it would have been if you’d started it off of <code>main</code> in it’s current state:</p>
-<div class="cell" data-layout-align="default">
-<div class="cell-output-display">
-<div>
-<p></p><figure class="figure"><p></p>
-<div>
-<pre class="mermaid mermaid-js">%%{init: {'theme': 'base'}}%%
-gitGraph
-  commit id: "start"
-  commit id: "conflict_change"
-  branch feature
-  checkout feature
-  commit id: "resolve"
-  checkout main
-  merge feature id: "complete_pr"
-</pre>
-</div>
-<p></p></figure><p></p>
-</div>
-</div>
-</div>
-<section id="note" class="level2">
-<h2 class="anchored" data-anchor-id="note">Note</h2>
-<p>With this approach you will have to force push as you’ll be rewriting the remote history of your branch. Only do this for branches where you’re the sole author, or at least very carefully coordinate with collaborators before you do this. For feature branches this typically shouldn’t be a problem.</p>
-</section>
-</section>
-<section id="conclusion" class="level1">
-<h1>Conclusion</h1>
-<p>This doesn’t look super different with these toy diagrams, but hopefully you can see how the latter solution would look a lot cleaner in an active project where there could be tens or hundreds of commits between when you start your branch and when you submit your PR.</p>
+<section id="bootstrap-scripts" class="level1">
+<h1>Bootstrap scripts</h1>
+<p>Ok, cluster still won’t be in a ready state until I get cilium installed:</p>
+<div class="sourceCode" id="cb5"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="ex">./cilium.sh</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>I’ve got the details of how that works in my earlier post on installing cilium.</p>
+<p>Wait a bit and then make sure everyone is up and healthy:</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="ex">❯</span> kubectl get nodes <span class="at">-o</span> wide</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="ex">NAME</span>          STATUS   ROLES           AGE     VERSION   INTERNAL-IP     EXTERNAL-IP   OS-IMAGE         KERNEL-VERSION   CONTAINER-RUNTIME</span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a><span class="ex">d-hpp-1-lab</span>   Ready    control-plane   2m49s   v1.32.3   192.168.40.11   <span class="op">&lt;</span>none<span class="op">&gt;</span>        Talos <span class="er">(</span><span class="ex">v1.9.5</span><span class="kw">)</span>   <span class="ex">6.12.18-talos</span>    containerd://2.0.3</span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a><span class="ex">d-hpp-2-lab</span>   Ready    control-plane   2m47s   v1.32.3   192.168.40.7    <span class="op">&lt;</span>none<span class="op">&gt;</span>        Talos <span class="er">(</span><span class="ex">v1.9.5</span><span class="kw">)</span>   <span class="ex">6.12.18-talos</span>    containerd://2.0.3</span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="ex">d-hpp-3-lab</span>   Ready    control-plane   2m48s   v1.32.3   192.168.40.9    <span class="op">&lt;</span>none<span class="op">&gt;</span>        Talos <span class="er">(</span><span class="ex">v1.9.5</span><span class="kw">)</span>   <span class="ex">6.12.18-talos</span>    containerd://2.0.3</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Perfect, now for the rest of my bootstrapping.</p>
+<p>Over in my bootstrap folder I first need to make sure I’ve got my bitwarden secrets available:</p>
+<div class="sourceCode" id="cb7"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="bu">export</span> <span class="va">BWS_ACCESS_TOKEN</span><span class="op">=&lt;</span>my access token<span class="op">&gt;</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Then bootstrap <code>cert-manager</code> with my <code>certmanager.sh</code> script.</p>
+<p>Next up we do <code>external-secrets</code> with its bootstrap script.</p>
+<p>Got an error that may or may not be a problem?</p>
+<div class="sourceCode" id="cb8"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="ex">Error</span> from server <span class="er">(</span><span class="ex">InternalError</span><span class="kw">)</span><span class="bu">:</span> error when creating <span class="st">"STDIN"</span>: Internal error occurred: failed calling webhook <span class="st">"validate.clustersecretstore.external-secrets.io"</span>: failed to call webhook: Post <span class="st">"https://external-secrets-webhook.external-secrets.svc:443/validate-external-secrets-io-v1beta1-clustersecretstore?timeout=5s"</span>: dial tcp 10.101.71.86:443: connect: operation not permitted</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>I’ve wiped the cluster a few times while testing, this does appear to be a timing thing. I have to wait a bit for some of the installs to finish before the last part that actually creates external secrets works. Running the script a second time fixes it. Not ideal but not terrible.</p>
+<p>Let’s do argocd now with the bootstrap script.</p>
+<p>and grab my updated argo admin password:</p>
+<div class="sourceCode" id="cb9"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="ex">argocd</span> admin initial-password <span class="at">-n</span> argocd</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<p>Give it a few minutes to spin up all the cluster resources I’ll need to access it and try logging in, and we’re up!</p>
+<p>About 20 minutes and a nice fresh kubernetes cluster with all my apps and only a handful of commands. Not bad.</p>
+<p>One thing to remind myself (and others) of here is that the actual bootstrapping takes a fair bit longer than just running the commands. Give the system a little time in between commands and if services don’t come up right away just wait a few minutes before freaking out and diving into troubleshooting.</p>
 
 
 </section>
