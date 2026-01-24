@@ -3,6 +3,7 @@
     "listing": "/index.html",
     "items": [
       "/posts/2026-01-23-cluster-env.html",
+      "/posts/2026-01-23-bootstrap-k8s.html",
       "/posts/2026-01-23-talos.html",
       "/posts/2025-04-20-reset-talos.html",
       "/posts/2025-04-20-k8s-configs.html",
