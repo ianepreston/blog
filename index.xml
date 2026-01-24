@@ -202,6 +202,43 @@ font-style: inherit;">|-</span></span>
   <pubDate>Fri, 23 Jan 2026 00:00:00 GMT</pubDate>
 </item>
 <item>
+  <title>My first k8s build log - Terraform</title>
+  <link>https://blog.ianpreston.ca/posts/2026-01-23-terraform.html</link>
+  <description><![CDATA[ 
+
+
+
+
+
+<section id="introduction" class="level1">
+<h1>Introduction</h1>
+<p>Continuing my rebooted cluster setup series, let’s talk about how I use terraform.</p>
+</section>
+<section id="setting-up-terraform" class="level1">
+<h1>Setting up terraform</h1>
+<p>As mentioned in my <a href="../posts/2026-01-23-cluster-env.html">environment</a> post, I use Hashicorp’s cloud service to manage my values and state. Initially I ran terraform itself in their cloud, which was fine when I was only talking to my Bitwarden Secrets Vault and Cloudflare, since they were both reachable from outside my network. Recently I’ve been using it to also manage <a href="https://registry.terraform.io/providers/goauthentik/authentik/latest/docs">authentik</a>, since I want to be declarative for as much as possible and the actual configuration can’t be handled by kubernetes manifests. Since authentik runs in my cluster, it’s not reachable by terraform’s hosted agents. To get around this I created an agent token and configured a docker container running <code>tfc-agent</code> which will pick up any terraform commands I call and run them from within my network. The setup for the container is <a href="https://github.com/ianepreston/homelab/blob/f616ca6e28c7e0129aac4031ca59a310175fb07f/flake.nix">in my flake</a>. It’s a little overkill in that it kills and restarts the container every time I start a shell in my homelab directory, but it seems to work fine.</p>
+</section>
+<section id="kubernetes-stuff" class="level1">
+<h1>Kubernetes stuff</h1>
+<p>I do only a couple things to set up my cluster with terraform and honestly both of them are kind of silly. I did it as a learning experience but wouldn’t recommend it as an approach for anyone else.</p>
+<p><a href="https://github.com/ianepreston/homelab/blob/6910de24a6b334e9a26a7742ee05def1f621edaf/terraform/k8s/cert-manager.tf">The first</a> is that I make a Cloudflare token that can write DNS records. This is used by cert-manager to make <a href="https://cert-manager.io/docs/configuration/acme/dns01/cloudflare/">dns challenges</a> to get certificates I can use to give my services proper TLS certs through letsencrypt. It’s not that having this itself is silly, but I need to manually create an API token with permission to create other API tokens and add it to terraform, so I can use it to… make an API token. I could have just made the token myself and directly saved it to my Bitwarden vault. Plus the cloudflare provider has introduced breaking changes a few times while I’ve been working on this project. Honestly, I just wanted this as an excuse to have some terraform in my setup and mess around with it. Don’t be like me kids.</p>
+<p><a href="https://github.com/ianepreston/homelab/blob/d91b4fc15551d490b284a4141dae5cc056ba75d1/terraform/k8s/authentik.tf">The second</a> is to generate random passwords and tokens for authentik and then save them to Bitwarden. Again, I could have just generated some passwords myself and saved them to my vault in less time than it took me to write this code and then I wouldn’t have to worry about the secrets being in my state file as well as my vault. At least I talked myself out of doing this for all my other tokens and passwords before this really got out of hand. I will probably remove this and just do the manual approach, but I’m also considering switching from authentik to zitadel, so it’s low on my list.</p>
+</section>
+<section id="authentik-stuff" class="level1">
+<h1>Authentik stuff</h1>
+<p>This part is actually useful. Even if I do switch to zitadel, I’ll do something like this. This repo creates all the resources within authentik that are required for it to act as an identity provider or secure gateway for my cluster apps. For apps that don’t have their own auth it sets them up as a proxy so my gateway knows to check with authentik before redirecting users to the underlying page and for apps that have their own auth it makes all the required application and oauth resources.</p>
+<p>I’ve seen other repos that seem to have a terraform controller within the cluster that would make it possible to bring something like this under management by flux (I think), but for how often I add apps or whatever I’m happy to hit <code>terraform apply</code> myself for now.</p>
+
+
+</section>
+
+ ]]></description>
+  <category>kubernetes</category>
+  <category>talos</category>
+  <guid>https://blog.ianpreston.ca/posts/2026-01-23-terraform.html</guid>
+  <pubDate>Fri, 23 Jan 2026 00:00:00 GMT</pubDate>
+</item>
+<item>
   <title>My first k8s build log - Talos</title>
   <link>https://blog.ianpreston.ca/posts/2026-01-23-talos.html</link>
   <description><![CDATA[ 
@@ -14021,351 +14058,6 @@ font-style: inherit;">-i</span> inventory.xen_orchestra.yml d-mars.yml</span></c
   <category>ansible</category>
   <guid>https://blog.ianpreston.ca/posts/2023-12-19-xcp-deployment.html</guid>
   <pubDate>Tue, 19 Dec 2023 00:00:00 GMT</pubDate>
-</item>
-<item>
-  <title>Working Templates in Xen-Orchestra</title>
-  <link>https://blog.ianpreston.ca/posts/2023-12-11-xcp-templates.html</link>
-  <description><![CDATA[ 
-
-
-
-
-
-<section id="introduction" class="level1">
-<h1>Introduction</h1>
-<p>In my <a href="../posts/2023-11-27-packer.html">last post</a> I spent entirely too long trying to figure out a fancy automated way of building image templates on xcp-ng/xen-orchestra. While I definitely learned a lot, I also spent more time trying to figure out an automation to build templates than I’ll reasonably spend doing it manually for the next few years.</p>
-<p>This post is a quick summary of my approach for (manually) building templates for the distros I want to have available in my homelab.</p>
-<p>General pro tip: Use the snapshot feature liberally while you’re building your reference images in case you mess up.</p>
-</section>
-<section id="arch" class="level1">
-<h1>Arch</h1>
-<p>I’m a big fan of Arch. My main bare metal server runs it, and it’s what I like to run for a personal OS as well, so having a good template for it would definitely be handy.</p>
-<p>I basically did this in the last post, but the notes are pretty scattered so this will be a cleaned up version.</p>
-<ul>
-<li>Create the VM. Base it on the Ubuntu Jammy template, give it 4 cores, 4GB RAM and 10GB disk</li>
-<li>Boot into the live environment and set the root password with <code>passwd</code>, check your IP with <code>ip address</code>
-<ul>
-<li>This is so you can do the rest of the install <a href="https://wiki.archlinux.org/title/Install_Arch_Linux_via_SSH">over ssh</a></li>
-</ul></li>
-<li>ssh in with <code>ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null root@ip.address.of.target</code></li>
-<li>run <code>archinstall</code>
-<ul>
-<li>Pick <code>Canada</code>, <code>United States</code> and <code>Worldwide</code> for mirror selection</li>
-<li>Leave locales at <code>en_US</code>, we’ll add Canada later and lots of packages seem to need that locale</li>
-<li>Use a best effort default partition layout with <code>ext4</code> format</li>
-<li>Pick <code>Limine</code> for the bootloader, why not?</li>
-<li>Keep the hostname as <code>archlinux</code></li>
-<li>Leave root password blank to disable root</li>
-<li>Add a user, might as well make it my actual username, one less thing to change and I’m the only one using this template
-<ul>
-<li>Give them a password and sudo access</li>
-</ul></li>
-<li>Pick <code>minimal</code> for profile</li>
-<li>Don’t add an audio server</li>
-<li>Just the <code>linux</code> kernel, no hardened, zen, lts</li>
-<li>Install the following additional packages: <code>vim openssh reflector git base-devel nfs-utils</code></li>
-<li>Set network configuration “Use NetworkManager”</li>
-<li>Update the time zone</li>
-<li>Leave NTP on</li>
-<li>Install</li>
-<li>Don’t <code>chroot</code> in, just reboot</li>
-</ul></li>
-<li><code>sudo systemctl start sshd.service &amp;&amp; sudo systemctl enable sshd.service</code></li>
-<li>ssh back in so you don’t have to use the XO portal anymore.</li>
-<li><code>sudo reflector --latest 200 --protocol http,https --sort rate --save /etc/pacman.d/mirrorlist</code> (<a href="https://wiki.archlinux.org/title/Reflector">docs</a>)</li>
-<li><code>sudo pacman -R reflector</code> maybe I’ll set it up on a timer but if I do it’ll be with ansible or something</li>
-<li>Install yay: <code>git clone https://aur.archlinux.org/yay.git &amp;&amp; cd yay &amp;&amp; makepkg -si</code></li>
-<li>Clean up <code>cd .. &amp;&amp; rm -rf yay</code></li>
-<li>Install guest agent: <code>yay -S xe-guest-utilities-xcp-ng</code></li>
-<li>Enable it <code>sudo systemctl enable xe-linux-distribution.service</code></li>
-<li>Setup passwordless sudo <code>sudo EDITOR=vim visudo /etc/sudoers.d/00_ipreston</code>
-<ul>
-<li>Change the line to <code>ipreston ALL=(ALL:ALL) NOPASSWD: ALL</code></li>
-</ul></li>
-<li>Install cloud init: <code>yay -S cloud-init cloud-guest-utils</code></li>
-<li>Set default user in cloud config, just change the default user line in <code>/etc/cloud/cloud.cfg</code></li>
-<li>Add the post install host signing script to <code>/etc/ssh/sign_host.sh</code>. This won’t help anyone else but it’s useful for me</li>
-</ul>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1" style="background: #f1f3f5;"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb1-1"><span class="co" style="color: #5E5E5E;
-background-color: null;
-font-style: inherit;">#!/bin/env bash</span></span>
-<span id="cb1-2"><span class="bu" style="color: null;
-background-color: null;
-font-style: inherit;">set</span> <span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">-e</span></span>
-<span id="cb1-3"><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">mkdir</span> /tmp/hostkeys</span>
-<span id="cb1-4"><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">mount</span> <span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">-t</span> nfs laconia.ipreston.net:/volume1/keys /tmp/hostkeys</span>
-<span id="cb1-5"><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">cp</span> /tmp/hostkeys/user_ca.pub /etc/ssh/user_ca.pub</span>
-<span id="cb1-6"><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">chown</span> root /etc/ssh/user_ca.pub</span>
-<span id="cb1-7"><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">chmod</span> 600 /etc/ssh/user_ca.pub</span>
-<span id="cb1-8"><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">cp</span> /tmp/hostkeys/host_ca /etc/ssh/host_ca</span>
-<span id="cb1-9"><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">chown</span> root /etc/ssh/host_ca</span>
-<span id="cb1-10"><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">chmod</span> 600 /etc/ssh/host_ca</span>
-<span id="cb1-11"><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">cp</span> /tmp/hostkeys/setup_host.sh /etc/ssh/setup_host.sh</span>
-<span id="cb1-12"><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">umount</span> /tmp/hostkeys</span>
-<span id="cb1-13"><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">bash</span> /etc/ssh/setup_host.sh</span>
-<span id="cb1-14"><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">rm</span> /etc/ssh/host_ca</span>
-<span id="cb1-15"><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">rm</span> /etc/ssh/setup_host.sh</span></code></pre></div></div>
-<ul>
-<li><code>sudo chmod +x /etc/ssh/sign_host.sh</code></li>
-<li>Get ready for cloud init:
-<ul>
-<li><code>sudo systemctl enable cloud-init.service</code></li>
-<li><code>sudo systemctl enable cloud-final.service</code></li>
-<li><code>sudo cloud-init clean</code></li>
-<li><code>sudo poweroff</code></li>
-</ul></li>
-<li>Make a clone so you can go back to this one after you make the template</li>
-<li>Rename the clone to be a template name</li>
-<li>Turn it into a template</li>
-<li>Make a cloud config:</li>
-</ul>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2" style="background: #f1f3f5;"><pre class="sourceCode yml code-with-copy"><code class="sourceCode yaml"><span id="cb2-1"><span class="co" style="color: #5E5E5E;
-background-color: null;
-font-style: inherit;">#cloud-config</span></span>
-<span id="cb2-2"><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">hostname</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-weight: bold;
-font-style: inherit;">:</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> </span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-weight: bold;
-font-style: inherit;">{</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">name</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-weight: bold;
-font-style: inherit;">}</span></span>
-<span id="cb2-3"><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">runcmd</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-weight: bold;
-font-style: inherit;">:</span></span>
-<span id="cb2-4"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> </span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-weight: bold;
-font-style: inherit;">-</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> </span><span class="st" style="color: #20794D;
-background-color: null;
-font-style: inherit;">"sudo /bin/bash /etc/ssh/sign_host.sh</span></span></code></pre></div></div>
-<p>That’s it! Template should work.</p>
-</section>
-<section id="debian" class="level1">
-<h1>Debian</h1>
-<ul>
-<li>Graphical install</li>
-<li>Pick English</li>
-<li>Update location</li>
-<li>Default keyboard map</li>
-<li>Keep hostname <code>debian</code></li>
-<li>Set the domain name</li>
-<li>Don’t set a root password</li>
-<li>Create user name</li>
-<li>Set password</li>
-<li>Set time zone</li>
-<li>Manual, make the whole disk one partition</li>
-<li>Tell it not to worry about swap</li>
-<li>Don’t scan extra installation media</li>
-<li>Pick Canada for a mirror</li>
-<li>Pick deb.debian.org</li>
-<li>No proxy</li>
-<li>participate in package usage or don’t, whatever</li>
-<li>Uncheck desktop and GNOME, check SSH server and standard system utilities</li>
-<li>Install GRUB</li>
-<li>Reboot</li>
-<li>Mount the guest utilities ISO</li>
-<li><code>mkdir /tmp/xentools</code></li>
-<li><code>sudo mount /dev/cdrom /tmp/xentools</code></li>
-<li>Run <code>install.sh</code> under the <code>Linux folder</code> as root</li>
-<li>Reboot</li>
-<li><code>sudo apt install nfs-common</code></li>
-<li><code>sudo apt install vim</code></li>
-<li><code>sudo EDITOR=vim visudo /etc/sudoers</code>
-<ul>
-<li>change the <code>%sudo</code> line to have <code>NOPASSWD:ALL</code> at the end instead of just <code>ALL</code></li>
-<li>logout and back in to apply</li>
-</ul></li>
-<li><code>sudo apt install cloud-init cloud-utils</code></li>
-<li>Set default user in cloud config, just change the default user line in <code>/etc/cloud/cloud.cfg</code></li>
-<li>Add the post install host signing script to <code>/etc/ssh/sign_host.sh</code>. This won’t help anyone else but it’s useful for me</li>
-</ul>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3" style="background: #f1f3f5;"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb3-1"><span class="co" style="color: #5E5E5E;
-background-color: null;
-font-style: inherit;">#!/bin/env bash</span></span>
-<span id="cb3-2"><span class="bu" style="color: null;
-background-color: null;
-font-style: inherit;">set</span> <span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">-e</span></span>
-<span id="cb3-3"><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">mkdir</span> /tmp/hostkeys</span>
-<span id="cb3-4"><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">mount</span> <span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">-t</span> nfs laconia.ipreston.net:/volume1/keys /tmp/hostkeys</span>
-<span id="cb3-5"><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">cp</span> /tmp/hostkeys/user_ca.pub /etc/ssh/user_ca.pub</span>
-<span id="cb3-6"><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">chown</span> root /etc/ssh/user_ca.pub</span>
-<span id="cb3-7"><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">chmod</span> 600 /etc/ssh/user_ca.pub</span>
-<span id="cb3-8"><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">cp</span> /tmp/hostkeys/host_ca /etc/ssh/host_ca</span>
-<span id="cb3-9"><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">chown</span> root /etc/ssh/host_ca</span>
-<span id="cb3-10"><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">chmod</span> 600 /etc/ssh/host_ca</span>
-<span id="cb3-11"><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">cp</span> /tmp/hostkeys/setup_host.sh /etc/ssh/setup_host.sh</span>
-<span id="cb3-12"><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">umount</span> /tmp/hostkeys</span>
-<span id="cb3-13"><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">bash</span> /etc/ssh/setup_host.sh</span>
-<span id="cb3-14"><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">rm</span> /etc/ssh/host_ca</span>
-<span id="cb3-15"><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">rm</span> /etc/ssh/setup_host.sh</span></code></pre></div></div>
-<ul>
-<li><code>sudo chmod +x /etc/ssh/sign_host.sh</code></li>
-<li>Get ready for cloud init:
-<ul>
-<li><code>sudo systemctl enable cloud-init.service</code></li>
-<li><code>sudo systemctl enable cloud-final.service</code></li>
-<li><code>sudo cloud-init clean</code></li>
-<li><code>sudo poweroff</code></li>
-</ul></li>
-<li>Make a clone so you can go back to this one after you make the template</li>
-<li>Rename the clone to be a template name</li>
-<li>Turn it into a template</li>
-<li>Make a cloud config:</li>
-</ul>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4" style="background: #f1f3f5;"><pre class="sourceCode yml code-with-copy"><code class="sourceCode yaml"><span id="cb4-1"><span class="co" style="color: #5E5E5E;
-background-color: null;
-font-style: inherit;">#cloud-config</span></span>
-<span id="cb4-2"><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">hostname</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-weight: bold;
-font-style: inherit;">:</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> </span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-weight: bold;
-font-style: inherit;">{</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">name</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-weight: bold;
-font-style: inherit;">}</span></span>
-<span id="cb4-3"><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">fqdn</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-weight: bold;
-font-style: inherit;">:</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> </span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-weight: bold;
-font-style: inherit;">{</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">name</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-weight: bold;
-font-style: inherit;">}</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">.ipreston.net</span></span>
-<span id="cb4-4"><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">manage_etc_hosts</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-weight: bold;
-font-style: inherit;">:</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> </span><span class="ch" style="color: #20794D;
-background-color: null;
-font-style: inherit;">true</span></span>
-<span id="cb4-5"><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">runcmd</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-weight: bold;
-font-style: inherit;">:</span></span>
-<span id="cb4-6"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> </span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-weight: bold;
-font-style: inherit;">-</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> </span><span class="st" style="color: #20794D;
-background-color: null;
-font-style: inherit;">"sudo /bin/bash /etc/ssh/sign_host.sh</span></span></code></pre></div></div>
-<p>Note the extra lines about fqdn and etc_hosts from the arch one.</p>
-</section>
-<section id="conclusion" class="level1">
-<h1>Conclusion</h1>
-<p>That was a lot simpler than doing things with packer. Some of it was helped by what I learned from trying to get packer going, but still. I might update this post later with other templates as I need them, but for now I want to move on to actually provisioning and configuring some VMs.</p>
-
-
-</section>
-
- ]]></description>
-  <category>linux</category>
-  <category>virtualization</category>
-  <category>xcp-ng</category>
-  <guid>https://blog.ianpreston.ca/posts/2023-12-11-xcp-templates.html</guid>
-  <pubDate>Mon, 11 Dec 2023 00:00:00 GMT</pubDate>
 </item>
 </channel>
 </rss>
