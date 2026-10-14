@@ -1,10 +1,35 @@
-# blog
+# Blog
 
-My blog, generated using quarto
+My blog, generated with [Quarto](https://quarto.org/).
 
-## Setup
+## Local development with Nix
 
-Run `quarto render` if you have code in qmd files you need to run. Doesn't seem to need
-it for completed `.ipynb` files.
+The flake supports Apple Silicon and Intel macOS, as well as x86-64 and ARM64 Linux.
+After [installing Nix](https://nixos.org/download/), enter the development shell:
 
-`quarto preview` will stand up a live web server.
+```sh
+nix develop
+```
+
+Build the site into `_site/`:
+
+```sh
+quarto render
+```
+
+Start a local server with live reload and open the URL Quarto prints (normally
+<http://localhost:4200/>):
+
+```sh
+quarto preview
+```
+
+You can also run either command without entering a persistent shell:
+
+```sh
+nix develop --command quarto render
+nix develop --command quarto preview
+```
+
+If you use direnv, the checked-in `.envrc` enters the same flake automatically
+after `direnv allow`.

@@ -1,5 +1,5 @@
 {
-  description = "A Nix flake-based development environment for ansible";
+  description = "Development environment for the Quarto blog";
 
   inputs.nixpkgs.url = "https://flakehub.com/f/NixOS/nixpkgs/0.1.*.tar.gz";
 
