@@ -9,7 +9,7 @@
 <link>https://blog.ianpreston.ca/</link>
 <atom:link href="https://blog.ianpreston.ca/index.xml" rel="self" type="application/rss+xml"/>
 <description></description>
-<generator>quarto-1.8.27</generator>
+<generator>quarto-1.10.19</generator>
 <lastBuildDate>Mon, 26 Jan 2026 00:00:00 GMT</lastBuildDate>
 <item>
   <title>My first k8s build log - Flux repo layout</title>
@@ -171,6 +171,43 @@ font-style: inherit;">│&nbsp;&nbsp;</span> │&nbsp;&nbsp; └── [manifest
   <pubDate>Mon, 26 Jan 2026 00:00:00 GMT</pubDate>
 </item>
 <item>
+  <title>My first k8s build log - Terraform</title>
+  <link>https://blog.ianpreston.ca/posts/2026-01-23-terraform.html</link>
+  <description><![CDATA[ 
+
+
+
+
+
+<section id="introduction" class="level1">
+<h1>Introduction</h1>
+<p>Continuing my rebooted cluster setup series, let’s talk about how I use terraform.</p>
+</section>
+<section id="setting-up-terraform" class="level1">
+<h1>Setting up terraform</h1>
+<p>As mentioned in my <a href="../posts/2026-01-23-cluster-env.html">environment</a> post, I use Hashicorp’s cloud service to manage my values and state. Initially I ran terraform itself in their cloud, which was fine when I was only talking to my Bitwarden Secrets Vault and Cloudflare, since they were both reachable from outside my network. Recently I’ve been using it to also manage <a href="https://registry.terraform.io/providers/goauthentik/authentik/latest/docs">authentik</a>, since I want to be declarative for as much as possible and the actual configuration can’t be handled by kubernetes manifests. Since authentik runs in my cluster, it’s not reachable by terraform’s hosted agents. To get around this I created an agent token and configured a docker container running <code>tfc-agent</code> which will pick up any terraform commands I call and run them from within my network. The setup for the container is <a href="https://github.com/ianepreston/homelab/blob/f616ca6e28c7e0129aac4031ca59a310175fb07f/flake.nix">in my flake</a>. It’s a little overkill in that it kills and restarts the container every time I start a shell in my homelab directory, but it seems to work fine.</p>
+</section>
+<section id="kubernetes-stuff" class="level1">
+<h1>Kubernetes stuff</h1>
+<p>I do only a couple things to set up my cluster with terraform and honestly both of them are kind of silly. I did it as a learning experience but wouldn’t recommend it as an approach for anyone else.</p>
+<p><a href="https://github.com/ianepreston/homelab/blob/6910de24a6b334e9a26a7742ee05def1f621edaf/terraform/k8s/cert-manager.tf">The first</a> is that I make a Cloudflare token that can write DNS records. This is used by cert-manager to make <a href="https://cert-manager.io/docs/configuration/acme/dns01/cloudflare/">dns challenges</a> to get certificates I can use to give my services proper TLS certs through letsencrypt. It’s not that having this itself is silly, but I need to manually create an API token with permission to create other API tokens and add it to terraform, so I can use it to… make an API token. I could have just made the token myself and directly saved it to my Bitwarden vault. Plus the cloudflare provider has introduced breaking changes a few times while I’ve been working on this project. Honestly, I just wanted this as an excuse to have some terraform in my setup and mess around with it. Don’t be like me kids.</p>
+<p><a href="https://github.com/ianepreston/homelab/blob/d91b4fc15551d490b284a4141dae5cc056ba75d1/terraform/k8s/authentik.tf">The second</a> is to generate random passwords and tokens for authentik and then save them to Bitwarden. Again, I could have just generated some passwords myself and saved them to my vault in less time than it took me to write this code and then I wouldn’t have to worry about the secrets being in my state file as well as my vault. At least I talked myself out of doing this for all my other tokens and passwords before this really got out of hand. I will probably remove this and just do the manual approach, but I’m also considering switching from authentik to zitadel, so it’s low on my list.</p>
+</section>
+<section id="authentik-stuff" class="level1">
+<h1>Authentik stuff</h1>
+<p>This part is actually useful. Even if I do switch to zitadel, I’ll do something like this. This repo creates all the resources within authentik that are required for it to act as an identity provider or secure gateway for my cluster apps. For apps that don’t have their own auth it sets them up as a proxy so my gateway knows to check with authentik before redirecting users to the underlying page and for apps that have their own auth it makes all the required application and oauth resources.</p>
+<p>I’ve seen other repos that seem to have a terraform controller within the cluster that would make it possible to bring something like this under management by flux (I think), but for how often I add apps or whatever I’m happy to hit <code>terraform apply</code> myself for now.</p>
+
+
+</section>
+
+ ]]></description>
+  <category>kubernetes</category>
+  <category>talos</category>
+  <guid>https://blog.ianpreston.ca/posts/2026-01-23-terraform.html</guid>
+  <pubDate>Fri, 23 Jan 2026 00:00:00 GMT</pubDate>
+</item>
+<item>
   <title>My first k8s build log - Local environment</title>
   <link>https://blog.ianpreston.ca/posts/2026-01-23-cluster-env.html</link>
   <description><![CDATA[ 
@@ -202,6 +239,58 @@ font-style: inherit;">│&nbsp;&nbsp;</span> │&nbsp;&nbsp; └── [manifest
   <category>kubernetes</category>
   <category>talos</category>
   <guid>https://blog.ianpreston.ca/posts/2026-01-23-cluster-env.html</guid>
+  <pubDate>Fri, 23 Jan 2026 00:00:00 GMT</pubDate>
+</item>
+<item>
+  <title>My first k8s build log - Talos</title>
+  <link>https://blog.ianpreston.ca/posts/2026-01-23-talos.html</link>
+  <description><![CDATA[ 
+
+
+
+
+
+<section id="introduction" class="level1">
+<h1>Introduction</h1>
+<p>Continuing my rebooted cluster setup series, let’s talk about how I manage Talos Linux and my base kubernetes environment.</p>
+<p>I did cover some of this in <a href="../posts/2025-03-23-talhelper.html">a previous post</a>, but some of the administrative components and configuration has changed since then and I’m treating these new posts as a bit of a clean slate anyway.</p>
+</section>
+<section id="bootstrap-secret" class="level1">
+<h1>Bootstrap secret</h1>
+<p>To encrypt all the secrets for certificates etc. that talos requires I still use sops and age. There’s a good post on getting those working <a href="https://mirceanton.com/posts/doing-secrets-the-gitops-way/">here</a>. I manage my age key as part of my NixOS setup, so if I’m on a machine I manage that’s already set up.</p>
+<p>In the repo I configure sops to use that age key with a <a href="https://github.com/ianepreston/homelab/blob/e094a491c1d486ad09652799c8f883a64b91d584/talos/dev/.sops.yaml">.sops.yaml</a> file in the folder for my cluster, and a <a href="https://github.com/ianepreston/homelab/blob/4a9a28d06b7e725d587b698217ca59c51119338c/talos/.sops.yaml">parent folder one</a> that tells it what to encrypt my secrets with and what files are secrets. Then as part of the bootstrap I generated an encrypted secret file with <code>talhelper gensecret &gt; talsecret.sops.yaml</code>, which I can safely commit to my repo since all the secrets are encrypted. These are then used by talhelper to generate and apply talos configs.</p>
+</section>
+<section id="talos-config" class="level1">
+<h1>Talos config</h1>
+<p>The rest of my config lives in either <a href="https://github.com/ianepreston/homelab/blob/47f167d984d4259b3ceba245bb53b81978579d18/talos/dev/talconfig.yaml">talconfig.yaml</a> or is incorporated into it from <a href="https://github.com/ianepreston/homelab/tree/ec0a162e559b48fe3e3aafe81f6a5ac106502465/talos/dev/patches">patches</a>. To be honest I’m still not thrilled with how I have my config set up. I’m getting better about not repeating configuration where it’s not necessary by using <a href="https://support.atlassian.com/bitbucket-cloud/docs/yaml-anchors/">yaml anchors</a> but it still feels like things could be designed better on my side. I also still struggle figuring out how to apply configs from how they’re specified in base talos config syntax into talhelper. Skill issue on my part I’m sure, nothing against the developer of the tool.</p>
+</section>
+<section id="helper-tasks" class="level1">
+<h1>Helper tasks</h1>
+<p>Because I don’t regularly do talos operations and because some of them can be verbose to type out, I make use of taskfiles. For the <a href="https://github.com/ianepreston/homelab/blob/03a35e292cf70ad966f57d77be0844492493139d/taskfiles/talos/Taskfile.yaml">basic operations</a> like applying configs, or updating talos or kubernetes this is a bit overkill, but it lets me run tasks from any folder, is slightly less typing, and forces the generation of new configs before applying them, which I sometimes forget about otherwise.</p>
+<p>I’ve also got some <a href="https://github.com/ianepreston/homelab/blob/2a20d8a84d6996e56ee66bd0e19d3d697d6c9cfc/taskfiles/status/Taskfile.yaml">status tasks</a> to do things like pull the names of disks in my machines or check the health of my cluster.</p>
+<p>Finally, probably the most helpful tasks I have are the <a href="https://github.com/ianepreston/homelab/blob/166ed3623a07bf1012f582569db4da73b4d9a73c/taskfiles/bootstrap/Taskfile.yaml">ones to perform a wipe and bootstrap of my cluster</a> I don’t do this very often so it’s nice to have the steps and commands captured.</p>
+</section>
+<section id="a-note-on-version-management" class="level1">
+<h1>A note on version management</h1>
+<p>In my <a href="../posts/2025-03-23-talhelper.html">previous post on talos</a> I talked about how I got myself into a pickle by having a newer version of kubernetes installed on my cluster than my version of talos supported and not being able to upgrade or roll back. At the time I thought the issue was related to which version of <code>talosctl</code> I was running. While I do still try and keep those versions close now, I don’t think that’s the issue. The main thing is that I had a misunderstanding of how applying a talos config impacts a machine that’s in maintenance mode. Here’s my current understanding, with the caveat that I may be missing some things still.</p>
+<p>When you wipe a talos machine back to maintenance mode it will be running whatever version of talos it was before it was wiped. If you then apply a talos config that specifies a different version of talos and kubernetes than what’s currently running, it <strong>will not</strong> change the version of talos that’s running, but it <strong>will</strong> change the version of kubernetes. This can then get you in the situation I found myself in. I’m pretty sure what happened was:</p>
+<ul>
+<li>I was running an older version of talos and kubernetes</li>
+<li>I decided I wanted to wipe and rebuild my cluster, and upgrade while I was at it</li>
+<li>I reset my machines to maintenance mode (still on old talos and old kubernetes)</li>
+<li>I updated my talos config to specify new talos and new kubernetes</li>
+<li>I applied my config, expecting it to apply the specified talos and kubernetes version</li>
+<li>It only applied the specified kubernetes version, resulting in a mismatch.</li>
+</ul>
+<p>The correct approach is to not mix wipe/rebuilds with upgrades. Do your wipe and rebuild to the same version of talos and kubernetes you were previously on, then upgrade talos, then upgrade kubernetes (repeat as needed if you have to go up a few major versions).</p>
+
+
+</section>
+
+ ]]></description>
+  <category>kubernetes</category>
+  <category>talos</category>
+  <guid>https://blog.ianpreston.ca/posts/2026-01-23-talos.html</guid>
   <pubDate>Fri, 23 Jan 2026 00:00:00 GMT</pubDate>
 </item>
 <item>
@@ -358,95 +447,6 @@ font-style: inherit;">|-</span></span>
   <category>kubernetes</category>
   <category>talos</category>
   <guid>https://blog.ianpreston.ca/posts/2026-01-23-bootstrap-k8s.html</guid>
-  <pubDate>Fri, 23 Jan 2026 00:00:00 GMT</pubDate>
-</item>
-<item>
-  <title>My first k8s build log - Terraform</title>
-  <link>https://blog.ianpreston.ca/posts/2026-01-23-terraform.html</link>
-  <description><![CDATA[ 
-
-
-
-
-
-<section id="introduction" class="level1">
-<h1>Introduction</h1>
-<p>Continuing my rebooted cluster setup series, let’s talk about how I use terraform.</p>
-</section>
-<section id="setting-up-terraform" class="level1">
-<h1>Setting up terraform</h1>
-<p>As mentioned in my <a href="../posts/2026-01-23-cluster-env.html">environment</a> post, I use Hashicorp’s cloud service to manage my values and state. Initially I ran terraform itself in their cloud, which was fine when I was only talking to my Bitwarden Secrets Vault and Cloudflare, since they were both reachable from outside my network. Recently I’ve been using it to also manage <a href="https://registry.terraform.io/providers/goauthentik/authentik/latest/docs">authentik</a>, since I want to be declarative for as much as possible and the actual configuration can’t be handled by kubernetes manifests. Since authentik runs in my cluster, it’s not reachable by terraform’s hosted agents. To get around this I created an agent token and configured a docker container running <code>tfc-agent</code> which will pick up any terraform commands I call and run them from within my network. The setup for the container is <a href="https://github.com/ianepreston/homelab/blob/f616ca6e28c7e0129aac4031ca59a310175fb07f/flake.nix">in my flake</a>. It’s a little overkill in that it kills and restarts the container every time I start a shell in my homelab directory, but it seems to work fine.</p>
-</section>
-<section id="kubernetes-stuff" class="level1">
-<h1>Kubernetes stuff</h1>
-<p>I do only a couple things to set up my cluster with terraform and honestly both of them are kind of silly. I did it as a learning experience but wouldn’t recommend it as an approach for anyone else.</p>
-<p><a href="https://github.com/ianepreston/homelab/blob/6910de24a6b334e9a26a7742ee05def1f621edaf/terraform/k8s/cert-manager.tf">The first</a> is that I make a Cloudflare token that can write DNS records. This is used by cert-manager to make <a href="https://cert-manager.io/docs/configuration/acme/dns01/cloudflare/">dns challenges</a> to get certificates I can use to give my services proper TLS certs through letsencrypt. It’s not that having this itself is silly, but I need to manually create an API token with permission to create other API tokens and add it to terraform, so I can use it to… make an API token. I could have just made the token myself and directly saved it to my Bitwarden vault. Plus the cloudflare provider has introduced breaking changes a few times while I’ve been working on this project. Honestly, I just wanted this as an excuse to have some terraform in my setup and mess around with it. Don’t be like me kids.</p>
-<p><a href="https://github.com/ianepreston/homelab/blob/d91b4fc15551d490b284a4141dae5cc056ba75d1/terraform/k8s/authentik.tf">The second</a> is to generate random passwords and tokens for authentik and then save them to Bitwarden. Again, I could have just generated some passwords myself and saved them to my vault in less time than it took me to write this code and then I wouldn’t have to worry about the secrets being in my state file as well as my vault. At least I talked myself out of doing this for all my other tokens and passwords before this really got out of hand. I will probably remove this and just do the manual approach, but I’m also considering switching from authentik to zitadel, so it’s low on my list.</p>
-</section>
-<section id="authentik-stuff" class="level1">
-<h1>Authentik stuff</h1>
-<p>This part is actually useful. Even if I do switch to zitadel, I’ll do something like this. This repo creates all the resources within authentik that are required for it to act as an identity provider or secure gateway for my cluster apps. For apps that don’t have their own auth it sets them up as a proxy so my gateway knows to check with authentik before redirecting users to the underlying page and for apps that have their own auth it makes all the required application and oauth resources.</p>
-<p>I’ve seen other repos that seem to have a terraform controller within the cluster that would make it possible to bring something like this under management by flux (I think), but for how often I add apps or whatever I’m happy to hit <code>terraform apply</code> myself for now.</p>
-
-
-</section>
-
- ]]></description>
-  <category>kubernetes</category>
-  <category>talos</category>
-  <guid>https://blog.ianpreston.ca/posts/2026-01-23-terraform.html</guid>
-  <pubDate>Fri, 23 Jan 2026 00:00:00 GMT</pubDate>
-</item>
-<item>
-  <title>My first k8s build log - Talos</title>
-  <link>https://blog.ianpreston.ca/posts/2026-01-23-talos.html</link>
-  <description><![CDATA[ 
-
-
-
-
-
-<section id="introduction" class="level1">
-<h1>Introduction</h1>
-<p>Continuing my rebooted cluster setup series, let’s talk about how I manage Talos Linux and my base kubernetes environment.</p>
-<p>I did cover some of this in <a href="../posts/2025-03-23-talhelper.html">a previous post</a>, but some of the administrative components and configuration has changed since then and I’m treating these new posts as a bit of a clean slate anyway.</p>
-</section>
-<section id="bootstrap-secret" class="level1">
-<h1>Bootstrap secret</h1>
-<p>To encrypt all the secrets for certificates etc. that talos requires I still use sops and age. There’s a good post on getting those working <a href="https://mirceanton.com/posts/doing-secrets-the-gitops-way/">here</a>. I manage my age key as part of my NixOS setup, so if I’m on a machine I manage that’s already set up.</p>
-<p>In the repo I configure sops to use that age key with a <a href="https://github.com/ianepreston/homelab/blob/e094a491c1d486ad09652799c8f883a64b91d584/talos/dev/.sops.yaml">.sops.yaml</a> file in the folder for my cluster, and a <a href="https://github.com/ianepreston/homelab/blob/4a9a28d06b7e725d587b698217ca59c51119338c/talos/.sops.yaml">parent folder one</a> that tells it what to encrypt my secrets with and what files are secrets. Then as part of the bootstrap I generated an encrypted secret file with <code>talhelper gensecret &gt; talsecret.sops.yaml</code>, which I can safely commit to my repo since all the secrets are encrypted. These are then used by talhelper to generate and apply talos configs.</p>
-</section>
-<section id="talos-config" class="level1">
-<h1>Talos config</h1>
-<p>The rest of my config lives in either <a href="https://github.com/ianepreston/homelab/blob/47f167d984d4259b3ceba245bb53b81978579d18/talos/dev/talconfig.yaml">talconfig.yaml</a> or is incorporated into it from <a href="https://github.com/ianepreston/homelab/tree/ec0a162e559b48fe3e3aafe81f6a5ac106502465/talos/dev/patches">patches</a>. To be honest I’m still not thrilled with how I have my config set up. I’m getting better about not repeating configuration where it’s not necessary by using <a href="https://support.atlassian.com/bitbucket-cloud/docs/yaml-anchors/">yaml anchors</a> but it still feels like things could be designed better on my side. I also still struggle figuring out how to apply configs from how they’re specified in base talos config syntax into talhelper. Skill issue on my part I’m sure, nothing against the developer of the tool.</p>
-</section>
-<section id="helper-tasks" class="level1">
-<h1>Helper tasks</h1>
-<p>Because I don’t regularly do talos operations and because some of them can be verbose to type out, I make use of taskfiles. For the <a href="https://github.com/ianepreston/homelab/blob/03a35e292cf70ad966f57d77be0844492493139d/taskfiles/talos/Taskfile.yaml">basic operations</a> like applying configs, or updating talos or kubernetes this is a bit overkill, but it lets me run tasks from any folder, is slightly less typing, and forces the generation of new configs before applying them, which I sometimes forget about otherwise.</p>
-<p>I’ve also got some <a href="https://github.com/ianepreston/homelab/blob/2a20d8a84d6996e56ee66bd0e19d3d697d6c9cfc/taskfiles/status/Taskfile.yaml">status tasks</a> to do things like pull the names of disks in my machines or check the health of my cluster.</p>
-<p>Finally, probably the most helpful tasks I have are the <a href="https://github.com/ianepreston/homelab/blob/166ed3623a07bf1012f582569db4da73b4d9a73c/taskfiles/bootstrap/Taskfile.yaml">ones to perform a wipe and bootstrap of my cluster</a> I don’t do this very often so it’s nice to have the steps and commands captured.</p>
-</section>
-<section id="a-note-on-version-management" class="level1">
-<h1>A note on version management</h1>
-<p>In my <a href="../posts/2025-03-23-talhelper.html">previous post on talos</a> I talked about how I got myself into a pickle by having a newer version of kubernetes installed on my cluster than my version of talos supported and not being able to upgrade or roll back. At the time I thought the issue was related to which version of <code>talosctl</code> I was running. While I do still try and keep those versions close now, I don’t think that’s the issue. The main thing is that I had a misunderstanding of how applying a talos config impacts a machine that’s in maintenance mode. Here’s my current understanding, with the caveat that I may be missing some things still.</p>
-<p>When you wipe a talos machine back to maintenance mode it will be running whatever version of talos it was before it was wiped. If you then apply a talos config that specifies a different version of talos and kubernetes than what’s currently running, it <strong>will not</strong> change the version of talos that’s running, but it <strong>will</strong> change the version of kubernetes. This can then get you in the situation I found myself in. I’m pretty sure what happened was:</p>
-<ul>
-<li>I was running an older version of talos and kubernetes</li>
-<li>I decided I wanted to wipe and rebuild my cluster, and upgrade while I was at it</li>
-<li>I reset my machines to maintenance mode (still on old talos and old kubernetes)</li>
-<li>I updated my talos config to specify new talos and new kubernetes</li>
-<li>I applied my config, expecting it to apply the specified talos and kubernetes version</li>
-<li>It only applied the specified kubernetes version, resulting in a mismatch.</li>
-</ul>
-<p>The correct approach is to not mix wipe/rebuilds with upgrades. Do your wipe and rebuild to the same version of talos and kubernetes you were previously on, then upgrade talos, then upgrade kubernetes (repeat as needed if you have to go up a few major versions).</p>
-
-
-</section>
-
- ]]></description>
-  <category>kubernetes</category>
-  <category>talos</category>
-  <guid>https://blog.ianpreston.ca/posts/2026-01-23-talos.html</guid>
   <pubDate>Fri, 23 Jan 2026 00:00:00 GMT</pubDate>
 </item>
 <item>
@@ -751,6 +751,697 @@ font-style: inherit;">-n</span> argocd</span></code></pre></div></div>
   <category>kubernetes</category>
   <category>talos</category>
   <guid>https://blog.ianpreston.ca/posts/2025-04-20-reset-talos.html</guid>
+  <pubDate>Sun, 20 Apr 2025 00:00:00 GMT</pubDate>
+</item>
+<item>
+  <title>My first k8s build log - persistent storage</title>
+  <link>https://blog.ianpreston.ca/posts/2025-04-20-k8s-storage.html</link>
+  <description><![CDATA[ 
+
+
+
+
+
+<section id="introduction" class="level1">
+<h1>Introduction</h1>
+<p>The next cluster component I need available before I can host actually useful workloads is persistent storage. The talos docs have sections for <a href="https://www.talos.dev/v1.9/kubernetes-guides/configuration/local-storage/">local</a> and <a href="https://www.talos.dev/v1.9/kubernetes-guides/configuration/storage/">replicated</a> with some recommendations and specific suggestions. I know I want both local storage to handle services that do their own replication (such as databases) as well as replicated storage for all the other services I run that don’t natively replicate storage. In this post I’ll document what storage providers I tested, the experience of configuring them, and their performance.</p>
+</section>
+<section id="tldr" class="level1">
+<h1>tldr</h1>
+<p>For replicated storage I’m going to go with <a href="https://longhorn.io/">longhorn</a>, and for local I’m going to go with <a href="https://github.com/rancher/local-path-provisioner">local-path-provisioner</a>. Performance on replicated storage varied a bit between the engines I tested, but I’m pretty obviously bottlenecked by the 1gbps link I have for my nodes. At a future date I might look into putting 2.5gbps NICs in them and getting an updated switch, but that’s a project for another time.</p>
+</section>
+<section id="how-i-benchmarked" class="level1">
+<h1>How I benchmarked</h1>
+<p>I found <a href="https://github.com/leeliu/dbench">this repo</a> that has a spec for running storage benchmarks. It looked pretty good and I don’t know enough about storage benchmarking to do better so I went with it. Here’s an example benchmark job I created to test a storage class:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1" style="background: #f1f3f5;"><pre class="sourceCode yaml code-with-copy"><code class="sourceCode yaml"><span id="cb1-1"><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">kind</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">:</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> PersistentVolumeClaim</span></span>
+<span id="cb1-2"><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">apiVersion</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">:</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> v1</span></span>
+<span id="cb1-3"><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">metadata</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">:</span></span>
+<span id="cb1-4"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">  </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">name</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">:</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> dbench-pv-claim</span></span>
+<span id="cb1-5"><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">spec</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">:</span></span>
+<span id="cb1-6"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">  </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">storageClassName</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">:</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> local-path</span></span>
+<span id="cb1-7"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">  </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">accessModes</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">:</span></span>
+<span id="cb1-8"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">    </span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">-</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> ReadWriteOnce</span></span>
+<span id="cb1-9"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">  </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">resources</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">:</span></span>
+<span id="cb1-10"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">    </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">requests</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">:</span></span>
+<span id="cb1-11"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">      </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">storage</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">:</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> 10Gi</span></span>
+<span id="cb1-12"><span class="pp" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">---</span></span>
+<span id="cb1-13"><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">apiVersion</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">:</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> batch/v1</span></span>
+<span id="cb1-14"><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">kind</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">:</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> Job</span></span>
+<span id="cb1-15"><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">metadata</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">:</span></span>
+<span id="cb1-16"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">  </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">name</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">:</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> dbench</span></span>
+<span id="cb1-17"><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">spec</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">:</span></span>
+<span id="cb1-18"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">  </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">template</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">:</span></span>
+<span id="cb1-19"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">    </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">spec</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">:</span></span>
+<span id="cb1-20"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">      </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">containers</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">:</span></span>
+<span id="cb1-21"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">        </span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">-</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">name</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">:</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> dbench</span></span>
+<span id="cb1-22"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">          </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">image</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">:</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> zayashv/dbench:latest</span></span>
+<span id="cb1-23"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">          </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">imagePullPolicy</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">:</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> Always</span></span>
+<span id="cb1-24"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">          </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">env</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">:</span></span>
+<span id="cb1-25"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">            </span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">-</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">name</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">:</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> DBENCH_MOUNTPOINT</span></span>
+<span id="cb1-26"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">              </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">value</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">:</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> /data</span></span>
+<span id="cb1-27"><span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">              # - name: DBENCH_QUICK</span></span>
+<span id="cb1-28"><span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">              #   value: "yes"</span></span>
+<span id="cb1-29"><span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">              # - name: FIO_SIZE</span></span>
+<span id="cb1-30"><span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">              #   value: 1G</span></span>
+<span id="cb1-31"><span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">              # - name: FIO_OFFSET_INCREMENT</span></span>
+<span id="cb1-32"><span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">              #   value: 256M</span></span>
+<span id="cb1-33"><span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">              # - name: FIO_DIRECT</span></span>
+<span id="cb1-34"><span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">              #   value: "0"</span></span>
+<span id="cb1-35"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">          </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">volumeMounts</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">:</span></span>
+<span id="cb1-36"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">            </span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">-</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">name</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">:</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> dbench-pv</span></span>
+<span id="cb1-37"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">              </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">mountPath</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">:</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> /data</span></span>
+<span id="cb1-38"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">      </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">restartPolicy</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">:</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> Never</span></span>
+<span id="cb1-39"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">      </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">volumes</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">:</span></span>
+<span id="cb1-40"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">        </span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">-</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">name</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">:</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> dbench-pv</span></span>
+<span id="cb1-41"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">          </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">persistentVolumeClaim</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">:</span></span>
+<span id="cb1-42"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">            </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">claimName</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">:</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> dbench-pv-claim</span></span>
+<span id="cb1-43"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">  </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">backoffLimit</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">:</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> </span><span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">4</span></span></code></pre></div></div>
+<p>Very straightforward, make a <code>PersistentVolumeClaim</code> using the storage class you care about, make a job that attaches the dbench container to that <code>pvc</code>.</p>
+<p>From there I can apply the file and then check out the results of the job with <code>kubectl logs jobs/dbench -f</code>. After I’m done I delete the resource and deploy a similar manifest to test another type of storage. Not super sophisticated but it worked for what I needed.</p>
+</section>
+<section id="local-storage" class="level1">
+<h1>Local storage</h1>
+<p>As both a baseline and because I need it I wanted to set up local path persistent storage to start. The Talos docs recommended <a href="https://github.com/rancher/local-path-provisioner">local path provisioner</a> so I tried it first. The installation from following the docs in talos (you need to do a couple talos specific installations) were easy to follow and when I was done I had a working storage class. Here’s the summary of the dbench results:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2" style="background: #f1f3f5;"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb2-1"><span class="ex" style="color: null;
+background-color: null;
+font-style: inherit;">==================</span></span>
+<span id="cb2-2"><span class="ex" style="color: null;
+background-color: null;
+font-style: inherit;">=</span> Dbench Summary =</span>
+<span id="cb2-3"><span class="ex" style="color: null;
+background-color: null;
+font-style: inherit;">==================</span></span>
+<span id="cb2-4"><span class="ex" style="color: null;
+background-color: null;
+font-style: inherit;">Random</span> Read/Write IOPS: 174k/103k. BW: 1831MiB/s / 2467MiB/s</span>
+<span id="cb2-5"><span class="ex" style="color: null;
+background-color: null;
+font-style: inherit;">Average</span> Latency <span class="er" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">(</span><span class="ex" style="color: null;
+background-color: null;
+font-style: inherit;">usec</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">)</span> <span class="ex" style="color: null;
+background-color: null;
+font-style: inherit;">Read/Write:</span> 66.86/43.63</span>
+<span id="cb2-6"><span class="ex" style="color: null;
+background-color: null;
+font-style: inherit;">Sequential</span> Read/Write: 3193MiB/s / 2835MiB/s</span>
+<span id="cb2-7"><span class="ex" style="color: null;
+background-color: null;
+font-style: inherit;">Mixed</span> Random Read/Write IOPS: 77.8k/25.1k</span></code></pre></div></div>
+<p>This is nice and fast, how fast exactly we’ll see when we start comparing it to other storage classes.</p>
+</section>
+<section id="nas-storage" class="level1">
+<h1>NAS storage</h1>
+<p>Not everything the cluster accesses will be stored on it. I’ve got a Synology NAS full of big spinning disks so for anything large I’ll want to use that. Also, spinning disks outside the cluster seems like a good other end of the spectrum for performance compared to the local path on nvme drives I just tested.</p>
+<p>I created a shared folder for storage testing on my NAS and added it as a pvc:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3" style="background: #f1f3f5;"><pre class="sourceCode yaml code-with-copy"><code class="sourceCode yaml"><span id="cb3-1"><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">apiVersion</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">:</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> v1</span></span>
+<span id="cb3-2"><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">kind</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">:</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> PersistentVolume</span></span>
+<span id="cb3-3"><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">metadata</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">:</span></span>
+<span id="cb3-4"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">  </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">name</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">:</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> nfs-pv</span></span>
+<span id="cb3-5"><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">spec</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">:</span></span>
+<span id="cb3-6"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">  </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">capacity</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">:</span></span>
+<span id="cb3-7"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">    </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">storage</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">:</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> 10Gi</span><span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"> # Size is arbitrary for NFS, adjust as needed</span></span>
+<span id="cb3-8"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">  </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">accessModes</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">:</span></span>
+<span id="cb3-9"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">    </span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">-</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> ReadWriteMany</span><span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"> # RWX for multiple pods</span></span>
+<span id="cb3-10"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">  </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">persistentVolumeReclaimPolicy</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">:</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> Retain</span><span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"> # Keeps data after PVC deletion</span></span>
+<span id="cb3-11"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">  </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">storageClassName</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">:</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> nfs</span><span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"> # Optional, define if using dynamic provisioning later</span></span>
+<span id="cb3-12"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">  </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">mountOptions</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">:</span></span>
+<span id="cb3-13"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">    </span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">-</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> hard</span></span>
+<span id="cb3-14"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">    </span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">-</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> nfsvers=4.1</span><span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"> # Adjust NFS version as needed</span></span>
+<span id="cb3-15"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">  </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">nfs</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">:</span></span>
+<span id="cb3-16"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">    </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">server</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">:</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> </span><span class="fl" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">192.168.10.3</span><span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"> # Your NFS server IP or hostname</span></span>
+<span id="cb3-17"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">    </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">path</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">:</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> /volume1/storagetesting</span><span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"> # Specific folder in the NFS share</span></span></code></pre></div></div>
+<p>Then ran dbench:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4" style="background: #f1f3f5;"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb4-1"><span class="ex" style="color: null;
+background-color: null;
+font-style: inherit;">==================</span></span>
+<span id="cb4-2"><span class="ex" style="color: null;
+background-color: null;
+font-style: inherit;">=</span> Dbench Summary =</span>
+<span id="cb4-3"><span class="ex" style="color: null;
+background-color: null;
+font-style: inherit;">==================</span></span>
+<span id="cb4-4"><span class="ex" style="color: null;
+background-color: null;
+font-style: inherit;">Random</span> Read/Write IOPS: 24.4k/15.6k. BW: 110MiB/s / 110MiB/s</span>
+<span id="cb4-5"><span class="ex" style="color: null;
+background-color: null;
+font-style: inherit;">Average</span> Latency <span class="er" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">(</span><span class="ex" style="color: null;
+background-color: null;
+font-style: inherit;">usec</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">)</span> <span class="ex" style="color: null;
+background-color: null;
+font-style: inherit;">Read/Write:</span> 588.77/528.61</span>
+<span id="cb4-6"><span class="ex" style="color: null;
+background-color: null;
+font-style: inherit;">Sequential</span> Read/Write: 111MiB/s / 111MiB/s</span>
+<span id="cb4-7"><span class="ex" style="color: null;
+background-color: null;
+font-style: inherit;">Mixed</span> Random Read/Write IOPS: 17.5k/5806</span></code></pre></div></div>
+<p>Dang, yup, that’s slow. Right around gigabit speed so to be expected, but still, slow.</p>
+</section>
+<section id="longhorn" class="level1">
+<h1>Longhorn</h1>
+<p>The <a href="https://www.talos.dev/v1.9/kubernetes-guides/configuration/storage/#others-iscsi">talos docs</a> basically just say don’t use longhorn because it uses iscsi and that’s old. I imagine in a really production focused high performance environment that would be a valid critique. For my home lab where storage isn’t really my main focus and convenience and user friendliness matter maybe it’s not such a big deal.</p>
+<p>The <a href="https://longhorn.io/docs/1.8.0/advanced-resources/os-distro-specific/talos-linux-support/">longhorn docs</a> do have a talos specific install guide that will probably be helpful. It also has a guide for installation with <a href="https://longhorn.io/docs/1.8.0/deploy/install/install-with-argocd/">argocd</a> that I’ll refer to. I already did the talos specific configs a wile back before I got sidetracked by upgrading and a bunch of other challenges. So I can just focus on the argo stuff at this point.</p>
+<p>I threw the helm chart in an app, added a manifest for the namespace that had a label for <code>pod-security.kubernetes.io/enforce: privileged</code> as well as an Ingress for Traefik so I could load the web UI.</p>
+<p>Besides some stupid issues where I hadn’t applied the talos patches that I thought I had the install went fine.</p>
+<section id="uninstalling" class="level2">
+<h2 class="anchored" data-anchor-id="uninstalling">Uninstalling</h2>
+<p>Quick note because this caught me out, if you want to remove longhorn, don’t just remove the app from argo. Follow <a href="https://longhorn.io/docs/1.8.1/deploy/uninstall/">the docs</a> otherwise you will be in a horribly broken state where the namespace can’t be deleted because it’s wiped some of the pods that are responsible for cleaning up CRDs… it’s a whole thing.</p>
+</section>
+<section id="performance" class="level2">
+<h2 class="anchored" data-anchor-id="performance">Performance</h2>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5" style="background: #f1f3f5;"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb5-1"><span class="ex" style="color: null;
+background-color: null;
+font-style: inherit;">==================</span></span>
+<span id="cb5-2"><span class="ex" style="color: null;
+background-color: null;
+font-style: inherit;">=</span> Dbench Summary =</span>
+<span id="cb5-3"><span class="ex" style="color: null;
+background-color: null;
+font-style: inherit;">==================</span></span>
+<span id="cb5-4"><span class="ex" style="color: null;
+background-color: null;
+font-style: inherit;">Random</span> Read/Write IOPS: 13.1k/8955. BW: 154MiB/s / 54.2MiB/s</span>
+<span id="cb5-5"><span class="ex" style="color: null;
+background-color: null;
+font-style: inherit;">Average</span> Latency <span class="er" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">(</span><span class="ex" style="color: null;
+background-color: null;
+font-style: inherit;">usec</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">)</span> <span class="ex" style="color: null;
+background-color: null;
+font-style: inherit;">Read/Write:</span> 539.46/664.56</span>
+<span id="cb5-6"><span class="ex" style="color: null;
+background-color: null;
+font-style: inherit;">Sequential</span> Read/Write: 151MiB/s / 56.2MiB/s</span>
+<span id="cb5-7"><span class="ex" style="color: null;
+background-color: null;
+font-style: inherit;">Mixed</span> Random Read/Write IOPS: 9449/3144</span></code></pre></div></div>
+<p>Slower than the NAS on writes, faster on reads. That makes sense, it’s got to write over gigabit multiple times whereas the NAS only has to do it once. I’m disappointed reads aren’t faster, I wouldn’t have expected that performance to be so much worse, I guess maybe it has to do some network checks to make sure nodes aren’t writing before it reads or something? Anyway, that’s good to be aware of.</p>
+</section>
+</section>
+<section id="openebs-mayastor" class="level1">
+<h1>Openebs Mayastor</h1>
+<p>Oh man, I had such a bad time with installing this. Openebs has very inconsistent choices about where it expects to be able to find files for its local volumes (for handling its own etcd cluster etc). There’s a <a href="https://github.com/openebs/openebs/issues/3778">github issue</a> discussing it. Combined with talos needing to configure the kubelet to mount paths that containers need to access this is a recipe for misconfiguration. I messed around with so many different configs on the helm chart for openebs and the config for my kubelet between <code>/var/local</code> and <code>/var/openebs/local</code> and <code>/var/local/openebs</code>. I did learn a ton of troubleshooting techniques following the logs of various pods back to ultimately discovering that one pod all the others depended on couldn’t start because it couldn’t attach to a volume. The worst part was as near as I can tell even after I updated my config, removed openebs and reinstalled it, it was still trying to use the old paths. Eventually I wiped my cluster and started fresh and was able to get it working after that. I don’t want to hold this against the project too much, I’m sure a lot of the problem is my inexperience, but I sure spent a lot of time banging my head against tweaking those configs.</p>
+<p>Once I got it working the performance was similar to longhorn:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6" style="background: #f1f3f5;"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb6-1"><span class="ex" style="color: null;
+background-color: null;
+font-style: inherit;">==================</span></span>
+<span id="cb6-2"><span class="ex" style="color: null;
+background-color: null;
+font-style: inherit;">=</span> Dbench Summary =</span>
+<span id="cb6-3"><span class="ex" style="color: null;
+background-color: null;
+font-style: inherit;">==================</span></span>
+<span id="cb6-4"><span class="ex" style="color: null;
+background-color: null;
+font-style: inherit;">Random</span> Read/Write IOPS: 29.9k/13.8k. BW: 161MiB/s / 56.4MiB/s</span>
+<span id="cb6-5"><span class="ex" style="color: null;
+background-color: null;
+font-style: inherit;">Average</span> Latency <span class="er" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">(</span><span class="ex" style="color: null;
+background-color: null;
+font-style: inherit;">usec</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">)</span> <span class="ex" style="color: null;
+background-color: null;
+font-style: inherit;">Read/Write:</span> 306.22/339.67</span>
+<span id="cb6-6"><span class="ex" style="color: null;
+background-color: null;
+font-style: inherit;">Sequential</span> Read/Write: 172MiB/s / 59.2MiB/s</span>
+<span id="cb6-7"><span class="ex" style="color: null;
+background-color: null;
+font-style: inherit;">Mixed</span> Random Read/Write IOPS: 19.4k/6457</span></code></pre></div></div>
+<p>Besides making me sad when I tried to configure it, openebs also requires 2 cores per node running at 100% polling for changes. Since I only have 4 cores in each of my nodes that would be 50% of my CPU dedicated to handling storage. Given that, the lack of nice web UI (I won’t configure things with it but it’s nice for monitoring in longhorn), and the pain I suffered configuring it, I will be passing on using openebs.</p>
+
+
+</section>
+
+ ]]></description>
+  <category>kubernetes</category>
+  <category>talos</category>
+  <category>storage</category>
+  <category>longhorn</category>
+  <category>openebs</category>
+  <guid>https://blog.ianpreston.ca/posts/2025-04-20-k8s-storage.html</guid>
   <pubDate>Sun, 20 Apr 2025 00:00:00 GMT</pubDate>
 </item>
 <item>
@@ -1495,697 +2186,6 @@ font-style: inherit;"> HEAD</span></span></code></pre></div></div>
   <category>kubernetes</category>
   <category>talos</category>
   <guid>https://blog.ianpreston.ca/posts/2025-04-20-k8s-configs.html</guid>
-  <pubDate>Sun, 20 Apr 2025 00:00:00 GMT</pubDate>
-</item>
-<item>
-  <title>My first k8s build log - persistent storage</title>
-  <link>https://blog.ianpreston.ca/posts/2025-04-20-k8s-storage.html</link>
-  <description><![CDATA[ 
-
-
-
-
-
-<section id="introduction" class="level1">
-<h1>Introduction</h1>
-<p>The next cluster component I need available before I can host actually useful workloads is persistent storage. The talos docs have sections for <a href="https://www.talos.dev/v1.9/kubernetes-guides/configuration/local-storage/">local</a> and <a href="https://www.talos.dev/v1.9/kubernetes-guides/configuration/storage/">replicated</a> with some recommendations and specific suggestions. I know I want both local storage to handle services that do their own replication (such as databases) as well as replicated storage for all the other services I run that don’t natively replicate storage. In this post I’ll document what storage providers I tested, the experience of configuring them, and their performance.</p>
-</section>
-<section id="tldr" class="level1">
-<h1>tldr</h1>
-<p>For replicated storage I’m going to go with <a href="https://longhorn.io/">longhorn</a>, and for local I’m going to go with <a href="https://github.com/rancher/local-path-provisioner">local-path-provisioner</a>. Performance on replicated storage varied a bit between the engines I tested, but I’m pretty obviously bottlenecked by the 1gbps link I have for my nodes. At a future date I might look into putting 2.5gbps NICs in them and getting an updated switch, but that’s a project for another time.</p>
-</section>
-<section id="how-i-benchmarked" class="level1">
-<h1>How I benchmarked</h1>
-<p>I found <a href="https://github.com/leeliu/dbench">this repo</a> that has a spec for running storage benchmarks. It looked pretty good and I don’t know enough about storage benchmarking to do better so I went with it. Here’s an example benchmark job I created to test a storage class:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1" style="background: #f1f3f5;"><pre class="sourceCode yaml code-with-copy"><code class="sourceCode yaml"><span id="cb1-1"><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">kind</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-weight: bold;
-font-style: inherit;">:</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> PersistentVolumeClaim</span></span>
-<span id="cb1-2"><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">apiVersion</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-weight: bold;
-font-style: inherit;">:</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> v1</span></span>
-<span id="cb1-3"><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">metadata</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-weight: bold;
-font-style: inherit;">:</span></span>
-<span id="cb1-4"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">  </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">name</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-weight: bold;
-font-style: inherit;">:</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> dbench-pv-claim</span></span>
-<span id="cb1-5"><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">spec</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-weight: bold;
-font-style: inherit;">:</span></span>
-<span id="cb1-6"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">  </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">storageClassName</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-weight: bold;
-font-style: inherit;">:</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> local-path</span></span>
-<span id="cb1-7"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">  </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">accessModes</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-weight: bold;
-font-style: inherit;">:</span></span>
-<span id="cb1-8"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">    </span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-weight: bold;
-font-style: inherit;">-</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> ReadWriteOnce</span></span>
-<span id="cb1-9"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">  </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">resources</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-weight: bold;
-font-style: inherit;">:</span></span>
-<span id="cb1-10"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">    </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">requests</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-weight: bold;
-font-style: inherit;">:</span></span>
-<span id="cb1-11"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">      </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">storage</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-weight: bold;
-font-style: inherit;">:</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> 10Gi</span></span>
-<span id="cb1-12"><span class="pp" style="color: #AD0000;
-background-color: null;
-font-style: inherit;">---</span></span>
-<span id="cb1-13"><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">apiVersion</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-weight: bold;
-font-style: inherit;">:</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> batch/v1</span></span>
-<span id="cb1-14"><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">kind</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-weight: bold;
-font-style: inherit;">:</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> Job</span></span>
-<span id="cb1-15"><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">metadata</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-weight: bold;
-font-style: inherit;">:</span></span>
-<span id="cb1-16"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">  </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">name</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-weight: bold;
-font-style: inherit;">:</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> dbench</span></span>
-<span id="cb1-17"><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">spec</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-weight: bold;
-font-style: inherit;">:</span></span>
-<span id="cb1-18"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">  </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">template</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-weight: bold;
-font-style: inherit;">:</span></span>
-<span id="cb1-19"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">    </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">spec</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-weight: bold;
-font-style: inherit;">:</span></span>
-<span id="cb1-20"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">      </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">containers</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-weight: bold;
-font-style: inherit;">:</span></span>
-<span id="cb1-21"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">        </span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-weight: bold;
-font-style: inherit;">-</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">name</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-weight: bold;
-font-style: inherit;">:</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> dbench</span></span>
-<span id="cb1-22"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">          </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">image</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-weight: bold;
-font-style: inherit;">:</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> zayashv/dbench:latest</span></span>
-<span id="cb1-23"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">          </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">imagePullPolicy</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-weight: bold;
-font-style: inherit;">:</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> Always</span></span>
-<span id="cb1-24"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">          </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">env</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-weight: bold;
-font-style: inherit;">:</span></span>
-<span id="cb1-25"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">            </span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-weight: bold;
-font-style: inherit;">-</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">name</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-weight: bold;
-font-style: inherit;">:</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> DBENCH_MOUNTPOINT</span></span>
-<span id="cb1-26"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">              </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">value</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-weight: bold;
-font-style: inherit;">:</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> /data</span></span>
-<span id="cb1-27"><span class="co" style="color: #5E5E5E;
-background-color: null;
-font-style: inherit;">              # - name: DBENCH_QUICK</span></span>
-<span id="cb1-28"><span class="co" style="color: #5E5E5E;
-background-color: null;
-font-style: inherit;">              #   value: "yes"</span></span>
-<span id="cb1-29"><span class="co" style="color: #5E5E5E;
-background-color: null;
-font-style: inherit;">              # - name: FIO_SIZE</span></span>
-<span id="cb1-30"><span class="co" style="color: #5E5E5E;
-background-color: null;
-font-style: inherit;">              #   value: 1G</span></span>
-<span id="cb1-31"><span class="co" style="color: #5E5E5E;
-background-color: null;
-font-style: inherit;">              # - name: FIO_OFFSET_INCREMENT</span></span>
-<span id="cb1-32"><span class="co" style="color: #5E5E5E;
-background-color: null;
-font-style: inherit;">              #   value: 256M</span></span>
-<span id="cb1-33"><span class="co" style="color: #5E5E5E;
-background-color: null;
-font-style: inherit;">              # - name: FIO_DIRECT</span></span>
-<span id="cb1-34"><span class="co" style="color: #5E5E5E;
-background-color: null;
-font-style: inherit;">              #   value: "0"</span></span>
-<span id="cb1-35"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">          </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">volumeMounts</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-weight: bold;
-font-style: inherit;">:</span></span>
-<span id="cb1-36"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">            </span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-weight: bold;
-font-style: inherit;">-</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">name</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-weight: bold;
-font-style: inherit;">:</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> dbench-pv</span></span>
-<span id="cb1-37"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">              </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">mountPath</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-weight: bold;
-font-style: inherit;">:</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> /data</span></span>
-<span id="cb1-38"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">      </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">restartPolicy</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-weight: bold;
-font-style: inherit;">:</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> Never</span></span>
-<span id="cb1-39"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">      </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">volumes</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-weight: bold;
-font-style: inherit;">:</span></span>
-<span id="cb1-40"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">        </span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-weight: bold;
-font-style: inherit;">-</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">name</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-weight: bold;
-font-style: inherit;">:</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> dbench-pv</span></span>
-<span id="cb1-41"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">          </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">persistentVolumeClaim</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-weight: bold;
-font-style: inherit;">:</span></span>
-<span id="cb1-42"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">            </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">claimName</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-weight: bold;
-font-style: inherit;">:</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> dbench-pv-claim</span></span>
-<span id="cb1-43"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">  </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">backoffLimit</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-weight: bold;
-font-style: inherit;">:</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> </span><span class="dv" style="color: #AD0000;
-background-color: null;
-font-style: inherit;">4</span></span></code></pre></div></div>
-<p>Very straightforward, make a <code>PersistentVolumeClaim</code> using the storage class you care about, make a job that attaches the dbench container to that <code>pvc</code>.</p>
-<p>From there I can apply the file and then check out the results of the job with <code>kubectl logs jobs/dbench -f</code>. After I’m done I delete the resource and deploy a similar manifest to test another type of storage. Not super sophisticated but it worked for what I needed.</p>
-</section>
-<section id="local-storage" class="level1">
-<h1>Local storage</h1>
-<p>As both a baseline and because I need it I wanted to set up local path persistent storage to start. The Talos docs recommended <a href="https://github.com/rancher/local-path-provisioner">local path provisioner</a> so I tried it first. The installation from following the docs in talos (you need to do a couple talos specific installations) were easy to follow and when I was done I had a working storage class. Here’s the summary of the dbench results:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2" style="background: #f1f3f5;"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb2-1"><span class="ex" style="color: null;
-background-color: null;
-font-style: inherit;">==================</span></span>
-<span id="cb2-2"><span class="ex" style="color: null;
-background-color: null;
-font-style: inherit;">=</span> Dbench Summary =</span>
-<span id="cb2-3"><span class="ex" style="color: null;
-background-color: null;
-font-style: inherit;">==================</span></span>
-<span id="cb2-4"><span class="ex" style="color: null;
-background-color: null;
-font-style: inherit;">Random</span> Read/Write IOPS: 174k/103k. BW: 1831MiB/s / 2467MiB/s</span>
-<span id="cb2-5"><span class="ex" style="color: null;
-background-color: null;
-font-style: inherit;">Average</span> Latency <span class="er" style="color: #AD0000;
-background-color: null;
-font-style: inherit;">(</span><span class="ex" style="color: null;
-background-color: null;
-font-style: inherit;">usec</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-weight: bold;
-font-style: inherit;">)</span> <span class="ex" style="color: null;
-background-color: null;
-font-style: inherit;">Read/Write:</span> 66.86/43.63</span>
-<span id="cb2-6"><span class="ex" style="color: null;
-background-color: null;
-font-style: inherit;">Sequential</span> Read/Write: 3193MiB/s / 2835MiB/s</span>
-<span id="cb2-7"><span class="ex" style="color: null;
-background-color: null;
-font-style: inherit;">Mixed</span> Random Read/Write IOPS: 77.8k/25.1k</span></code></pre></div></div>
-<p>This is nice and fast, how fast exactly we’ll see when we start comparing it to other storage classes.</p>
-</section>
-<section id="nas-storage" class="level1">
-<h1>NAS storage</h1>
-<p>Not everything the cluster accesses will be stored on it. I’ve got a Synology NAS full of big spinning disks so for anything large I’ll want to use that. Also, spinning disks outside the cluster seems like a good other end of the spectrum for performance compared to the local path on nvme drives I just tested.</p>
-<p>I created a shared folder for storage testing on my NAS and added it as a pvc:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3" style="background: #f1f3f5;"><pre class="sourceCode yaml code-with-copy"><code class="sourceCode yaml"><span id="cb3-1"><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">apiVersion</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-weight: bold;
-font-style: inherit;">:</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> v1</span></span>
-<span id="cb3-2"><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">kind</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-weight: bold;
-font-style: inherit;">:</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> PersistentVolume</span></span>
-<span id="cb3-3"><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">metadata</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-weight: bold;
-font-style: inherit;">:</span></span>
-<span id="cb3-4"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">  </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">name</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-weight: bold;
-font-style: inherit;">:</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> nfs-pv</span></span>
-<span id="cb3-5"><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">spec</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-weight: bold;
-font-style: inherit;">:</span></span>
-<span id="cb3-6"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">  </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">capacity</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-weight: bold;
-font-style: inherit;">:</span></span>
-<span id="cb3-7"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">    </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">storage</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-weight: bold;
-font-style: inherit;">:</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> 10Gi</span><span class="co" style="color: #5E5E5E;
-background-color: null;
-font-style: inherit;"> # Size is arbitrary for NFS, adjust as needed</span></span>
-<span id="cb3-8"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">  </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">accessModes</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-weight: bold;
-font-style: inherit;">:</span></span>
-<span id="cb3-9"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">    </span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-weight: bold;
-font-style: inherit;">-</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> ReadWriteMany</span><span class="co" style="color: #5E5E5E;
-background-color: null;
-font-style: inherit;"> # RWX for multiple pods</span></span>
-<span id="cb3-10"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">  </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">persistentVolumeReclaimPolicy</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-weight: bold;
-font-style: inherit;">:</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> Retain</span><span class="co" style="color: #5E5E5E;
-background-color: null;
-font-style: inherit;"> # Keeps data after PVC deletion</span></span>
-<span id="cb3-11"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">  </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">storageClassName</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-weight: bold;
-font-style: inherit;">:</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> nfs</span><span class="co" style="color: #5E5E5E;
-background-color: null;
-font-style: inherit;"> # Optional, define if using dynamic provisioning later</span></span>
-<span id="cb3-12"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">  </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">mountOptions</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-weight: bold;
-font-style: inherit;">:</span></span>
-<span id="cb3-13"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">    </span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-weight: bold;
-font-style: inherit;">-</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> hard</span></span>
-<span id="cb3-14"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">    </span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-weight: bold;
-font-style: inherit;">-</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> nfsvers=4.1</span><span class="co" style="color: #5E5E5E;
-background-color: null;
-font-style: inherit;"> # Adjust NFS version as needed</span></span>
-<span id="cb3-15"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">  </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">nfs</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-weight: bold;
-font-style: inherit;">:</span></span>
-<span id="cb3-16"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">    </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">server</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-weight: bold;
-font-style: inherit;">:</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> </span><span class="fl" style="color: #AD0000;
-background-color: null;
-font-style: inherit;">192.168.10.3</span><span class="co" style="color: #5E5E5E;
-background-color: null;
-font-style: inherit;"> # Your NFS server IP or hostname</span></span>
-<span id="cb3-17"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">    </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">path</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-weight: bold;
-font-style: inherit;">:</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> /volume1/storagetesting</span><span class="co" style="color: #5E5E5E;
-background-color: null;
-font-style: inherit;"> # Specific folder in the NFS share</span></span></code></pre></div></div>
-<p>Then ran dbench:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4" style="background: #f1f3f5;"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb4-1"><span class="ex" style="color: null;
-background-color: null;
-font-style: inherit;">==================</span></span>
-<span id="cb4-2"><span class="ex" style="color: null;
-background-color: null;
-font-style: inherit;">=</span> Dbench Summary =</span>
-<span id="cb4-3"><span class="ex" style="color: null;
-background-color: null;
-font-style: inherit;">==================</span></span>
-<span id="cb4-4"><span class="ex" style="color: null;
-background-color: null;
-font-style: inherit;">Random</span> Read/Write IOPS: 24.4k/15.6k. BW: 110MiB/s / 110MiB/s</span>
-<span id="cb4-5"><span class="ex" style="color: null;
-background-color: null;
-font-style: inherit;">Average</span> Latency <span class="er" style="color: #AD0000;
-background-color: null;
-font-style: inherit;">(</span><span class="ex" style="color: null;
-background-color: null;
-font-style: inherit;">usec</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-weight: bold;
-font-style: inherit;">)</span> <span class="ex" style="color: null;
-background-color: null;
-font-style: inherit;">Read/Write:</span> 588.77/528.61</span>
-<span id="cb4-6"><span class="ex" style="color: null;
-background-color: null;
-font-style: inherit;">Sequential</span> Read/Write: 111MiB/s / 111MiB/s</span>
-<span id="cb4-7"><span class="ex" style="color: null;
-background-color: null;
-font-style: inherit;">Mixed</span> Random Read/Write IOPS: 17.5k/5806</span></code></pre></div></div>
-<p>Dang, yup, that’s slow. Right around gigabit speed so to be expected, but still, slow.</p>
-</section>
-<section id="longhorn" class="level1">
-<h1>Longhorn</h1>
-<p>The <a href="https://www.talos.dev/v1.9/kubernetes-guides/configuration/storage/#others-iscsi">talos docs</a> basically just say don’t use longhorn because it uses iscsi and that’s old. I imagine in a really production focused high performance environment that would be a valid critique. For my home lab where storage isn’t really my main focus and convenience and user friendliness matter maybe it’s not such a big deal.</p>
-<p>The <a href="https://longhorn.io/docs/1.8.0/advanced-resources/os-distro-specific/talos-linux-support/">longhorn docs</a> do have a talos specific install guide that will probably be helpful. It also has a guide for installation with <a href="https://longhorn.io/docs/1.8.0/deploy/install/install-with-argocd/">argocd</a> that I’ll refer to. I already did the talos specific configs a wile back before I got sidetracked by upgrading and a bunch of other challenges. So I can just focus on the argo stuff at this point.</p>
-<p>I threw the helm chart in an app, added a manifest for the namespace that had a label for <code>pod-security.kubernetes.io/enforce: privileged</code> as well as an Ingress for Traefik so I could load the web UI.</p>
-<p>Besides some stupid issues where I hadn’t applied the talos patches that I thought I had the install went fine.</p>
-<section id="uninstalling" class="level2">
-<h2 class="anchored" data-anchor-id="uninstalling">Uninstalling</h2>
-<p>Quick note because this caught me out, if you want to remove longhorn, don’t just remove the app from argo. Follow <a href="https://longhorn.io/docs/1.8.1/deploy/uninstall/">the docs</a> otherwise you will be in a horribly broken state where the namespace can’t be deleted because it’s wiped some of the pods that are responsible for cleaning up CRDs… it’s a whole thing.</p>
-</section>
-<section id="performance" class="level2">
-<h2 class="anchored" data-anchor-id="performance">Performance</h2>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5" style="background: #f1f3f5;"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb5-1"><span class="ex" style="color: null;
-background-color: null;
-font-style: inherit;">==================</span></span>
-<span id="cb5-2"><span class="ex" style="color: null;
-background-color: null;
-font-style: inherit;">=</span> Dbench Summary =</span>
-<span id="cb5-3"><span class="ex" style="color: null;
-background-color: null;
-font-style: inherit;">==================</span></span>
-<span id="cb5-4"><span class="ex" style="color: null;
-background-color: null;
-font-style: inherit;">Random</span> Read/Write IOPS: 13.1k/8955. BW: 154MiB/s / 54.2MiB/s</span>
-<span id="cb5-5"><span class="ex" style="color: null;
-background-color: null;
-font-style: inherit;">Average</span> Latency <span class="er" style="color: #AD0000;
-background-color: null;
-font-style: inherit;">(</span><span class="ex" style="color: null;
-background-color: null;
-font-style: inherit;">usec</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-weight: bold;
-font-style: inherit;">)</span> <span class="ex" style="color: null;
-background-color: null;
-font-style: inherit;">Read/Write:</span> 539.46/664.56</span>
-<span id="cb5-6"><span class="ex" style="color: null;
-background-color: null;
-font-style: inherit;">Sequential</span> Read/Write: 151MiB/s / 56.2MiB/s</span>
-<span id="cb5-7"><span class="ex" style="color: null;
-background-color: null;
-font-style: inherit;">Mixed</span> Random Read/Write IOPS: 9449/3144</span></code></pre></div></div>
-<p>Slower than the NAS on writes, faster on reads. That makes sense, it’s got to write over gigabit multiple times whereas the NAS only has to do it once. I’m disappointed reads aren’t faster, I wouldn’t have expected that performance to be so much worse, I guess maybe it has to do some network checks to make sure nodes aren’t writing before it reads or something? Anyway, that’s good to be aware of.</p>
-</section>
-</section>
-<section id="openebs-mayastor" class="level1">
-<h1>Openebs Mayastor</h1>
-<p>Oh man, I had such a bad time with installing this. Openebs has very inconsistent choices about where it expects to be able to find files for its local volumes (for handling its own etcd cluster etc). There’s a <a href="https://github.com/openebs/openebs/issues/3778">github issue</a> discussing it. Combined with talos needing to configure the kubelet to mount paths that containers need to access this is a recipe for misconfiguration. I messed around with so many different configs on the helm chart for openebs and the config for my kubelet between <code>/var/local</code> and <code>/var/openebs/local</code> and <code>/var/local/openebs</code>. I did learn a ton of troubleshooting techniques following the logs of various pods back to ultimately discovering that one pod all the others depended on couldn’t start because it couldn’t attach to a volume. The worst part was as near as I can tell even after I updated my config, removed openebs and reinstalled it, it was still trying to use the old paths. Eventually I wiped my cluster and started fresh and was able to get it working after that. I don’t want to hold this against the project too much, I’m sure a lot of the problem is my inexperience, but I sure spent a lot of time banging my head against tweaking those configs.</p>
-<p>Once I got it working the performance was similar to longhorn:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6" style="background: #f1f3f5;"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb6-1"><span class="ex" style="color: null;
-background-color: null;
-font-style: inherit;">==================</span></span>
-<span id="cb6-2"><span class="ex" style="color: null;
-background-color: null;
-font-style: inherit;">=</span> Dbench Summary =</span>
-<span id="cb6-3"><span class="ex" style="color: null;
-background-color: null;
-font-style: inherit;">==================</span></span>
-<span id="cb6-4"><span class="ex" style="color: null;
-background-color: null;
-font-style: inherit;">Random</span> Read/Write IOPS: 29.9k/13.8k. BW: 161MiB/s / 56.4MiB/s</span>
-<span id="cb6-5"><span class="ex" style="color: null;
-background-color: null;
-font-style: inherit;">Average</span> Latency <span class="er" style="color: #AD0000;
-background-color: null;
-font-style: inherit;">(</span><span class="ex" style="color: null;
-background-color: null;
-font-style: inherit;">usec</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-weight: bold;
-font-style: inherit;">)</span> <span class="ex" style="color: null;
-background-color: null;
-font-style: inherit;">Read/Write:</span> 306.22/339.67</span>
-<span id="cb6-6"><span class="ex" style="color: null;
-background-color: null;
-font-style: inherit;">Sequential</span> Read/Write: 172MiB/s / 59.2MiB/s</span>
-<span id="cb6-7"><span class="ex" style="color: null;
-background-color: null;
-font-style: inherit;">Mixed</span> Random Read/Write IOPS: 19.4k/6457</span></code></pre></div></div>
-<p>Besides making me sad when I tried to configure it, openebs also requires 2 cores per node running at 100% polling for changes. Since I only have 4 cores in each of my nodes that would be 50% of my CPU dedicated to handling storage. Given that, the lack of nice web UI (I won’t configure things with it but it’s nice for monitoring in longhorn), and the pain I suffered configuring it, I will be passing on using openebs.</p>
-
-
-</section>
-
- ]]></description>
-  <category>kubernetes</category>
-  <category>talos</category>
-  <category>storage</category>
-  <category>longhorn</category>
-  <category>openebs</category>
-  <guid>https://blog.ianpreston.ca/posts/2025-04-20-k8s-storage.html</guid>
   <pubDate>Sun, 20 Apr 2025 00:00:00 GMT</pubDate>
 </item>
 <item>
@@ -5459,682 +5459,6 @@ font-style: inherit;">-n</span> argocd</span></code></pre></div></div>
   <pubDate>Sat, 04 Jan 2025 00:00:00 GMT</pubDate>
 </item>
 <item>
-  <title>My first k8s build log - Cilium</title>
-  <link>https://blog.ianpreston.ca/posts/2024-12-27-kubelog-cilium.html</link>
-  <description><![CDATA[ 
-
-
-
-
-
-<section id="introduction" class="level1">
-<h1>Introduction</h1>
-<p>I’m building out my first kubernetes cluster and in these posts I’m going to do a relatively raw write up on what I’ve done to get it working. These are definitely not authoritative guides, but I think sometimes having someone who’s new write up what they’re doing can be helpful. Hopefully it’s useful to others, or at least me when I need to go back and figure out what I did.</p>
-<p>In this inaugural post I’m going to talk about setting up <a href="https://cilium.io/">cilium</a> as my <a href="https://kubernetes.io/docs/concepts/extend-kubernetes/compute-storage-net/network-plugins/">CNI</a>.</p>
-<section id="update" class="level2">
-<h2 class="anchored" data-anchor-id="update">Update</h2>
-<p>I went back and set this up so that <a href="https://argo-cd.readthedocs.io/en/stable/">argocd</a> can take over managing cilium once it’s loaded up. The main components are the same but the structure of some files is slightly different.</p>
-<p>This post has been updated to reflect that.</p>
-</section>
-</section>
-<section id="background-on-my-setup" class="level1">
-<h1>Background on my setup</h1>
-<p>For this project I started with a Talos Linux cluster of 3 nodes running <a href="https://github.com/flannel-io/flannel">flannel</a>. I got interested in cilium because it allows for more complicated network policies that I thought I’d want in the future, it has a built in load balancer option so I wouldn’t have to bring in <a href="https://metallb.io/">metallb</a>, and finally in looking at a bunch of example homelab repos it seems to be what everyone else is using and they probably have a good reason. PS, no disrespect to metallb, it worked great when I tested it out, I just figure having that capability combined and managed with the rest of my network stack will make my life easier in the future.</p>
-<p>Additionally, while this isn’t implemented yet, I want to use <a href="https://argo-cd.readthedocs.io/en/stable/">argocd</a> to manage my cluster, so I don’t want my cilium install to be too tightly coupled with talos.</p>
-</section>
-<section id="initial-research" class="level1">
-<h1>Initial research</h1>
-<p>The obvious place to start is the <a href="https://www.talos.dev/v1.9/kubernetes-guides/network/deploying-cilium/">talos docs</a>. Unfortunately, unlike flannel I can’t just set <code>cilium</code> as my CNI in my config and have it stood up when I bootstrap the cluster. Fortunately they give a bunch of options for using cilium.</p>
-<p>Since the docs recommend not using the cilium CLI I skipped those options and reviewed the options available through <a href="https://helm.sh/">helm</a>.</p>
-<p><a href="https://www.talos.dev/v1.9/kubernetes-guides/network/deploying-cilium/#method-1-helm-install">Method 1</a>, just running the regular <code>helm install</code> command after bootstrapping your cluster but before it reboots because it has no CNI was definitely the most straightforward, but it felt a bit hacky. It ended up being what I did, but not before trying and failing with some other options.</p>
-<p><a href="https://www.talos.dev/v1.9/kubernetes-guides/network/deploying-cilium/#method-4-helm-manifests-inline-install">Method 4</a> is more elegant, adding in the full templated manifest to your patch, but it had a few killer drawbacks for my requirements. First, I’d have sensitive information in the templated manifest, which means I couldn’t just dump it in git. I could maybe get around that with SOPs, but it’s extra steps. More importantly, talos would revert any changes to objects created by the manifest whenever a node rebooted. This means if I patched cilium after install it would only last until a node reboot. I’d instead have to update my template and reapply my talos config. That ruled it out.</p>
-<p><a href="https://www.talos.dev/v1.9/kubernetes-guides/network/deploying-cilium/#method-5-using-a-job">Method 5</a>, defining a job to run in the manifest which would run the cilium installer seemed great. No timing issues with running commands after cluster bootstrapping, and since it’s only the job object itself directly implemented by talos I should be able to manage cilium outside it after the setup.</p>
-</section>
-<section id="first-issue" class="level1">
-<h1>First issue</h1>
-<p>Using the approach from Method 5 I added a file to my patches folder with the CNI configs and the job manifest as specified. After applying the patch to my control plane nodes I checked the state:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1" style="background: #f1f3f5;"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb1-1"><span class="ex" style="color: null;
-background-color: null;
-font-style: inherit;">❯</span> kubectl get pods <span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">-n</span> kube-system</span>
-<span id="cb1-2"><span class="ex" style="color: null;
-background-color: null;
-font-style: inherit;">NAME</span>                                  READY   STATUS                       RESTARTS     AGE</span>
-<span id="cb1-3"><span class="ex" style="color: null;
-background-color: null;
-font-style: inherit;">cilium-install-chtmv</span>                  0/1     ContainerCreating            0            13s</span>
-<span id="cb1-4"><span class="ex" style="color: null;
-background-color: null;
-font-style: inherit;">coredns-64b67fc8fd-l7k7j</span>              1/1     Running                      0            69d</span>
-<span id="cb1-5"><span class="ex" style="color: null;
-background-color: null;
-font-style: inherit;">coredns-64b67fc8fd-nlg55</span>              1/1     Running                      0            69d</span>
-<span id="cb1-6"><span class="ex" style="color: null;
-background-color: null;
-font-style: inherit;">kube-apiserver-d-hpp-1-lab</span>            0/1     ContainerCreating            0            69d</span>
-<span id="cb1-7"><span class="ex" style="color: null;
-background-color: null;
-font-style: inherit;">kube-apiserver-d-hpp-2-lab</span>            1/1     Running                      0            1s</span>
-<span id="cb1-8"><span class="ex" style="color: null;
-background-color: null;
-font-style: inherit;">kube-apiserver-d-hpp-3-lab</span>            1/1     Running                      0            9s</span>
-<span id="cb1-9"><span class="ex" style="color: null;
-background-color: null;
-font-style: inherit;">kube-controller-manager-d-hpp-1-lab</span>   0/1     ContainerCreating            0            69d</span>
-<span id="cb1-10"><span class="ex" style="color: null;
-background-color: null;
-font-style: inherit;">kube-controller-manager-d-hpp-2-lab</span>   0/1     Running                      0            2s</span>
-<span id="cb1-11"><span class="ex" style="color: null;
-background-color: null;
-font-style: inherit;">kube-controller-manager-d-hpp-3-lab</span>   1/1     Running                      0            8s</span>
-<span id="cb1-12"><span class="ex" style="color: null;
-background-color: null;
-font-style: inherit;">kube-flannel-fzrqv</span>                    0/1     CreateContainerConfigError   0            69d</span>
-<span id="cb1-13"><span class="ex" style="color: null;
-background-color: null;
-font-style: inherit;">kube-flannel-kwl77</span>                    1/1     Running                      1 <span class="er" style="color: #AD0000;
-background-color: null;
-font-style: inherit;">(</span><span class="ex" style="color: null;
-background-color: null;
-font-style: inherit;">1s</span> ago<span class="kw" style="color: #003B4F;
-background-color: null;
-font-weight: bold;
-font-style: inherit;">)</span>   <span class="ex" style="color: null;
-background-color: null;
-font-style: inherit;">69d</span></span>
-<span id="cb1-14"><span class="ex" style="color: null;
-background-color: null;
-font-style: inherit;">kube-flannel-rj7m7</span>                    0/1     CreateContainerConfigError   0            69d</span>
-<span id="cb1-15"><span class="ex" style="color: null;
-background-color: null;
-font-style: inherit;">kube-proxy-4dtr8</span>                      0/1     CreateContainerConfigError   0            69d</span>
-<span id="cb1-16"><span class="ex" style="color: null;
-background-color: null;
-font-style: inherit;">kube-proxy-5s9zh</span>                      1/1     Running                      1 <span class="er" style="color: #AD0000;
-background-color: null;
-font-style: inherit;">(</span><span class="ex" style="color: null;
-background-color: null;
-font-style: inherit;">2s</span> ago<span class="kw" style="color: #003B4F;
-background-color: null;
-font-weight: bold;
-font-style: inherit;">)</span>   <span class="ex" style="color: null;
-background-color: null;
-font-style: inherit;">69d</span></span>
-<span id="cb1-17"><span class="ex" style="color: null;
-background-color: null;
-font-style: inherit;">kube-proxy-9lf9b</span>                      0/1     CreateContainerConfigError   0            69d</span>
-<span id="cb1-18"><span class="ex" style="color: null;
-background-color: null;
-font-style: inherit;">kube-scheduler-d-hpp-1-lab</span>            0/1     ContainerCreating            0            69d</span>
-<span id="cb1-19"><span class="ex" style="color: null;
-background-color: null;
-font-style: inherit;">kube-scheduler-d-hpp-2-lab</span>            0/1     Running                      0            1s</span>
-<span id="cb1-20"><span class="ex" style="color: null;
-background-color: null;
-font-style: inherit;">kube-scheduler-d-hpp-3-lab</span>            1/1     Running                      0            9s</span>
-<span id="cb1-21"><span class="ex" style="color: null;
-background-color: null;
-font-style: inherit;">metrics-server-d5865ff47-nb7fp</span>        0/1     CreateContainerConfigError   0            28d</span></code></pre></div></div>
-<p>Not ideal. After a little while <code>cilium-install</code> is in <code>CrashLoopBackOff</code>. Also, I still have flannel pods running.</p>
-<section id="the-solution" class="level2">
-<h2 class="anchored" data-anchor-id="the-solution">The solution</h2>
-<p>Fortunately this cluster was in the very early stages of testing so I just wiped everything and did a fresh install. Maybe there’s a cleaner way to handle that but it wasn’t really worth it for what I’d set up on the cluster so far. All I’d really done to date was work through the chapters of <a href="https://www.oreilly.com/library/view/kubernetes-up-and/9781098110192/">kubernetes up and running</a></p>
-</section>
-</section>
-<section id="second-issue" class="level1">
-<h1>Second issue</h1>
-<p>For whatever reason, the job install just wasn’t working for me. I don’t have amazing logs from the attempt but the one I wrote down was this:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2" style="background: #f1f3f5;"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb2-1"><span class="ex" style="color: null;
-background-color: null;
-font-style: inherit;">❯</span> kubectl logs <span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">-n</span> kube-system cilium-install-chtmv</span>
-<span id="cb2-2"></span>
-<span id="cb2-3"><span class="ex" style="color: null;
-background-color: null;
-font-style: inherit;">Error:</span> Unable to install Cilium: failed parsing <span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">--set</span> data: key <span class="st" style="color: #20794D;
-background-color: null;
-font-style: inherit;">"KILL"</span> has no value <span class="er" style="color: #AD0000;
-background-color: null;
-font-style: inherit;">(</span><span class="ex" style="color: null;
-background-color: null;
-font-style: inherit;">cannot</span> end with ,<span class="kw" style="color: #003B4F;
-background-color: null;
-font-weight: bold;
-font-style: inherit;">)</span></span></code></pre></div></div>
-<p>I’m really not sure why that happened, google and ChatGPT both failed me.</p>
-<section id="the-solution-1" class="level2">
-<h2 class="anchored" data-anchor-id="the-solution-1">The solution</h2>
-<p>I just did the helm install approach.</p>
-<p>From a fresh set of machines in maintenance mode I just ran:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3" style="background: #f1f3f5;"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb3-1"><span class="ex" style="color: null;
-background-color: null;
-font-style: inherit;">talosctl</span> apply <span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">-f</span> rendered/controlplane.yaml <span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">-n</span> 192.168.40.7 <span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">--insecure</span></span>
-<span id="cb3-2"><span class="ex" style="color: null;
-background-color: null;
-font-style: inherit;">talosctl</span> apply <span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">-f</span> rendered/controlplane.yaml <span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">-n</span> 192.168.40.9 <span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">--insecure</span></span>
-<span id="cb3-3"><span class="ex" style="color: null;
-background-color: null;
-font-style: inherit;">talosctl</span> apply <span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">-f</span> rendered/controlplane.yaml <span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">-n</span> 192.168.40.11 <span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">--insecure</span></span>
-<span id="cb3-4"><span class="co" style="color: #5E5E5E;
-background-color: null;
-font-style: inherit;"># wait until the dashboard starts showing that its waiting on etcd</span></span>
-<span id="cb3-5"><span class="ex" style="color: null;
-background-color: null;
-font-style: inherit;">talosctl</span> dashboard <span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">-n</span> 192.168.40.9</span>
-<span id="cb3-6"><span class="co" style="color: #5E5E5E;
-background-color: null;
-font-style: inherit;"># This is helpful too, should show all systems</span></span>
-<span id="cb3-7"><span class="ex" style="color: null;
-background-color: null;
-font-style: inherit;">talosctl</span> get members <span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">-n</span> 192.168.40.11</span>
-<span id="cb3-8"><span class="co" style="color: #5E5E5E;
-background-color: null;
-font-style: inherit;"># Start the bootstrap</span></span>
-<span id="cb3-9"><span class="ex" style="color: null;
-background-color: null;
-font-style: inherit;">talosctl</span> bootstrap <span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">-n</span> 192.168.40.11</span>
-<span id="cb3-10"><span class="co" style="color: #5E5E5E;
-background-color: null;
-font-style: inherit;"># install cilium</span></span>
-<span id="cb3-11"><span class="ex" style="color: null;
-background-color: null;
-font-style: inherit;">./cilium.sh</span></span></code></pre></div></div>
-<p>Where <code>cilium.sh</code> is:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4" style="background: #f1f3f5;"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb4-1"><span class="co" style="color: #5E5E5E;
-background-color: null;
-font-style: inherit;">#!/bin/env bash</span></span>
-<span id="cb4-2"><span class="bu" style="color: null;
-background-color: null;
-font-style: inherit;">echo</span> <span class="st" style="color: #20794D;
-background-color: null;
-font-style: inherit;">"Installing cilium"</span></span>
-<span id="cb4-3"><span class="va" style="color: #111111;
-background-color: null;
-font-style: inherit;">CILIUM_CHART</span><span class="op" style="color: #5E5E5E;
-background-color: null;
-font-style: inherit;">=</span><span class="va" style="color: #111111;
-background-color: null;
-font-style: inherit;">$(</span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">cat</span> ../../k8s/dev/services/cilium/chart/Chart.yaml<span class="va" style="color: #111111;
-background-color: null;
-font-style: inherit;">)</span></span>
-<span id="cb4-4"><span class="va" style="color: #111111;
-background-color: null;
-font-style: inherit;">CILIUM_REPO</span><span class="op" style="color: #5E5E5E;
-background-color: null;
-font-style: inherit;">=</span><span class="va" style="color: #111111;
-background-color: null;
-font-style: inherit;">$(</span><span class="bu" style="color: null;
-background-color: null;
-font-style: inherit;">echo</span> <span class="st" style="color: #20794D;
-background-color: null;
-font-style: inherit;">"</span><span class="va" style="color: #111111;
-background-color: null;
-font-style: inherit;">$CILIUM_CHART</span><span class="st" style="color: #20794D;
-background-color: null;
-font-style: inherit;">"</span> <span class="kw" style="color: #003B4F;
-background-color: null;
-font-weight: bold;
-font-style: inherit;">|</span> <span class="ex" style="color: null;
-background-color: null;
-font-style: inherit;">yq</span> eval <span class="st" style="color: #20794D;
-background-color: null;
-font-style: inherit;">'.dependencies[0].repository'</span> <span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">-</span><span class="va" style="color: #111111;
-background-color: null;
-font-style: inherit;">)</span></span>
-<span id="cb4-5"><span class="va" style="color: #111111;
-background-color: null;
-font-style: inherit;">CILIUM_VERSION</span><span class="op" style="color: #5E5E5E;
-background-color: null;
-font-style: inherit;">=</span><span class="va" style="color: #111111;
-background-color: null;
-font-style: inherit;">$(</span><span class="bu" style="color: null;
-background-color: null;
-font-style: inherit;">echo</span> <span class="st" style="color: #20794D;
-background-color: null;
-font-style: inherit;">"</span><span class="va" style="color: #111111;
-background-color: null;
-font-style: inherit;">$CILIUM_CHART</span><span class="st" style="color: #20794D;
-background-color: null;
-font-style: inherit;">"</span> <span class="kw" style="color: #003B4F;
-background-color: null;
-font-weight: bold;
-font-style: inherit;">|</span> <span class="ex" style="color: null;
-background-color: null;
-font-style: inherit;">yq</span> eval <span class="st" style="color: #20794D;
-background-color: null;
-font-style: inherit;">'.dependencies[0].version'</span><span class="va" style="color: #111111;
-background-color: null;
-font-style: inherit;">)</span></span>
-<span id="cb4-6"><span class="bu" style="color: null;
-background-color: null;
-font-style: inherit;">echo</span> <span class="st" style="color: #20794D;
-background-color: null;
-font-style: inherit;">"cilium repo: </span><span class="va" style="color: #111111;
-background-color: null;
-font-style: inherit;">$CILIUM_REPO</span><span class="st" style="color: #20794D;
-background-color: null;
-font-style: inherit;">"</span></span>
-<span id="cb4-7"><span class="bu" style="color: null;
-background-color: null;
-font-style: inherit;">echo</span> <span class="st" style="color: #20794D;
-background-color: null;
-font-style: inherit;">"cilium version: </span><span class="va" style="color: #111111;
-background-color: null;
-font-style: inherit;">$CILIUM_VERSION</span><span class="st" style="color: #20794D;
-background-color: null;
-font-style: inherit;">"</span></span>
-<span id="cb4-8"><span class="ex" style="color: null;
-background-color: null;
-font-style: inherit;">helm</span> repo add cilium <span class="va" style="color: #111111;
-background-color: null;
-font-style: inherit;">$CILIUM_REPO</span></span>
-<span id="cb4-9"><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">cat</span> ../../k8s/dev/services/cilium/chart/values.yaml <span class="kw" style="color: #003B4F;
-background-color: null;
-font-weight: bold;
-font-style: inherit;">|</span> <span class="ex" style="color: null;
-background-color: null;
-font-style: inherit;">yq</span> <span class="st" style="color: #20794D;
-background-color: null;
-font-style: inherit;">'.["cilium"]'</span> <span class="kw" style="color: #003B4F;
-background-color: null;
-font-weight: bold;
-font-style: inherit;">|</span><span class="dt" style="color: #AD0000;
-background-color: null;
-font-style: inherit;">\</span></span>
-<span id="cb4-10">  <span class="ex" style="color: null;
-background-color: null;
-font-style: inherit;">helm</span> install cilium <span class="dt" style="color: #AD0000;
-background-color: null;
-font-style: inherit;">\</span></span>
-<span id="cb4-11">    cilium/cilium <span class="dt" style="color: #AD0000;
-background-color: null;
-font-style: inherit;">\</span></span>
-<span id="cb4-12">    <span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">--version</span> <span class="va" style="color: #111111;
-background-color: null;
-font-style: inherit;">$CILIUM_VERSION</span> <span class="dt" style="color: #AD0000;
-background-color: null;
-font-style: inherit;">\</span></span>
-<span id="cb4-13">    <span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">--namespace</span> kube-system <span class="dt" style="color: #AD0000;
-background-color: null;
-font-style: inherit;">\</span></span>
-<span id="cb4-14">    <span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">--values</span> <span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">-</span></span></code></pre></div></div>
-<p>Why that version of it allows me to set the capabilities and the job approach didn’t is beyond me at this point.</p>
-<p>The actual specification of the version of cilium to install and the extra parameters to pass to the helm install are in a separate folder where they can be managed by argo once the cluster is started. The chart part looks like this:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5" style="background: #f1f3f5;"><pre class="sourceCode yaml code-with-copy"><code class="sourceCode yaml"><span id="cb5-1"><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">dependencies</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-weight: bold;
-font-style: inherit;">:</span></span>
-<span id="cb5-2"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">  </span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-weight: bold;
-font-style: inherit;">-</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">name</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-weight: bold;
-font-style: inherit;">:</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> cilium</span></span>
-<span id="cb5-3"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">    </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">version</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-weight: bold;
-font-style: inherit;">:</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> </span><span class="st" style="color: #20794D;
-background-color: null;
-font-style: inherit;">"1.16.5"</span></span>
-<span id="cb5-4"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">    </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">repository</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-weight: bold;
-font-style: inherit;">:</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> https://helm.cilium.io/</span></span></code></pre></div></div>
-<p>And the values file looks like this:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6" style="background: #f1f3f5;"><pre class="sourceCode yaml code-with-copy"><code class="sourceCode yaml"><span id="cb6-1"><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">cilium</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-weight: bold;
-font-style: inherit;">:</span></span>
-<span id="cb6-2"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">  </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">ipam</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-weight: bold;
-font-style: inherit;">:</span></span>
-<span id="cb6-3"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">    </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">mode</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-weight: bold;
-font-style: inherit;">:</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> kubernetes</span></span>
-<span id="cb6-4"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">  </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">kubeProxyReplacement</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-weight: bold;
-font-style: inherit;">:</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> </span><span class="ch" style="color: #20794D;
-background-color: null;
-font-style: inherit;">true</span></span>
-<span id="cb6-5"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">  </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">securityContext</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-weight: bold;
-font-style: inherit;">:</span></span>
-<span id="cb6-6"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">    </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">capabilities</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-weight: bold;
-font-style: inherit;">:</span></span>
-<span id="cb6-7"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">      </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">ciliumAgent</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-weight: bold;
-font-style: inherit;">:</span></span>
-<span id="cb6-8"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">        </span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-weight: bold;
-font-style: inherit;">-</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> </span><span class="st" style="color: #20794D;
-background-color: null;
-font-style: inherit;">"CHOWN"</span></span>
-<span id="cb6-9"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">        </span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-weight: bold;
-font-style: inherit;">-</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> </span><span class="st" style="color: #20794D;
-background-color: null;
-font-style: inherit;">"KILL"</span></span>
-<span id="cb6-10"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">        </span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-weight: bold;
-font-style: inherit;">-</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> </span><span class="st" style="color: #20794D;
-background-color: null;
-font-style: inherit;">"NET_ADMIN"</span></span>
-<span id="cb6-11"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">        </span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-weight: bold;
-font-style: inherit;">-</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> </span><span class="st" style="color: #20794D;
-background-color: null;
-font-style: inherit;">"NET_RAW"</span></span>
-<span id="cb6-12"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">        </span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-weight: bold;
-font-style: inherit;">-</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> </span><span class="st" style="color: #20794D;
-background-color: null;
-font-style: inherit;">"IPC_LOCK"</span></span>
-<span id="cb6-13"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">        </span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-weight: bold;
-font-style: inherit;">-</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> </span><span class="st" style="color: #20794D;
-background-color: null;
-font-style: inherit;">"SYS_ADMIN"</span></span>
-<span id="cb6-14"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">        </span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-weight: bold;
-font-style: inherit;">-</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> </span><span class="st" style="color: #20794D;
-background-color: null;
-font-style: inherit;">"SYS_RESOURCE"</span></span>
-<span id="cb6-15"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">        </span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-weight: bold;
-font-style: inherit;">-</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> </span><span class="st" style="color: #20794D;
-background-color: null;
-font-style: inherit;">"DAC_OVERRIDE"</span></span>
-<span id="cb6-16"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">        </span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-weight: bold;
-font-style: inherit;">-</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> </span><span class="st" style="color: #20794D;
-background-color: null;
-font-style: inherit;">"FOWNER"</span></span>
-<span id="cb6-17"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">        </span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-weight: bold;
-font-style: inherit;">-</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> </span><span class="st" style="color: #20794D;
-background-color: null;
-font-style: inherit;">"SETGID"</span></span>
-<span id="cb6-18"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">        </span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-weight: bold;
-font-style: inherit;">-</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> </span><span class="st" style="color: #20794D;
-background-color: null;
-font-style: inherit;">"SETUID"</span></span>
-<span id="cb6-19"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">      </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">cleanCiliumState</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-weight: bold;
-font-style: inherit;">:</span></span>
-<span id="cb6-20"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">        </span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-weight: bold;
-font-style: inherit;">-</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> </span><span class="st" style="color: #20794D;
-background-color: null;
-font-style: inherit;">"NET_ADMIN"</span></span>
-<span id="cb6-21"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">        </span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-weight: bold;
-font-style: inherit;">-</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> </span><span class="st" style="color: #20794D;
-background-color: null;
-font-style: inherit;">"SYS_ADMIN"</span></span>
-<span id="cb6-22"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">        </span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-weight: bold;
-font-style: inherit;">-</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> </span><span class="st" style="color: #20794D;
-background-color: null;
-font-style: inherit;">"SYS_RESOURCE"</span></span>
-<span id="cb6-23"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">  </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">cgroup</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-weight: bold;
-font-style: inherit;">:</span></span>
-<span id="cb6-24"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">    </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">autoMount</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-weight: bold;
-font-style: inherit;">:</span></span>
-<span id="cb6-25"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">      </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">enabled</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-weight: bold;
-font-style: inherit;">:</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> </span><span class="ch" style="color: #20794D;
-background-color: null;
-font-style: inherit;">false</span></span>
-<span id="cb6-26"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">    </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">hostRoot</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-weight: bold;
-font-style: inherit;">:</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> </span><span class="st" style="color: #20794D;
-background-color: null;
-font-style: inherit;">"/sys/fs/cgroup/"</span></span>
-<span id="cb6-27"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">  </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">k8sServiceHost</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-weight: bold;
-font-style: inherit;">:</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> localhost</span></span>
-<span id="cb6-28"><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;">  </span><span class="fu" style="color: #4758AB;
-background-color: null;
-font-style: inherit;">k8sServicePort</span><span class="kw" style="color: #003B4F;
-background-color: null;
-font-weight: bold;
-font-style: inherit;">:</span><span class="at" style="color: #657422;
-background-color: null;
-font-style: inherit;"> </span><span class="dv" style="color: #AD0000;
-background-color: null;
-font-style: inherit;">7445</span></span></code></pre></div></div>
-<p>Same content, but now if I need to do patches or update other configuration in the future it will be handled by argo, and if I bootstrap a fresh cluster it will also pick up the latest versions.</p>
-</section>
-</section>
-<section id="conclusion" class="level1">
-<h1>Conclusion</h1>
-<p>I did finally get cilium working on my cluster and so far haven’t encountered any additional issues. We’ll see how it goes when I get around to managing things with argo. I’d love to know why the job install approach didn’t work and I’d also like to know if there’s a clean, practical way to swap out your CNI on a live cluster. But I’ve got a ton of other things to learn about and set up on this cluster and I had to cut my losses somewhere. I don’t think the approach I have is awful. As a future enhancement maybe I’ll have my <code>cilium.sh</code> script parse out what version of cilium I’m managing in argo so I don’t bootstrap clusters with an old version or have to manage patching versions in two places. That’s a bit overengineered for how often I think I’m going to bootstrap clusters though so maybe I won’t</p>
-<p><em>Edit</em> I did it anyway, it follows the same pattern as the other stuff I bootstrap in my cluster so it wasn’t a big deal. Besides some dumb issues like figuring out how to correctly format the yaml for values and accidentally installing it into the <code>argocd</code> rather than <code>kube-system</code> namespace (oops) there were no problems getting this going in argo.</p>
-
-
-</section>
-
- ]]></description>
-  <category>cilium</category>
-  <category>kubernetes</category>
-  <category>talos</category>
-  <guid>https://blog.ianpreston.ca/posts/2024-12-27-kubelog-cilium.html</guid>
-  <pubDate>Fri, 27 Dec 2024 00:00:00 GMT</pubDate>
-</item>
-<item>
   <title>My first k8s build log - Bitwarden Secrets</title>
   <link>https://blog.ianpreston.ca/posts/2024-12-27-kubelog-bitwarden-secrets.html</link>
   <description><![CDATA[ 
@@ -8208,6 +7532,682 @@ font-style: inherit;"> test </span></span></code></pre></div></div>
   <category>bitwarden</category>
   <category>kubernetes</category>
   <guid>https://blog.ianpreston.ca/posts/2024-12-27-kubelog-bitwarden-secrets.html</guid>
+  <pubDate>Fri, 27 Dec 2024 00:00:00 GMT</pubDate>
+</item>
+<item>
+  <title>My first k8s build log - Cilium</title>
+  <link>https://blog.ianpreston.ca/posts/2024-12-27-kubelog-cilium.html</link>
+  <description><![CDATA[ 
+
+
+
+
+
+<section id="introduction" class="level1">
+<h1>Introduction</h1>
+<p>I’m building out my first kubernetes cluster and in these posts I’m going to do a relatively raw write up on what I’ve done to get it working. These are definitely not authoritative guides, but I think sometimes having someone who’s new write up what they’re doing can be helpful. Hopefully it’s useful to others, or at least me when I need to go back and figure out what I did.</p>
+<p>In this inaugural post I’m going to talk about setting up <a href="https://cilium.io/">cilium</a> as my <a href="https://kubernetes.io/docs/concepts/extend-kubernetes/compute-storage-net/network-plugins/">CNI</a>.</p>
+<section id="update" class="level2">
+<h2 class="anchored" data-anchor-id="update">Update</h2>
+<p>I went back and set this up so that <a href="https://argo-cd.readthedocs.io/en/stable/">argocd</a> can take over managing cilium once it’s loaded up. The main components are the same but the structure of some files is slightly different.</p>
+<p>This post has been updated to reflect that.</p>
+</section>
+</section>
+<section id="background-on-my-setup" class="level1">
+<h1>Background on my setup</h1>
+<p>For this project I started with a Talos Linux cluster of 3 nodes running <a href="https://github.com/flannel-io/flannel">flannel</a>. I got interested in cilium because it allows for more complicated network policies that I thought I’d want in the future, it has a built in load balancer option so I wouldn’t have to bring in <a href="https://metallb.io/">metallb</a>, and finally in looking at a bunch of example homelab repos it seems to be what everyone else is using and they probably have a good reason. PS, no disrespect to metallb, it worked great when I tested it out, I just figure having that capability combined and managed with the rest of my network stack will make my life easier in the future.</p>
+<p>Additionally, while this isn’t implemented yet, I want to use <a href="https://argo-cd.readthedocs.io/en/stable/">argocd</a> to manage my cluster, so I don’t want my cilium install to be too tightly coupled with talos.</p>
+</section>
+<section id="initial-research" class="level1">
+<h1>Initial research</h1>
+<p>The obvious place to start is the <a href="https://www.talos.dev/v1.9/kubernetes-guides/network/deploying-cilium/">talos docs</a>. Unfortunately, unlike flannel I can’t just set <code>cilium</code> as my CNI in my config and have it stood up when I bootstrap the cluster. Fortunately they give a bunch of options for using cilium.</p>
+<p>Since the docs recommend not using the cilium CLI I skipped those options and reviewed the options available through <a href="https://helm.sh/">helm</a>.</p>
+<p><a href="https://www.talos.dev/v1.9/kubernetes-guides/network/deploying-cilium/#method-1-helm-install">Method 1</a>, just running the regular <code>helm install</code> command after bootstrapping your cluster but before it reboots because it has no CNI was definitely the most straightforward, but it felt a bit hacky. It ended up being what I did, but not before trying and failing with some other options.</p>
+<p><a href="https://www.talos.dev/v1.9/kubernetes-guides/network/deploying-cilium/#method-4-helm-manifests-inline-install">Method 4</a> is more elegant, adding in the full templated manifest to your patch, but it had a few killer drawbacks for my requirements. First, I’d have sensitive information in the templated manifest, which means I couldn’t just dump it in git. I could maybe get around that with SOPs, but it’s extra steps. More importantly, talos would revert any changes to objects created by the manifest whenever a node rebooted. This means if I patched cilium after install it would only last until a node reboot. I’d instead have to update my template and reapply my talos config. That ruled it out.</p>
+<p><a href="https://www.talos.dev/v1.9/kubernetes-guides/network/deploying-cilium/#method-5-using-a-job">Method 5</a>, defining a job to run in the manifest which would run the cilium installer seemed great. No timing issues with running commands after cluster bootstrapping, and since it’s only the job object itself directly implemented by talos I should be able to manage cilium outside it after the setup.</p>
+</section>
+<section id="first-issue" class="level1">
+<h1>First issue</h1>
+<p>Using the approach from Method 5 I added a file to my patches folder with the CNI configs and the job manifest as specified. After applying the patch to my control plane nodes I checked the state:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1" style="background: #f1f3f5;"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb1-1"><span class="ex" style="color: null;
+background-color: null;
+font-style: inherit;">❯</span> kubectl get pods <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">-n</span> kube-system</span>
+<span id="cb1-2"><span class="ex" style="color: null;
+background-color: null;
+font-style: inherit;">NAME</span>                                  READY   STATUS                       RESTARTS     AGE</span>
+<span id="cb1-3"><span class="ex" style="color: null;
+background-color: null;
+font-style: inherit;">cilium-install-chtmv</span>                  0/1     ContainerCreating            0            13s</span>
+<span id="cb1-4"><span class="ex" style="color: null;
+background-color: null;
+font-style: inherit;">coredns-64b67fc8fd-l7k7j</span>              1/1     Running                      0            69d</span>
+<span id="cb1-5"><span class="ex" style="color: null;
+background-color: null;
+font-style: inherit;">coredns-64b67fc8fd-nlg55</span>              1/1     Running                      0            69d</span>
+<span id="cb1-6"><span class="ex" style="color: null;
+background-color: null;
+font-style: inherit;">kube-apiserver-d-hpp-1-lab</span>            0/1     ContainerCreating            0            69d</span>
+<span id="cb1-7"><span class="ex" style="color: null;
+background-color: null;
+font-style: inherit;">kube-apiserver-d-hpp-2-lab</span>            1/1     Running                      0            1s</span>
+<span id="cb1-8"><span class="ex" style="color: null;
+background-color: null;
+font-style: inherit;">kube-apiserver-d-hpp-3-lab</span>            1/1     Running                      0            9s</span>
+<span id="cb1-9"><span class="ex" style="color: null;
+background-color: null;
+font-style: inherit;">kube-controller-manager-d-hpp-1-lab</span>   0/1     ContainerCreating            0            69d</span>
+<span id="cb1-10"><span class="ex" style="color: null;
+background-color: null;
+font-style: inherit;">kube-controller-manager-d-hpp-2-lab</span>   0/1     Running                      0            2s</span>
+<span id="cb1-11"><span class="ex" style="color: null;
+background-color: null;
+font-style: inherit;">kube-controller-manager-d-hpp-3-lab</span>   1/1     Running                      0            8s</span>
+<span id="cb1-12"><span class="ex" style="color: null;
+background-color: null;
+font-style: inherit;">kube-flannel-fzrqv</span>                    0/1     CreateContainerConfigError   0            69d</span>
+<span id="cb1-13"><span class="ex" style="color: null;
+background-color: null;
+font-style: inherit;">kube-flannel-kwl77</span>                    1/1     Running                      1 <span class="er" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">(</span><span class="ex" style="color: null;
+background-color: null;
+font-style: inherit;">1s</span> ago<span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">)</span>   <span class="ex" style="color: null;
+background-color: null;
+font-style: inherit;">69d</span></span>
+<span id="cb1-14"><span class="ex" style="color: null;
+background-color: null;
+font-style: inherit;">kube-flannel-rj7m7</span>                    0/1     CreateContainerConfigError   0            69d</span>
+<span id="cb1-15"><span class="ex" style="color: null;
+background-color: null;
+font-style: inherit;">kube-proxy-4dtr8</span>                      0/1     CreateContainerConfigError   0            69d</span>
+<span id="cb1-16"><span class="ex" style="color: null;
+background-color: null;
+font-style: inherit;">kube-proxy-5s9zh</span>                      1/1     Running                      1 <span class="er" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">(</span><span class="ex" style="color: null;
+background-color: null;
+font-style: inherit;">2s</span> ago<span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">)</span>   <span class="ex" style="color: null;
+background-color: null;
+font-style: inherit;">69d</span></span>
+<span id="cb1-17"><span class="ex" style="color: null;
+background-color: null;
+font-style: inherit;">kube-proxy-9lf9b</span>                      0/1     CreateContainerConfigError   0            69d</span>
+<span id="cb1-18"><span class="ex" style="color: null;
+background-color: null;
+font-style: inherit;">kube-scheduler-d-hpp-1-lab</span>            0/1     ContainerCreating            0            69d</span>
+<span id="cb1-19"><span class="ex" style="color: null;
+background-color: null;
+font-style: inherit;">kube-scheduler-d-hpp-2-lab</span>            0/1     Running                      0            1s</span>
+<span id="cb1-20"><span class="ex" style="color: null;
+background-color: null;
+font-style: inherit;">kube-scheduler-d-hpp-3-lab</span>            1/1     Running                      0            9s</span>
+<span id="cb1-21"><span class="ex" style="color: null;
+background-color: null;
+font-style: inherit;">metrics-server-d5865ff47-nb7fp</span>        0/1     CreateContainerConfigError   0            28d</span></code></pre></div></div>
+<p>Not ideal. After a little while <code>cilium-install</code> is in <code>CrashLoopBackOff</code>. Also, I still have flannel pods running.</p>
+<section id="the-solution" class="level2">
+<h2 class="anchored" data-anchor-id="the-solution">The solution</h2>
+<p>Fortunately this cluster was in the very early stages of testing so I just wiped everything and did a fresh install. Maybe there’s a cleaner way to handle that but it wasn’t really worth it for what I’d set up on the cluster so far. All I’d really done to date was work through the chapters of <a href="https://www.oreilly.com/library/view/kubernetes-up-and/9781098110192/">kubernetes up and running</a></p>
+</section>
+</section>
+<section id="second-issue" class="level1">
+<h1>Second issue</h1>
+<p>For whatever reason, the job install just wasn’t working for me. I don’t have amazing logs from the attempt but the one I wrote down was this:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2" style="background: #f1f3f5;"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb2-1"><span class="ex" style="color: null;
+background-color: null;
+font-style: inherit;">❯</span> kubectl logs <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">-n</span> kube-system cilium-install-chtmv</span>
+<span id="cb2-2"></span>
+<span id="cb2-3"><span class="ex" style="color: null;
+background-color: null;
+font-style: inherit;">Error:</span> Unable to install Cilium: failed parsing <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">--set</span> data: key <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"KILL"</span> has no value <span class="er" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">(</span><span class="ex" style="color: null;
+background-color: null;
+font-style: inherit;">cannot</span> end with ,<span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">)</span></span></code></pre></div></div>
+<p>I’m really not sure why that happened, google and ChatGPT both failed me.</p>
+<section id="the-solution-1" class="level2">
+<h2 class="anchored" data-anchor-id="the-solution-1">The solution</h2>
+<p>I just did the helm install approach.</p>
+<p>From a fresh set of machines in maintenance mode I just ran:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3" style="background: #f1f3f5;"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb3-1"><span class="ex" style="color: null;
+background-color: null;
+font-style: inherit;">talosctl</span> apply <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">-f</span> rendered/controlplane.yaml <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">-n</span> 192.168.40.7 <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">--insecure</span></span>
+<span id="cb3-2"><span class="ex" style="color: null;
+background-color: null;
+font-style: inherit;">talosctl</span> apply <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">-f</span> rendered/controlplane.yaml <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">-n</span> 192.168.40.9 <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">--insecure</span></span>
+<span id="cb3-3"><span class="ex" style="color: null;
+background-color: null;
+font-style: inherit;">talosctl</span> apply <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">-f</span> rendered/controlplane.yaml <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">-n</span> 192.168.40.11 <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">--insecure</span></span>
+<span id="cb3-4"><span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># wait until the dashboard starts showing that its waiting on etcd</span></span>
+<span id="cb3-5"><span class="ex" style="color: null;
+background-color: null;
+font-style: inherit;">talosctl</span> dashboard <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">-n</span> 192.168.40.9</span>
+<span id="cb3-6"><span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># This is helpful too, should show all systems</span></span>
+<span id="cb3-7"><span class="ex" style="color: null;
+background-color: null;
+font-style: inherit;">talosctl</span> get members <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">-n</span> 192.168.40.11</span>
+<span id="cb3-8"><span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># Start the bootstrap</span></span>
+<span id="cb3-9"><span class="ex" style="color: null;
+background-color: null;
+font-style: inherit;">talosctl</span> bootstrap <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">-n</span> 192.168.40.11</span>
+<span id="cb3-10"><span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;"># install cilium</span></span>
+<span id="cb3-11"><span class="ex" style="color: null;
+background-color: null;
+font-style: inherit;">./cilium.sh</span></span></code></pre></div></div>
+<p>Where <code>cilium.sh</code> is:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4" style="background: #f1f3f5;"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb4-1"><span class="co" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">#!/bin/env bash</span></span>
+<span id="cb4-2"><span class="bu" style="color: null;
+background-color: null;
+font-style: inherit;">echo</span> <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"Installing cilium"</span></span>
+<span id="cb4-3"><span class="va" style="color: #111111;
+background-color: null;
+font-style: inherit;">CILIUM_CHART</span><span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span><span class="va" style="color: #111111;
+background-color: null;
+font-style: inherit;">$(</span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">cat</span> ../../k8s/dev/services/cilium/chart/Chart.yaml<span class="va" style="color: #111111;
+background-color: null;
+font-style: inherit;">)</span></span>
+<span id="cb4-4"><span class="va" style="color: #111111;
+background-color: null;
+font-style: inherit;">CILIUM_REPO</span><span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span><span class="va" style="color: #111111;
+background-color: null;
+font-style: inherit;">$(</span><span class="bu" style="color: null;
+background-color: null;
+font-style: inherit;">echo</span> <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"</span><span class="va" style="color: #111111;
+background-color: null;
+font-style: inherit;">$CILIUM_CHART</span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"</span> <span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">|</span> <span class="ex" style="color: null;
+background-color: null;
+font-style: inherit;">yq</span> eval <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">'.dependencies[0].repository'</span> <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">-</span><span class="va" style="color: #111111;
+background-color: null;
+font-style: inherit;">)</span></span>
+<span id="cb4-5"><span class="va" style="color: #111111;
+background-color: null;
+font-style: inherit;">CILIUM_VERSION</span><span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span><span class="va" style="color: #111111;
+background-color: null;
+font-style: inherit;">$(</span><span class="bu" style="color: null;
+background-color: null;
+font-style: inherit;">echo</span> <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"</span><span class="va" style="color: #111111;
+background-color: null;
+font-style: inherit;">$CILIUM_CHART</span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"</span> <span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">|</span> <span class="ex" style="color: null;
+background-color: null;
+font-style: inherit;">yq</span> eval <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">'.dependencies[0].version'</span><span class="va" style="color: #111111;
+background-color: null;
+font-style: inherit;">)</span></span>
+<span id="cb4-6"><span class="bu" style="color: null;
+background-color: null;
+font-style: inherit;">echo</span> <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"cilium repo: </span><span class="va" style="color: #111111;
+background-color: null;
+font-style: inherit;">$CILIUM_REPO</span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"</span></span>
+<span id="cb4-7"><span class="bu" style="color: null;
+background-color: null;
+font-style: inherit;">echo</span> <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"cilium version: </span><span class="va" style="color: #111111;
+background-color: null;
+font-style: inherit;">$CILIUM_VERSION</span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"</span></span>
+<span id="cb4-8"><span class="ex" style="color: null;
+background-color: null;
+font-style: inherit;">helm</span> repo add cilium <span class="va" style="color: #111111;
+background-color: null;
+font-style: inherit;">$CILIUM_REPO</span></span>
+<span id="cb4-9"><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">cat</span> ../../k8s/dev/services/cilium/chart/values.yaml <span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">|</span> <span class="ex" style="color: null;
+background-color: null;
+font-style: inherit;">yq</span> <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">'.["cilium"]'</span> <span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">|</span><span class="dt" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">\</span></span>
+<span id="cb4-10">  <span class="ex" style="color: null;
+background-color: null;
+font-style: inherit;">helm</span> install cilium <span class="dt" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">\</span></span>
+<span id="cb4-11">    cilium/cilium <span class="dt" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">\</span></span>
+<span id="cb4-12">    <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">--version</span> <span class="va" style="color: #111111;
+background-color: null;
+font-style: inherit;">$CILIUM_VERSION</span> <span class="dt" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">\</span></span>
+<span id="cb4-13">    <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">--namespace</span> kube-system <span class="dt" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">\</span></span>
+<span id="cb4-14">    <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">--values</span> <span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">-</span></span></code></pre></div></div>
+<p>Why that version of it allows me to set the capabilities and the job approach didn’t is beyond me at this point.</p>
+<p>The actual specification of the version of cilium to install and the extra parameters to pass to the helm install are in a separate folder where they can be managed by argo once the cluster is started. The chart part looks like this:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5" style="background: #f1f3f5;"><pre class="sourceCode yaml code-with-copy"><code class="sourceCode yaml"><span id="cb5-1"><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">dependencies</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">:</span></span>
+<span id="cb5-2"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">  </span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">-</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">name</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">:</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> cilium</span></span>
+<span id="cb5-3"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">    </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">version</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">:</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> </span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"1.16.5"</span></span>
+<span id="cb5-4"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">    </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">repository</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">:</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> https://helm.cilium.io/</span></span></code></pre></div></div>
+<p>And the values file looks like this:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6" style="background: #f1f3f5;"><pre class="sourceCode yaml code-with-copy"><code class="sourceCode yaml"><span id="cb6-1"><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">cilium</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">:</span></span>
+<span id="cb6-2"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">  </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">ipam</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">:</span></span>
+<span id="cb6-3"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">    </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">mode</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">:</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> kubernetes</span></span>
+<span id="cb6-4"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">  </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">kubeProxyReplacement</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">:</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> </span><span class="ch" style="color: #20794D;
+background-color: null;
+font-style: inherit;">true</span></span>
+<span id="cb6-5"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">  </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">securityContext</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">:</span></span>
+<span id="cb6-6"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">    </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">capabilities</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">:</span></span>
+<span id="cb6-7"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">      </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">ciliumAgent</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">:</span></span>
+<span id="cb6-8"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">        </span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">-</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> </span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"CHOWN"</span></span>
+<span id="cb6-9"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">        </span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">-</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> </span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"KILL"</span></span>
+<span id="cb6-10"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">        </span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">-</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> </span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"NET_ADMIN"</span></span>
+<span id="cb6-11"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">        </span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">-</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> </span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"NET_RAW"</span></span>
+<span id="cb6-12"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">        </span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">-</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> </span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"IPC_LOCK"</span></span>
+<span id="cb6-13"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">        </span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">-</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> </span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"SYS_ADMIN"</span></span>
+<span id="cb6-14"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">        </span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">-</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> </span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"SYS_RESOURCE"</span></span>
+<span id="cb6-15"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">        </span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">-</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> </span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"DAC_OVERRIDE"</span></span>
+<span id="cb6-16"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">        </span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">-</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> </span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"FOWNER"</span></span>
+<span id="cb6-17"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">        </span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">-</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> </span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"SETGID"</span></span>
+<span id="cb6-18"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">        </span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">-</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> </span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"SETUID"</span></span>
+<span id="cb6-19"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">      </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">cleanCiliumState</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">:</span></span>
+<span id="cb6-20"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">        </span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">-</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> </span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"NET_ADMIN"</span></span>
+<span id="cb6-21"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">        </span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">-</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> </span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"SYS_ADMIN"</span></span>
+<span id="cb6-22"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">        </span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">-</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> </span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"SYS_RESOURCE"</span></span>
+<span id="cb6-23"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">  </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">cgroup</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">:</span></span>
+<span id="cb6-24"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">    </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">autoMount</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">:</span></span>
+<span id="cb6-25"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">      </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">enabled</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">:</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> </span><span class="ch" style="color: #20794D;
+background-color: null;
+font-style: inherit;">false</span></span>
+<span id="cb6-26"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">    </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">hostRoot</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">:</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> </span><span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"/sys/fs/cgroup/"</span></span>
+<span id="cb6-27"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">  </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">k8sServiceHost</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">:</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> localhost</span></span>
+<span id="cb6-28"><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;">  </span><span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">k8sServicePort</span><span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">:</span><span class="at" style="color: #657422;
+background-color: null;
+font-style: inherit;"> </span><span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">7445</span></span></code></pre></div></div>
+<p>Same content, but now if I need to do patches or update other configuration in the future it will be handled by argo, and if I bootstrap a fresh cluster it will also pick up the latest versions.</p>
+</section>
+</section>
+<section id="conclusion" class="level1">
+<h1>Conclusion</h1>
+<p>I did finally get cilium working on my cluster and so far haven’t encountered any additional issues. We’ll see how it goes when I get around to managing things with argo. I’d love to know why the job install approach didn’t work and I’d also like to know if there’s a clean, practical way to swap out your CNI on a live cluster. But I’ve got a ton of other things to learn about and set up on this cluster and I had to cut my losses somewhere. I don’t think the approach I have is awful. As a future enhancement maybe I’ll have my <code>cilium.sh</code> script parse out what version of cilium I’m managing in argo so I don’t bootstrap clusters with an old version or have to manage patching versions in two places. That’s a bit overengineered for how often I think I’m going to bootstrap clusters though so maybe I won’t</p>
+<p><em>Edit</em> I did it anyway, it follows the same pattern as the other stuff I bootstrap in my cluster so it wasn’t a big deal. Besides some dumb issues like figuring out how to correctly format the yaml for values and accidentally installing it into the <code>argocd</code> rather than <code>kube-system</code> namespace (oops) there were no problems getting this going in argo.</p>
+
+
+</section>
+
+ ]]></description>
+  <category>cilium</category>
+  <category>kubernetes</category>
+  <category>talos</category>
+  <guid>https://blog.ianpreston.ca/posts/2024-12-27-kubelog-cilium.html</guid>
   <pubDate>Fri, 27 Dec 2024 00:00:00 GMT</pubDate>
 </item>
 <item>
