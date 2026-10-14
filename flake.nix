@@ -1,32 +1,40 @@
 {
   description = "Development environment for the Quarto blog";
 
-  inputs = {
-    # 26.11 dropped Intel macOS; 26.05 supports both Intel and Apple Silicon.
-    nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-26.05-darwin";
+  inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
 
-    # Newer Nixpkgs Quarto packages fail to render this site with an
-    # "Unknown option syntax-highlighting" Pandoc error.
-    quartoNixpkgs.url =
-      "github:NixOS/nixpkgs/88d3861acdd3d2f0e361767018218e51810df8a1";
-  };
-
-  outputs = { self, nixpkgs, quartoNixpkgs }:
+  outputs = { self, nixpkgs }:
     let
       supportedSystems =
-        [ "x86_64-linux" "aarch64-linux" "x86_64-darwin" "aarch64-darwin" ];
+        [ "x86_64-linux" "aarch64-linux" "aarch64-darwin" ];
       forEachSupportedSystem = f:
         nixpkgs.lib.genAttrs supportedSystems
-        (system:
-          f {
-            pkgs = import nixpkgs { inherit system; };
-            quartoPkgs = import quartoNixpkgs { inherit system; };
-          });
+        (system: f { pkgs = import nixpkgs { inherit system; }; });
     in {
-      devShells = forEachSupportedSystem ({ pkgs, quartoPkgs }: {
-        default = pkgs.mkShell {
-          packages = [ quartoPkgs.quarto pkgs.markdownlint-cli ];
-        };
+      devShells = forEachSupportedSystem ({ pkgs }: {
+        default =
+          let
+            # Quarto 1.10 requires Pandoc 3.10, but nixpkgs currently replaces
+            # it with Pandoc 3.7. Keep the Pandoc binary bundled by Quarto.
+            quartoPandoc = pkgs.stdenvNoCC.mkDerivation {
+              pname = "quarto-pandoc";
+              inherit (pkgs.quarto) version src;
+              sourceRoot =
+                if pkgs.stdenv.hostPlatform.isDarwin then "."
+                else "quarto-${pkgs.quarto.version}";
+              installPhase = ''
+                runHook preInstall
+                mkdir -p $out/bin
+                cp bin/tools/${pkgs.stdenv.hostPlatform.parsed.cpu.name}/pandoc \
+                  $out/bin/pandoc
+                runHook postInstall
+              '';
+              meta.mainProgram = "pandoc";
+            };
+            quarto = pkgs.quarto.override { pandoc = quartoPandoc; };
+          in pkgs.mkShell {
+            packages = [ quarto pkgs.markdownlint-cli ];
+          };
       });
     };
 }

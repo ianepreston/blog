@@ -132,3 +132,5 @@ dmypy.json
 
 _site
 .direnv
+
+**/*.quarto_ipynb

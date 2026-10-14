@@ -4,7 +4,7 @@ My blog, generated with [Quarto](https://quarto.org/).
 
 ## Local development with Nix
 
-The flake supports Apple Silicon and Intel macOS, as well as x86-64 and ARM64 Linux.
+The flake supports Apple Silicon macOS, as well as x86-64 and ARM64 Linux.
 After [installing Nix](https://nixos.org/download/), enter the development shell:
 
 ```sh
