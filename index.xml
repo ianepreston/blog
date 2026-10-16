@@ -10,7 +10,502 @@
 <atom:link href="https://blog.ianpreston.ca/index.xml" rel="self" type="application/rss+xml"/>
 <description></description>
 <generator>quarto-1.10.19</generator>
-<lastBuildDate>Mon, 26 Jan 2026 00:00:00 GMT</lastBuildDate>
+<lastBuildDate>Wed, 14 Oct 2026 00:00:00 GMT</lastBuildDate>
+<item>
+  <title>Time zones when moving from on-prem to Databricks</title>
+  <link>https://blog.ianpreston.ca/posts/2026-10-14-databricks-timezones.html</link>
+  <description><![CDATA[ 
+
+
+
+
+
+<section id="introduction" class="level1">
+<h1>Introduction</h1>
+<p>Time zones are one of those topics that seem straightforward right up until they aren’t. This gets particularly confusing for companies moving from on-prem systems to the cloud.</p>
+<p>An on-prem system might have spent its entire life in one data centre and one time zone. A value like <code>2026-01-15 09:00:00</code> was obviously local time because everything was local time. Once that data lands in a cloud platform it starts mixing with audit columns, system tables, APIs, and services that record time in UTC. Now that same value is ambiguous: is it nine in the morning in Edmonton, or nine in the morning UTC?</p>
+<p>This post covers how I handle that in Databricks. The short version is:</p>
+<ul>
+<li>Use <code>TIMESTAMP</code> for an instant in time, normalized to UTC.</li>
+<li>Use <code>TIMESTAMP_NTZ</code> for a wall-clock value with no time zone attached.</li>
+<li>Convert explicitly when writing data instead of relying on a session setting.</li>
+<li>Use names and comments that make the intended time zone obvious.</li>
+</ul>
+<p>I’ll use <code>America/Edmonton</code> for the local time zone in the examples, but the same approach applies to any <a href="https://www.iana.org/time-zones">IANA time zone</a>.</p>
+</section>
+<section id="two-timestamp-types-that-mean-different-things" class="level1">
+<h1>Two timestamp types that mean different things</h1>
+<p>Databricks has two timestamp types that matter here.</p>
+<p><a href="https://learn.microsoft.com/en-us/azure/databricks/sql/language-manual/data-types/timestamp-type"><code>TIMESTAMP</code></a> represents an instant in time. Databricks normalizes that instant to UTC, then renders it using the current session time zone. Change the session time zone and the displayed clock time changes, but the instant does not.</p>
+<p><a href="https://learn.microsoft.com/en-us/azure/databricks/sql/language-manual/data-types/timestamp-ntz-type"><code>TIMESTAMP_NTZ</code></a> represents a wall-clock value. The <code>NTZ</code> means “no time zone.” The value does not move when the session time zone changes. That makes it a good fit for a source value that means “09:00 in the local office,” but the type does not remember which office or time zone you meant. Column names and comments still matter.</p>
+<p>Here’s a small example from a SQL warehouse configured for UTC:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1" style="background: #f1f3f5;"><pre class="sourceCode sql code-with-copy"><code class="sourceCode sql"><span id="cb1-1"><span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">SELECT</span></span>
+<span id="cb1-2">  current_timezone() <span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">AS</span> session_timezone,</span>
+<span id="cb1-3">  typeof(<span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">CAST</span>(<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">'2026-01-15T16:00:00Z'</span> <span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">AS</span> <span class="dt" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">TIMESTAMP</span>)) <span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">AS</span> instant_type,</span>
+<span id="cb1-4">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">CAST</span>(<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">'2026-01-15T16:00:00Z'</span> <span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">AS</span> <span class="dt" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">TIMESTAMP</span>) <span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">AS</span> instant_ts,</span>
+<span id="cb1-5">  typeof(TIMESTAMP_NTZ<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">'2026-01-15 09:00:00'</span>) <span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">AS</span> wall_clock_type,</span>
+<span id="cb1-6">  TIMESTAMP_NTZ<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">'2026-01-15 09:00:00'</span> <span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">AS</span> wall_clock_ts;</span></code></pre></div></div>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 18%">
+<col style="width: 14%">
+<col style="width: 27%">
+<col style="width: 17%">
+<col style="width: 22%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>session_timezone</th>
+<th>instant_type</th>
+<th>instant_ts</th>
+<th>wall_clock_type</th>
+<th>wall_clock_ts</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Etc/UTC</td>
+<td>timestamp</td>
+<td>2026-01-15 16:00:00 UTC</td>
+<td>timestamp_ntz</td>
+<td>2026-01-15 09:00:00</td>
+</tr>
+</tbody>
+</table>
+<p>If I change the session to <code>America/Edmonton</code>, the instant displays as 09:00. The <code>TIMESTAMP_NTZ</code> value also displays as 09:00, but for a completely different reason: its clock value never changes. Identical output does not mean identical semantics.</p>
+</section>
+<section id="converting-local-source-data-to-utc" class="level1">
+<h1>Converting local source data to UTC</h1>
+<p>Let’s say an older source system exports timestamps as strings and all of them are known to be Edmonton time. I want to preserve the value the source supplied and also create an unambiguous instant for joins, ordering, and comparisons.</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2" style="background: #f1f3f5;"><pre class="sourceCode sql code-with-copy"><code class="sourceCode sql"><span id="cb2-1"><span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">SELECT</span></span>
+<span id="cb2-2">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">CAST</span>(source_time <span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">AS</span> TIMESTAMP_NTZ) <span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">AS</span> local_ts,</span>
+<span id="cb2-3">  to_utc_timestamp(</span>
+<span id="cb2-4">    <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">CAST</span>(source_time <span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">AS</span> TIMESTAMP_NTZ),</span>
+<span id="cb2-5">    <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">'America/Edmonton'</span></span>
+<span id="cb2-6">  ) <span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">AS</span> utc_ts</span>
+<span id="cb2-7"><span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">FROM</span> <span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">VALUES</span></span>
+<span id="cb2-8">  (<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">'2026-01-15 09:00:00'</span>),</span>
+<span id="cb2-9">  (<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">'2026-07-15 09:00:00'</span>)</span>
+<span id="cb2-10"><span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">AS</span> <span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">source</span>(source_time);</span></code></pre></div></div>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>local_ts</th>
+<th>utc_ts</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>2026-01-15 09:00:00</td>
+<td>2026-01-15 16:00:00 UTC</td>
+</tr>
+<tr class="even">
+<td>2026-07-15 09:00:00</td>
+<td>2026-07-15 15:00:00 UTC</td>
+</tr>
+</tbody>
+</table>
+<p>The different UTC values are intentional. Edmonton is seven hours behind UTC in January and six hours behind in July. Using the named time zone lets the conversion function apply daylight-saving rules. Subtracting a fixed number of hours would be wrong for half the year.</p>
+<p>Those offsets are correct for the example dates in early and mid-2026. They are not the rules Alberta will use going forward. Alberta has <a href="https://www.alberta.ca/albertas-new-time-system-abt">adopted permanent Alberta Time</a>, equivalent to UTC-6, and clocks will no longer fall back to Mountain Standard Time beginning in November 2026. A January 2027 value should therefore also be six hours behind UTC.</p>
+<p>For a table that needs both representations I would use a schema something like this:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3" style="background: #f1f3f5;"><pre class="sourceCode sql code-with-copy"><code class="sourceCode sql"><span id="cb3-1"><span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">CREATE</span> <span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">TABLE</span> <span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">events</span> (</span>
+<span id="cb3-2">  event_id BIGINT,</span>
+<span id="cb3-3">  event_utc_ts <span class="dt" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">TIMESTAMP</span></span>
+<span id="cb3-4">    <span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">COMMENT</span> <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">'Event instant normalized to UTC'</span>,</span>
+<span id="cb3-5">  event_local_ts TIMESTAMP_NTZ</span>
+<span id="cb3-6">    <span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">COMMENT</span> <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">'Source wall-clock time in America/Edmonton'</span></span>
+<span id="cb3-7">);</span></code></pre></div></div>
+<p>The suffixes are a little verbose, but timestamp bugs are worse. If local time does not have independent business meaning, storing the UTC instant plus an IANA time-zone identifier and deriving the local value is also reasonable. The important thing is not to leave the interpretation implicit.</p>
+<p>When adding a <code>TIMESTAMP_NTZ</code> column to an older Delta table you may first need to enable the table feature:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4" style="background: #f1f3f5;"><pre class="sourceCode sql code-with-copy"><code class="sourceCode sql"><span id="cb4-1"><span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">ALTER</span> <span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">TABLE</span> <span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">events</span></span>
+<span id="cb4-2"><span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">SET</span> TBLPROPERTIES (<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">'delta.feature.timestampNtz'</span> <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">=</span> <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">'supported'</span>);</span></code></pre></div></div>
+<p>New Delta tables with a <code>TIMESTAMP_NTZ</code> column enable the feature automatically.</p>
+</section>
+<section id="timestamps-generated-in-databricks" class="level1">
+<h1>Timestamps generated in Databricks</h1>
+<p>For timestamps created in Databricks the conversion goes the other direction. <code>current_timestamp()</code> returns a <code>TIMESTAMP</code>, so it is already the right type for the UTC instant column. <code>convert_timezone()</code> can produce the corresponding local <code>TIMESTAMP_NTZ</code> value.</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5" style="background: #f1f3f5;"><pre class="sourceCode sql code-with-copy"><code class="sourceCode sql"><span id="cb5-1"><span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">SELECT</span></span>
+<span id="cb5-2">  typeof(<span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">current_timestamp</span>()) <span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">AS</span> utc_type,</span>
+<span id="cb5-3">  <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">current_timestamp</span>() <span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">AS</span> utc_ts,</span>
+<span id="cb5-4">  typeof(</span>
+<span id="cb5-5">    convert_timezone(<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">'America/Edmonton'</span>, <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">current_timestamp</span>())</span>
+<span id="cb5-6">  ) <span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">AS</span> local_type,</span>
+<span id="cb5-7">  convert_timezone(<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">'America/Edmonton'</span>, <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">current_timestamp</span>()) <span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">AS</span> local_ts;</span></code></pre></div></div>
+<p>This was the result when I ran the example:</p>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 14%">
+<col style="width: 35%">
+<col style="width: 20%">
+<col style="width: 29%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>utc_type</th>
+<th>utc_ts</th>
+<th>local_type</th>
+<th>local_ts</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>timestamp</td>
+<td>2026-10-14 18:41:17 UTC</td>
+<td>timestamp_ntz</td>
+<td>2026-10-14 12:41:17</td>
+</tr>
+</tbody>
+</table>
+<p>The code is explicit about the local zone, so it produces the same pair of values whether the SQL warehouse session is configured for UTC, Edmonton, or something else.</p>
+</section>
+<section id="why-the-session-time-zone-can-still-surprise-you" class="level1">
+<h1>Why the session time zone can still surprise you</h1>
+<p>The session setting controls how <code>TIMESTAMP</code> values are presented and how functions such as <code>hour()</code> interpret them. That means business logic can change based on a setting far away from the query.</p>
+<p>Here’s an example using a UTC warehouse:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6" style="background: #f1f3f5;"><pre class="sourceCode sql code-with-copy"><code class="sourceCode sql"><span id="cb6-1"><span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">WITH</span> <span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">events</span> <span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">AS</span> (</span>
+<span id="cb6-2">  <span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">SELECT</span> <span class="op" style="color: #5E5E5E;
+background-color: null;
+font-style: inherit;">*</span></span>
+<span id="cb6-3">  <span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">FROM</span> <span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">VALUES</span></span>
+<span id="cb6-4">    (<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">'store_open'</span>, <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">CAST</span>(<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">'2026-01-15T16:30:00Z'</span> <span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">AS</span> <span class="dt" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">TIMESTAMP</span>)),</span>
+<span id="cb6-5">    (<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">'late_batch'</span>, <span class="fu" style="color: #4758AB;
+background-color: null;
+font-style: inherit;">CAST</span>(<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">'2026-01-16T02:15:00Z'</span> <span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">AS</span> <span class="dt" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">TIMESTAMP</span>))</span>
+<span id="cb6-6">  <span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">AS</span> <span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">events</span>(event_name, event_ts)</span>
+<span id="cb6-7">)</span>
+<span id="cb6-8"><span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">SELECT</span></span>
+<span id="cb6-9">  current_timezone() <span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">AS</span> session_timezone,</span>
+<span id="cb6-10">  event_name,</span>
+<span id="cb6-11">  <span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">hour</span>(event_ts) <span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">AS</span> session_hour,</span>
+<span id="cb6-12">  <span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">hour</span>(</span>
+<span id="cb6-13">    convert_timezone(<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">'America/Edmonton'</span>, event_ts)</span>
+<span id="cb6-14">  ) <span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">AS</span> edmonton_hour,</span>
+<span id="cb6-15">  <span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">hour</span>(</span>
+<span id="cb6-16">    convert_timezone(<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">'America/Edmonton'</span>, event_ts)</span>
+<span id="cb6-17">  ) <span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">BETWEEN</span> <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">9</span> <span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">AND</span> <span class="dv" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">16</span> <span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">AS</span> during_business_hours</span>
+<span id="cb6-18"><span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">FROM</span> <span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">events</span></span>
+<span id="cb6-19"><span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">ORDER</span> <span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">BY</span> event_ts;</span></code></pre></div></div>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 22%">
+<col style="width: 13%">
+<col style="width: 16%">
+<col style="width: 18%">
+<col style="width: 29%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>session_timezone</th>
+<th>event_name</th>
+<th style="text-align: right;">session_hour</th>
+<th style="text-align: right;">edmonton_hour</th>
+<th>during_business_hours</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Etc/UTC</td>
+<td>store_open</td>
+<td style="text-align: right;">16</td>
+<td style="text-align: right;">9</td>
+<td>true</td>
+</tr>
+<tr class="even">
+<td>Etc/UTC</td>
+<td>late_batch</td>
+<td style="text-align: right;">2</td>
+<td style="text-align: right;">19</td>
+<td>false</td>
+</tr>
+</tbody>
+</table>
+<p><code>hour(event_ts)</code> is not inherently a UTC hour. It is the hour in the current session time zone. The explicit conversion makes the business rule independent of that setting.</p>
+</section>
+<section id="setting-the-session-time-zone-consistently" class="level1">
+<h1>Setting the session time zone consistently</h1>
+<p>Explicit conversion should handle correctness, but a consistent session time zone is still useful for interactive work.</p>
+<p>For one SQL session:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7" style="background: #f1f3f5;"><pre class="sourceCode sql code-with-copy"><code class="sourceCode sql"><span id="cb7-1"><span class="kw" style="color: #003B4F;
+background-color: null;
+font-weight: bold;
+font-style: inherit;">SET</span> <span class="dt" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">TIME</span> <span class="dt" style="color: #AD0000;
+background-color: null;
+font-style: inherit;">ZONE</span> <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">'America/Edmonton'</span>;</span></code></pre></div></div>
+<p>For a notebook or job:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8" style="background: #f1f3f5;"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb8-1">spark.conf.<span class="bu" style="color: null;
+background-color: null;
+font-style: inherit;">set</span>(<span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"spark.sql.session.timeZone"</span>, <span class="st" style="color: #20794D;
+background-color: null;
+font-style: inherit;">"America/Edmonton"</span>)</span></code></pre></div></div>
+<p>A workspace administrator can also add the following SQL configuration parameter to apply it to SQL warehouses:</p>
+<pre class="text"><code>spark.sql.session.timeZone America/Edmonton</code></pre>
+<p>That workspace setting does not configure jobs or interactive compute. More importantly, none of these settings document what a source value meant. I treat them as display conveniences, not as a substitute for explicit conversion.</p>
+</section>
+<section id="validating-the-examples" class="level1">
+<h1>Validating the examples</h1>
+<p>I kept the SQL used for this post in the blog repository. This command runs all four examples against my Databricks workspace and prints the results as JSON:</p>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10" style="background: #f1f3f5;"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb10-1"><span class="ex" style="color: null;
+background-color: null;
+font-style: inherit;">./scripts/timezones/validate.sh</span></span></code></pre></div></div>
+<p>The script uses the <code>fevm-az-cc</code> Databricks CLI profile. If you’re adapting it for your own environment, change the profile near the top of the script.</p>
+</section>
+<section id="conclusion" class="level1">
+<h1>Conclusion</h1>
+<p>There isn’t a setting that makes time zones stop being complicated. My general approach is to store an unambiguous <code>TIMESTAMP</code> for operations that care about an instant, preserve a <code>TIMESTAMP_NTZ</code> when the original wall-clock value has business meaning, and make every conversion explicit.</p>
+<p>It costs a little extra storage and typing. In exchange, joins against system tables work, daylight-saving changes are handled correctly, and downstream users do not have to guess what <code>created_at</code> meant. That seems like a pretty good trade to me.</p>
+
+
+</section>
+
+ ]]></description>
+  <category>databricks</category>
+  <category>sql</category>
+  <guid>https://blog.ianpreston.ca/posts/2026-10-14-databricks-timezones.html</guid>
+  <pubDate>Wed, 14 Oct 2026 00:00:00 GMT</pubDate>
+</item>
 <item>
   <title>My first k8s build log - Flux repo layout</title>
   <link>https://blog.ianpreston.ca/posts/2026-01-26-k8s-layout.html</link>
@@ -13700,133 +14195,6 @@ font-style: inherit;">}</span>);</span>
   <category>docker</category>
   <guid>https://blog.ianpreston.ca/posts/2024-01-18-unifi.html</guid>
   <pubDate>Thu, 18 Jan 2024 00:00:00 GMT</pubDate>
-</item>
-<item>
-  <title>Setting up internal name resolution in Windows and WSL (probably Linux too)</title>
-  <link>https://blog.ianpreston.ca/posts/2023-12-26-dns.html</link>
-  <description><![CDATA[ 
-
-
-
-
-
-<section id="introduction" class="level1">
-<h1>Introduction</h1>
-<p>Previously whenever I wanted to connect to a machine on my network I would create an entry in <code>~/.ssh/config</code> that looked something like this</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1" style="background: #f1f3f5;"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb1-1"><span class="ex" style="color: null;
-background-color: null;
-font-style: inherit;">Host</span> <span class="op" style="color: #5E5E5E;
-background-color: null;
-font-style: inherit;">&lt;</span>host<span class="op" style="color: #5E5E5E;
-background-color: null;
-font-style: inherit;">&gt;</span></span>
-<span id="cb1-2">  <span class="ex" style="color: null;
-background-color: null;
-font-style: inherit;">HostName</span> <span class="op" style="color: #5E5E5E;
-background-color: null;
-font-style: inherit;">&lt;</span>host<span class="op" style="color: #5E5E5E;
-background-color: null;
-font-style: inherit;">&gt;</span>.mydomain.ca</span></code></pre></div></div>
-<p>I might include key or default user information as well, but a lot of the time all I really needed was that. There were two reasons for doing that:</p>
-<ul>
-<li>VS code looks in that file for remote development environments</li>
-<li>It saves me typing <code>ssh &lt;host&gt;.mydomain.ca</code> and lets me just type <code>ssh &lt;host&gt;</code></li>
-</ul>
-<p>The first one this post doesn’t do anything about, but there’s a limited number of machines I need that for. The second doesn’t really seem like a big deal, but I’m lazy. In fact, I’m so lazy that I got annoyed with having to add a record in that file for every host I wanted to connect to, so I looked up how to configure DNS on my workstation to default to my domain if I didn’t put in a FQDN. That’s what this post is about. Read on to find out how.</p>
-</section>
-<section id="on-windows" class="level1">
-<h1>On Windows</h1>
-<p>This is basically cribbed straight from chatGPT:</p>
-<p>To configure your Windows machine so that it can automatically resolve hostnames with a specific domain (like appending <code>mydomain.com</code> to <code>machine1</code> to form <code>machine1.mydomain.com</code>), you need to set up DNS suffix appending. Here’s how to do it:</p>
-<ul>
-<li>Open Network Connections Settings:
-<ul>
-<li>Right-click the network icon in the system tray and select “Open Network &amp; Internet settings”.</li>
-<li>In the settings window, click on “Change adapter options”.</li>
-</ul></li>
-<li>Modify Properties of Your Network Adapter:
-<ul>
-<li>Right-click on the network adapter you are using (it could be Ethernet or Wi-Fi) and select “Properties”. If prompted, provide administrator credentials or confirmation.</li>
-</ul></li>
-<li>Edit TCP/IP Settings:
-<ul>
-<li>In the list of items used by the connection, select “Internet Protocol Version 4 (TCP/IPv4)” or “Internet Protocol Version 6 (TCP/IPv6)” depending on your network configuration.</li>
-<li>Then click “Properties”.</li>
-<li>In the next window, click on the “Advanced” button.</li>
-</ul></li>
-<li>Set the DNS Suffix:
-<ul>
-<li>In the Advanced TCP/IP settings window, go to the “DNS” tab.</li>
-<li>Check the option “Append these DNS suffixes (in order):”.</li>
-<li>Click “Add” and enter your domain name (e.g., mydomain.com).</li>
-<li>Click “Add” after typing each domain. You can add multiple domains if necessary.</li>
-</ul></li>
-<li>Save Your Changes:
-<ul>
-<li>Click “OK” on all open windows to save your changes.</li>
-</ul></li>
-<li>Test the Configuration:
-<ul>
-<li>Open Command Prompt or PowerShell.</li>
-<li>Try to ping or connect to a device using only its hostname (e.g., ping machine1).</li>
-<li>If everything is configured correctly, Windows will automatically append the DNS suffix and resolve <code>machine1</code> to <code>machine1.mydomain.com</code>.</li>
-</ul></li>
-<li>Note for Dynamic DNS Environments:
-<ul>
-<li>If you’re in a dynamic DNS environment, like a corporate network using Active Directory, these settings might be managed by your network administrator via DHCP or Group Policy.</li>
-</ul></li>
-</ul>
-<p>Remember, these settings apply to the network adapter you configure. If you switch between different networks (e.g., from Wi-Fi to Ethernet), you may need to configure each adapter separately.</p>
-</section>
-<section id="wsl" class="level1">
-<h1>WSL</h1>
-<p>In theory this part should just work if Windows is configured correctly, but after some reboots and fiddling I couldn’t get it to go. So I did a manual override. There’s two parts to this</p>
-<ul>
-<li><p>Set <code>/etc/wsl.conf</code> to not auto-generate <code>/etc/resolv.conf</code></p>
-<ul>
-<li>Put an entry in your <code>/etc/wsl.conf</code> that looks like the following:</li>
-</ul>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2" style="background: #f1f3f5;"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb2-1"><span class="ex" style="color: null;
-background-color: null;
-font-style: inherit;">[network]</span></span>
-<span id="cb2-2"><span class="va" style="color: #111111;
-background-color: null;
-font-style: inherit;">generateResolvConf</span><span class="op" style="color: #5E5E5E;
-background-color: null;
-font-style: inherit;">=</span>false</span></code></pre></div></div>
-<ul>
-<li>Restart wsl (or just your whole computer) with <code>wsl --restart</code> from powershell</li>
-</ul></li>
-<li><p>Update <code>/etc/resolv.conf</code> to look something like this:</p>
-<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3" style="background: #f1f3f5;"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb3-1"><span class="ex" style="color: null;
-background-color: null;
-font-style: inherit;">nameserver</span> <span class="op" style="color: #5E5E5E;
-background-color: null;
-font-style: inherit;">&lt;</span>your DNS IP<span class="op" style="color: #5E5E5E;
-background-color: null;
-font-style: inherit;">&gt;</span></span>
-<span id="cb3-2"><span class="ex" style="color: null;
-background-color: null;
-font-style: inherit;">search</span> <span class="op" style="color: #5E5E5E;
-background-color: null;
-font-style: inherit;">&lt;</span>your.domain<span class="op" style="color: #5E5E5E;
-background-color: null;
-font-style: inherit;">&gt;</span></span></code></pre></div></div></li>
-</ul>
-</section>
-<section id="conclusion" class="level1">
-<h1>Conclusion</h1>
-<p>This is a small little quality of life hack. It doesn’t save a ton of time, but it also doesn’t take a ton of time to do, and at least for me while I’ve been experimenting with spinning up and tearing down a bunch of VMs it’s been worth the few minutes it took to figure out and set up.</p>
-
-
-</section>
-
- ]]></description>
-  <category>linux</category>
-  <category>WSL</category>
-  <category>DNS</category>
-  <guid>https://blog.ianpreston.ca/posts/2023-12-26-dns.html</guid>
-  <pubDate>Tue, 26 Dec 2023 00:00:00 GMT</pubDate>
 </item>
 </channel>
 </rss>

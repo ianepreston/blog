@@ -2,6 +2,7 @@
   {
     "listing": "/index.html",
     "items": [
+      "/posts/2026-10-14-databricks-timezones.html",
       "/posts/2026-01-26-k8s-layout.html",
       "/posts/2026-01-23-terraform.html",
       "/posts/2026-01-23-cluster-env.html",
