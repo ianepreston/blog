@@ -102,67 +102,6 @@ equivalent to UTC-6, and clocks will no longer fall back to Mountain Standard
 Time beginning in November 2026. A January 2027 value should therefore also be
 six hours behind UTC.
 
-## Named time zones still depend on current data
-
-Using `America/Edmonton` instead of subtracting a hard-coded offset is still
-the right approach, but it only works if the runtime has a current copy of the
-[IANA time-zone database](https://www.iana.org/time-zones). Alberta's new rules
-were added in tzdata 2026c.
-
-As of October 14, 2026, the serverless SQL warehouse I used for this post had
-not received that update. I added this query to the validation scripts so I can
-tell when the update arrives:
-
-```sql
-WITH checks AS (
-  SELECT *
-  FROM VALUES
-    (
-      'before_change',
-      TIMESTAMP_NTZ'2026-10-31 09:00:00',
-      CAST('2026-10-31T15:00:00Z' AS TIMESTAMP)
-    ),
-    (
-      'after_change',
-      TIMESTAMP_NTZ'2026-11-02 09:00:00',
-      CAST('2026-11-02T15:00:00Z' AS TIMESTAMP)
-    ),
-    (
-      'future_winter',
-      TIMESTAMP_NTZ'2027-01-15 09:00:00',
-      CAST('2027-01-15T15:00:00Z' AS TIMESTAMP)
-    )
-  AS checks(test_case, local_ts, expected_utc_ts)
-)
-SELECT
-  test_case,
-  local_ts,
-  to_utc_timestamp(
-    local_ts,
-    'America/Edmonton'
-  ) AS actual_utc_ts,
-  expected_utc_ts,
-  to_utc_timestamp(
-    local_ts,
-    'America/Edmonton'
-  ) = expected_utc_ts AS uses_current_alberta_rule
-FROM checks
-ORDER BY local_ts;
-```
-
-| test_case      | local_ts            | actual_utc_ts           | expected_utc_ts         | current_rule |
-| -------------- | ------------------- | ----------------------- | ----------------------- | ------------ |
-| before_change  | 2026-10-31 09:00:00 | 2026-10-31 15:00:00 UTC | 2026-10-31 15:00:00 UTC | true         |
-| after_change   | 2026-11-02 09:00:00 | 2026-11-02 16:00:00 UTC | 2026-11-02 15:00:00 UTC | false        |
-| future_winter  | 2027-01-15 09:00:00 | 2027-01-15 16:00:00 UTC | 2027-01-15 15:00:00 UTC | false        |
-
-The pre-change result is correct, but the two winter results still use the old
-UTC-7 rule. Once the warehouse has current time-zone data, the last column
-should be `true` for all three rows without changing the conversion code. This
-is also a good reminder to test future dates whenever local time-zone rules are
-changing; using a named zone is necessary, but the runtime data behind that
-name matters too.
-
 For a table that needs both representations I would use a schema something like
 this:
 
@@ -288,7 +227,7 @@ them as display conveniences, not as a substitute for explicit conversion.
 # Validating the examples
 
 I kept the SQL used for this post in the blog repository. This command runs all
-five examples against my Databricks workspace and prints the results as JSON:
+four examples against my Databricks workspace and prints the results as JSON:
 
 ```bash
 ./scripts/timezones/validate.sh
